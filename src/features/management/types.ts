@@ -1,0 +1,80 @@
+import type { ControlPoint } from '../../types/distance'
+
+/** Локальная дистанция, накопленная в мастере до публикации. */
+export interface PendingDistance {
+  name: string | null
+  lengthMeters: number
+  climbMeters: number
+  controlPoints: ControlPoint[]
+  finishControlPoint: number | null
+  description: string | null
+}
+
+/** Локальная группа — ссылается на дистанцию по индексу в списке шага «Дистанции». */
+export interface PendingGroup {
+  title: string
+  minAge: number | null
+  maxAge: number | null
+  maxParticipants: number | null
+  distanceIndex: number
+  timeLimitMinutes: number | null
+  scorePenaltyPerMinute: number | null
+  maxLatenessMinutes: number | null
+}
+
+export interface CreateCompetitionFormState {
+  title: string
+  startDateStr: string
+  startTime: string
+  zoneId: string
+  address: string
+  latitude: number | null
+  longitude: number | null
+  description: string
+  direction: string
+  punchingSystem: string
+  startTimeMode: string
+  startInterval: number
+  registrationOpenImmediately: boolean
+  regStartDateStr: string
+  regStartTime: string
+  registrationEndMode: string
+  maxParticipants: string
+  feeAmount: string
+  organizerName: string
+  contactPhone: string
+  contactEmail: string
+  website: string
+  regulationUrl: string
+  mapUrl: string
+  isTest: boolean
+}
+
+/**
+ * Превью дистанции из импортируемого IOF XML — только для отображения и выбора в группах.
+ * Реальный парсинг (с координатами КП) делает сервер при публикации (importFromXml);
+ * до тех пор, пока соревнование не создано, читаем из XML только имя/длину/число КП
+ * простым регэкспом.
+ */
+export interface XmlCoursePreview {
+  name: string
+  lengthMeters: number
+  controlsCount: number
+}
+
+const COURSE_REGEX = /<Course>([\s\S]*?)<\/Course>/g
+const NAME_REGEX = /<Name>([\s\S]*?)<\/Name>/
+const LENGTH_REGEX = /<Length>([\s\S]*?)<\/Length>/
+const COURSE_CONTROL_REGEX = /<CourseControl\b/g
+
+export function parseXmlCoursePreviews(xmlContent: string): XmlCoursePreview[] {
+  const previews: XmlCoursePreview[] = []
+  for (const match of xmlContent.matchAll(COURSE_REGEX)) {
+    const block = match[1]
+    const name = NAME_REGEX.exec(block)?.[1]?.trim() || 'Без названия'
+    const lengthMeters = parseInt(LENGTH_REGEX.exec(block)?.[1]?.trim() ?? '', 10) || 0
+    const controlsCount = [...block.matchAll(COURSE_CONTROL_REGEX)].length
+    previews.push({ name, lengthMeters, controlsCount })
+  }
+  return previews
+}

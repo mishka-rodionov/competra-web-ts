@@ -72,6 +72,43 @@ export interface RegisterEventRequest {
   lastName: string
 }
 
+export interface CompetitionFields {
+  title: string
+  startDate: number
+  endDate: number | null
+  kindOfSport: string
+  description: string | null
+  address: string | null
+  coordinates: Coordinates | null
+  status: string
+  registrationStart: number | null
+  registrationEnd: number | null
+  maxParticipants: number | null
+  feeAmount: number | null
+  feeCurrency: string | null
+  mainOrganizerId: string | null
+  organizerName: string | null
+  contactPhone: string | null
+  contactEmail: string | null
+  website: string | null
+  regulationUrl: string | null
+  mapUrl: string | null
+  imageUrl?: string | null
+  resultsStatus: string
+  timeZoneId: string
+  isTest: boolean
+}
+
+export interface CreateCompetitionRequest {
+  competitionId: string
+  competition: CompetitionFields
+  direction: string
+  punchingSystem: string
+  startTimeMode: string
+  startIntervalSeconds: number | null
+  countdownTimer?: number | null
+}
+
 export interface CompetitionDetail {
   id: string
   legacyId: number | null

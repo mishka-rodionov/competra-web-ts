@@ -23,3 +23,20 @@ export interface Distance {
   mapBottomRightLng: number | null
   updatedAt: number
 }
+
+export interface SaveDistanceRequest {
+  distanceId: number | null
+  competitionId: string
+  name: string | null
+  lengthMeters: number
+  climbMeters: number
+  controlsCount: number
+  description: string
+  controlPoints: ControlPoint[]
+  finishControlPoint: number | null
+  mapUrl?: string | null
+  mapTopLeftLat?: number | null
+  mapTopLeftLng?: number | null
+  mapBottomRightLat?: number | null
+  mapBottomRightLng?: number | null
+}

@@ -4,6 +4,7 @@ import { AboutPage } from './pages/AboutPage'
 import { ClubsPage } from './pages/ClubsPage'
 import { CompetitionDetailPage } from './pages/CompetitionDetailPage'
 import { CompetitionsPage } from './pages/CompetitionsPage'
+import { CreateCompetitionPage } from './pages/CreateCompetitionPage'
 import { DiaryPage } from './pages/DiaryPage'
 import { ManagementPage } from './pages/ManagementPage'
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage'
@@ -31,4 +32,5 @@ export const router = createHashRouter([
   { path: '/competition/:id', element: <CompetitionDetailPage /> },
   { path: '/about', element: <AboutPage /> },
   { path: '/privacy', element: <PrivacyPolicyPage /> },
+  { path: '/management/create', element: <CreateCompetitionPage /> },
 ])

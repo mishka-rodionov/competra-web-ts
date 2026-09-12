@@ -61,7 +61,11 @@ interface RequestOptions extends RequestInit {
 async function performFetch(path: string, options: RequestOptions): Promise<Response> {
   const { auth = false, headers, ...rest } = options
   const finalHeaders = new Headers(headers)
-  if (!finalHeaders.has('Content-Type')) finalHeaders.set('Content-Type', 'application/json')
+  // FormData (загрузка XML/файлов) должна сама выставить Content-Type с boundary —
+  // раз проставленный тут application/json это сломает.
+  if (!finalHeaders.has('Content-Type') && !(rest.body instanceof FormData)) {
+    finalHeaders.set('Content-Type', 'application/json')
+  }
   if (auth) {
     const token = tokenStorage.getToken()
     if (token) finalHeaders.set('Authorization', `Bearer ${token}`)
