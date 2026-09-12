@@ -36,6 +36,15 @@ export const competitionRepository = {
     return safeApiCall(() => publicRequest<CompetitionDetail>(`/event/orienteering/competitions/public/${id}`))
   },
 
+  /**
+   * Полная OrienteeringCompetition (direction/punchingSystem/... + вложенная Competition) по id —
+   * старое приложение никогда её не вызывало (передавало объект из списка через навигацию),
+   * но при URL-роутинге (обновление страницы, прямая ссылка) нужен независимый фетч для ManageCompetitionPage.
+   */
+  getById(id: string) {
+    return safeApiCall(() => authRequest<OrienteeringCompetition>(`/event/orienteering/competitions/${id}`))
+  },
+
   getMyCompetitions() {
     return safeApiCall(() => authRequest<OrienteeringCompetition[]>('/event/orienteering/competitions'))
   },

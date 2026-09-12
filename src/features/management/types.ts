@@ -1,4 +1,37 @@
+import { DEFAULT_TIME_ZONE } from '../../lib/dateUtils'
+import type { Competition, CompetitionFields } from '../../types/competition'
 import type { ControlPoint } from '../../types/distance'
+
+/** Клонирует поля соревнования для повторной отправки в save/competitions (апдейт по тому же id). */
+export function competitionToFields(c: Competition, overrides: Partial<CompetitionFields> = {}): CompetitionFields {
+  return {
+    title: c.title,
+    startDate: c.startDate,
+    endDate: c.endDate,
+    kindOfSport: c.kindOfSport,
+    description: c.description,
+    address: c.address,
+    coordinates: c.coordinates,
+    status: c.status,
+    registrationStart: c.registrationStart,
+    registrationEnd: c.registrationEnd,
+    maxParticipants: c.maxParticipants,
+    feeAmount: c.feeAmount,
+    feeCurrency: c.feeCurrency,
+    mainOrganizerId: c.mainOrganizerId,
+    organizerName: c.organizerName,
+    contactPhone: c.contactPhone,
+    contactEmail: c.contactEmail,
+    website: c.website,
+    regulationUrl: c.regulationUrl,
+    mapUrl: c.mapUrl,
+    imageUrl: c.imageUrl,
+    resultsStatus: c.resultsStatus,
+    timeZoneId: c.timeZoneId || DEFAULT_TIME_ZONE,
+    isTest: c.isTest,
+    ...overrides,
+  }
+}
 
 /** Локальная дистанция, накопленная в мастере до публикации. */
 export interface PendingDistance {

@@ -35,3 +35,17 @@ export const REG_END_MODE_OPTIONS: [string, string][] = [
   ['AT_COMPETITION_START', 'В момент старта'],
   ['DAY_BEFORE_START', 'За день до старта'],
 ]
+
+export const STATUS_OPTIONS: [string, string][] = [
+  ['REGISTRATION_OPEN', 'Регистрация открыта'],
+  ['REGISTRATION_CLOSED', 'Регистрация закрыта'],
+  ['CREATED', 'Черновик'],
+  ['FINISHED', 'Завершено'],
+]
+
+/** null — «без ограничений»; LabeledSelect работает со string/number ключами, поэтому здесь '' вместо null. */
+export const GENDER_OPTIONS: [string, string][] = [
+  ['', 'Без ограничений'],
+  ['M', 'Мужчины'],
+  ['F', 'Женщины'],
+]

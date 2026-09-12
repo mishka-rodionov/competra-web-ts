@@ -14,6 +14,23 @@ export interface OrienteeringParticipant {
   isChipGiven: boolean
 }
 
+/** Форма 1:1 с бэкендовым OrienteeringParticipantRequest — создание/обновление участника вручную. */
+export interface SaveParticipantRequest {
+  id: string
+  userId: string | null
+  firstName: string
+  lastName: string
+  groupId: number
+  groupName: string
+  competitionId: string
+  commandName: string | null
+  startNumber: number
+  startTime: number
+  chipNumber: number
+  comment: string | null
+  isChipGiven: boolean
+}
+
 export interface SplitTime {
   controlPoint: number
   timestamp: number

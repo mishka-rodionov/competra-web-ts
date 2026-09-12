@@ -112,7 +112,7 @@ export function ManagementPage() {
               <div className="flex items-center justify-between pt-2">
                 <button
                   type="button"
-                  onClick={() => navigate(`/competition/${competition.competitionId}`)}
+                  onClick={() => navigate(`/management/${competition.competitionId}`)}
                   className="rounded-md border border-outline px-3 py-1.5 text-sm text-fg"
                 >
                   Управлять

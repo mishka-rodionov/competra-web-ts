@@ -61,6 +61,16 @@ export function zonedDateTimeToUtcMillis(dateStr: string, timeStr: string, zoneI
   return asUtc - (shown - asUtc)
 }
 
+/** "ГГГГ-ММ-ДД" из UTC-таймстампа в указанном часовом поясе — для value <input type="date">. */
+export function utcMillisToZonedDate(ms: number, zoneId: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: zoneId,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(ms))
+}
+
 /** Список IANA-часовых поясов из браузера. */
 export function availableTimeZones(): string[] {
   try {

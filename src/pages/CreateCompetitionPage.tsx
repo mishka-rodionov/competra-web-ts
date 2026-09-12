@@ -253,9 +253,7 @@ export function CreateCompetitionPage() {
     }
 
     await queryClient.invalidateQueries({ queryKey: ['my-competitions'] })
-    // ManageCompetitionPage ещё не перенесена (часть 2 вертикали 3) — пока возвращаемся к списку,
-    // где созданное соревнование уже видно.
-    navigate('/management')
+    navigate(`/management/${competitionId}`)
   }
 
   return (
