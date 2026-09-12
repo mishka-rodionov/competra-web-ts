@@ -8,4 +8,9 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   base: './',
   plugins: [react(), tailwindcss()],
+  // 3000, не дефолтный 5173 — бэкенд (eSport, HTTP.kt) уже разрешает CORS для localhost:3000
+  // (использовался старым webpack-dev-server), это позволяет не трогать его конфиг.
+  server: {
+    port: 3000,
+  },
 })
