@@ -1,15 +1,20 @@
 import { createHashRouter } from 'react-router-dom'
 import { AppShell } from './layout/AppShell'
 import { AboutPage } from './pages/AboutPage'
+import { ClubDetailPage } from './pages/ClubDetailPage'
+import { ClubJoinRequestsPage } from './pages/ClubJoinRequestsPage'
 import { ClubsPage } from './pages/ClubsPage'
 import { CompetitionDetailPage } from './pages/CompetitionDetailPage'
 import { CompetitionsPage } from './pages/CompetitionsPage'
+import { CreateClubPage } from './pages/CreateClubPage'
 import { CreateCompetitionPage } from './pages/CreateCompetitionPage'
 import { DiaryPage } from './pages/DiaryPage'
 import { ManageCompetitionPage } from './pages/ManageCompetitionPage'
 import { ManagementPage } from './pages/ManagementPage'
+import { MyJoinRequestsPage } from './pages/MyJoinRequestsPage'
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { TeamDetailPage } from './pages/TeamDetailPage'
 
 /**
  * Hash-роутинг (#/...) осознанно вместо обычного BrowserRouter — GitHub Pages
@@ -35,4 +40,9 @@ export const router = createHashRouter([
   { path: '/privacy', element: <PrivacyPolicyPage /> },
   { path: '/management/create', element: <CreateCompetitionPage /> },
   { path: '/management/:id', element: <ManageCompetitionPage /> },
+  { path: '/clubs/create', element: <CreateClubPage /> },
+  { path: '/clubs/my-join-requests', element: <MyJoinRequestsPage /> },
+  { path: '/clubs/:id', element: <ClubDetailPage /> },
+  { path: '/clubs/:id/join-requests', element: <ClubJoinRequestsPage /> },
+  { path: '/teams/:id', element: <TeamDetailPage /> },
 ])
