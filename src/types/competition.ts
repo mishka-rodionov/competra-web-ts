@@ -65,6 +65,13 @@ export interface ParticipantGroupDetail {
   maxLatenessMinutes: number | null
 }
 
+export interface RegisterEventRequest {
+  competitionId: string
+  groupId: number
+  firstName: string
+  lastName: string
+}
+
 export interface CompetitionDetail {
   id: string
   legacyId: number | null

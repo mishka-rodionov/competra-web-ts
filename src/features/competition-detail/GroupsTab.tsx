@@ -1,26 +1,91 @@
+import { useState } from 'react'
 import { EmptyState } from '../../components/EmptyState'
-import type { ParticipantGroupDetail } from '../../types/competition'
+import { ErrorMessage } from '../../components/ErrorMessage'
+import { useIsLoggedIn } from '../../auth/useIsLoggedIn'
+import type { ParticipantGroupDetail, RegisterEventRequest } from '../../types/competition'
 import { genderLabel } from '../competitions/labels'
+import { RegistrationDialog } from './RegistrationDialog'
 
-/**
- * Только просмотр — кнопка регистрации из старого приложения показывалась лишь залогиненным
- * пользователям (isLoggedIn && registrationOpen && !anyRegistered), а авторизация появится
- * только в вертикали 2. До тех пор это ровно то же состояние, что видел неавторизованный
- * пользователь в Kotlin-версии.
- */
-export function GroupsTab({ groups }: { groups: ParticipantGroupDetail[] }) {
-  if (groups.length === 0) return <EmptyState text="Группы ещё не добавлены" />
+interface GroupsTabProps {
+  competitionId: string
+  groups: ParticipantGroupDetail[]
+  registrationOpen: boolean
+  registeredGroupId: number | null
+  registerError: string | null
+  onRegister: (request: RegisterEventRequest) => void
+  onCancelRegistration: () => void
+}
+
+export function GroupsTab({
+  competitionId,
+  groups,
+  registrationOpen,
+  registeredGroupId,
+  registerError,
+  onRegister,
+  onCancelRegistration,
+}: GroupsTabProps) {
+  const isLoggedIn = useIsLoggedIn()
+  const [dialogGroup, setDialogGroup] = useState<ParticipantGroupDetail | null>(null)
+  const anyRegistered = registeredGroupId != null
 
   return (
     <div className="flex flex-col gap-2 p-4">
-      {groups.map((group) => (
-        <GroupCard key={group.groupId} group={group} />
-      ))}
+      {anyRegistered && (
+        <div className="flex flex-col items-start gap-2">
+          <span className="text-base text-primary">Вы зарегистрированы</span>
+          <button
+            type="button"
+            onClick={onCancelRegistration}
+            className="rounded-md border border-outline px-3 py-1.5 text-sm text-fg"
+          >
+            Отменить регистрацию
+          </button>
+        </div>
+      )}
+      {registerError && <ErrorMessage message={registerError} />}
+
+      {groups.length === 0 ? (
+        <EmptyState text="Группы ещё не добавлены" />
+      ) : (
+        groups.map((group) => (
+          <GroupCard
+            key={group.groupId}
+            group={group}
+            isLoggedIn={isLoggedIn}
+            registrationOpen={registrationOpen}
+            isRegistered={registeredGroupId === group.groupId}
+            anyRegistered={anyRegistered}
+            onRegister={() => setDialogGroup(group)}
+          />
+        ))
+      )}
+
+      {dialogGroup && (
+        <RegistrationDialog
+          group={dialogGroup}
+          competitionId={competitionId}
+          onDismiss={() => setDialogGroup(null)}
+          onConfirm={(request) => {
+            onRegister(request)
+            setDialogGroup(null)
+          }}
+        />
+      )}
     </div>
   )
 }
 
-function GroupCard({ group }: { group: ParticipantGroupDetail }) {
+interface GroupCardProps {
+  group: ParticipantGroupDetail
+  isLoggedIn: boolean
+  registrationOpen: boolean
+  isRegistered: boolean
+  anyRegistered: boolean
+  onRegister: () => void
+}
+
+function GroupCard({ group, isLoggedIn, registrationOpen, isRegistered, anyRegistered, onRegister }: GroupCardProps) {
   const spotsLeft = group.maxParticipants != null ? group.maxParticipants - group.registeredCount : null
   const ageRange =
     group.minAge != null && group.maxAge != null
@@ -42,12 +107,14 @@ function GroupCard({ group }: { group: ParticipantGroupDetail }) {
         .join(' · ')
     : null
 
+  const isFull = spotsLeft != null && spotsLeft <= 0
+
   return (
     <div className="flex flex-col gap-1 rounded-lg border border-outline-variant bg-surface p-4">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-fg">{group.title}</span>
         {spotsLeft != null && (
-          <span className={`text-xs ${spotsLeft <= 0 ? 'text-error' : 'text-on-surface-variant'}`}>
+          <span className={`text-xs ${isFull ? 'text-error' : 'text-on-surface-variant'}`}>
             Мест: {spotsLeft}/{group.maxParticipants}
           </span>
         )}
@@ -58,6 +125,19 @@ function GroupCard({ group }: { group: ParticipantGroupDetail }) {
       {group.distanceDescription?.trim() && (
         <span className="text-sm text-on-surface-variant">{group.distanceDescription}</span>
       )}
+
+      {isLoggedIn && registrationOpen && !anyRegistered ? (
+        <button
+          type="button"
+          onClick={onRegister}
+          disabled={isFull}
+          className="mt-2 self-start rounded-md bg-primary px-3 py-1.5 text-sm text-on-primary disabled:opacity-50"
+        >
+          {isFull ? 'Мест нет' : 'Зарегистрироваться'}
+        </button>
+      ) : isRegistered ? (
+        <span className="mt-2 text-sm font-medium text-primary">✓ Вы в этой группе</span>
+      ) : null}
     </div>
   )
 }

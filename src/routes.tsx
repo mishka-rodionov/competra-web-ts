@@ -1,10 +1,12 @@
 import { createHashRouter } from 'react-router-dom'
 import { AppShell } from './layout/AppShell'
+import { AboutPage } from './pages/AboutPage'
 import { ClubsPage } from './pages/ClubsPage'
 import { CompetitionDetailPage } from './pages/CompetitionDetailPage'
 import { CompetitionsPage } from './pages/CompetitionsPage'
 import { DiaryPage } from './pages/DiaryPage'
 import { ManagementPage } from './pages/ManagementPage'
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage'
 import { ProfilePage } from './pages/ProfilePage'
 
 /**
@@ -27,4 +29,6 @@ export const router = createHashRouter([
   },
   // Вне AppShell — full-screen, без нижней навигации (как Page.CompetitionDetail в старом приложении).
   { path: '/competition/:id', element: <CompetitionDetailPage /> },
+  { path: '/about', element: <AboutPage /> },
+  { path: '/privacy', element: <PrivacyPolicyPage /> },
 ])

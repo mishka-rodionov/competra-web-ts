@@ -1,13 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { tokenStorage } from '../auth/tokenStorage'
+import { useIsLoggedIn } from '../auth/useIsLoggedIn'
 import { EmptyState } from '../components/EmptyState'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
 import { TabBar } from '../components/TabBar'
 import { CompetitionCard } from '../features/competitions/CompetitionCard'
 import { FilterSheet } from '../features/competitions/FilterSheet'
-import { EMPTY_FILTER, isFilterEmpty, usePublicCompetitions, type CompetitionsFilter } from '../features/competitions/hooks'
+import {
+  EMPTY_FILTER,
+  isFilterEmpty,
+  useMyCompetitions,
+  usePublicCompetitions,
+  type CompetitionsFilter,
+} from '../features/competitions/hooks'
 import { isDebugEnvironment } from '../lib/debugEnv'
 
 const TABS = [
@@ -21,14 +27,19 @@ export function CompetitionsPage() {
   const [filter, setFilter] = useState<CompetitionsFilter>(EMPTY_FILTER)
   const [draftFilter, setDraftFilter] = useState<CompetitionsFilter>(EMPTY_FILTER)
   const [showFilter, setShowFilter] = useState(false)
-  // "Мои" пока не реализовано (нужна авторизация — вертикаль 2), проверка isLoggedIn
-  // здесь только чтобы показать правильное пустое состояние, как в старом приложении.
-  const [isLoggedIn] = useState(() => tokenStorage.isLoggedIn())
+  const isLoggedIn = useIsLoggedIn()
   const showTabs = isDebugEnvironment()
 
   const { data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
     usePublicCompetitions(filter)
   const competitions = data?.pages.flatMap((page) => page.items) ?? []
+
+  const {
+    data: myCompetitions,
+    isLoading: isMyLoading,
+    isError: isMyError,
+    error: myError,
+  } = useMyCompetitions(selectedTab === 'mine' && isLoggedIn)
 
   const sentinelRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -62,7 +73,25 @@ export function CompetitionsPage() {
       {showTabs && <TabBar tabs={TABS} active={selectedTab} onChange={(key) => setSelectedTab(key as 'public' | 'mine')} />}
 
       {selectedTab === 'mine' ? (
-        <EmptyState text={isLoggedIn ? 'Нет соревнований' : 'Войдите в аккаунт, чтобы увидеть свои соревнования'} />
+        !isLoggedIn ? (
+          <EmptyState text="Войдите в аккаунт, чтобы увидеть свои соревнования" />
+        ) : isMyLoading ? (
+          <Loading />
+        ) : isMyError ? (
+          <ErrorMessage message={(myError as Error).message} />
+        ) : !myCompetitions || myCompetitions.length === 0 ? (
+          <EmptyState text="Нет соревнований" />
+        ) : (
+          <div className="flex flex-col gap-2 p-4">
+            {myCompetitions.map((competition) => (
+              <CompetitionCard
+                key={competition.competitionId}
+                competition={competition.competition}
+                onClick={() => navigate(`/competition/${competition.competitionId}`)}
+              />
+            ))}
+          </div>
+        )
       ) : isLoading ? (
         <Loading />
       ) : isError ? (

@@ -1,7 +1,7 @@
-import { publicRequest } from './client'
-import { safeApiCall } from './safeApiCall'
+import { authRequest, publicRequest } from './client'
+import { safeApiCall, safeApiCallUnit } from './safeApiCall'
 import type { PagedResponse } from './types'
-import type { Competition, CompetitionDetail } from '../types/competition'
+import type { Competition, CompetitionDetail, OrienteeringCompetition, RegisterEventRequest } from '../types/competition'
 
 export interface GetPublicCompetitionsParams {
   kindOfSports?: string[]
@@ -28,5 +28,23 @@ export const competitionRepository = {
 
   getCompetitionDetail(id: string) {
     return safeApiCall(() => publicRequest<CompetitionDetail>(`/event/orienteering/competitions/public/${id}`))
+  },
+
+  getMyCompetitions() {
+    return safeApiCall(() => authRequest<OrienteeringCompetition[]>('/event/orienteering/competitions'))
+  },
+
+  getRegisteredCompetitions() {
+    return safeApiCall(() => authRequest<OrienteeringCompetition[]>('/event/orienteering/competitions/registered'))
+  },
+
+  register(request: RegisterEventRequest) {
+    return safeApiCallUnit(() =>
+      authRequest('/event/orienteering/register', { method: 'POST', body: JSON.stringify(request) }),
+    )
+  },
+
+  cancelRegistration(competitionId: string) {
+    return safeApiCallUnit(() => authRequest(`/event/orienteering/register/${competitionId}`, { method: 'DELETE' }))
   },
 }
