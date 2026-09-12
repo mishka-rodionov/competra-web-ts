@@ -1,0 +1,88 @@
+@import 'tailwindcss';
+
+/*
+ * Дизайн-токены «Лес»: хвойный зелёный + терракота + кремовый фон.
+ * Тот же дух, что и в competra-web (Compose Material3), но набор ролей
+ * упрощён — без полной M3 surface-container лестницы, которая там была
+ * источником бага с "фиолетовой" baseline-палитрой по умолчанию.
+ */
+@theme {
+  --color-bg: var(--les-bg);
+  --color-fg: var(--les-fg);
+  --color-surface: var(--les-surface);
+  --color-surface-variant: var(--les-surface-variant);
+  --color-on-surface-variant: var(--les-on-surface-variant);
+  --color-primary: var(--les-primary);
+  --color-on-primary: var(--les-on-primary);
+  --color-primary-container: var(--les-primary-container);
+  --color-on-primary-container: var(--les-on-primary-container);
+  --color-secondary: var(--les-secondary);
+  --color-on-secondary: var(--les-on-secondary);
+  --color-secondary-container: var(--les-secondary-container);
+  --color-on-secondary-container: var(--les-on-secondary-container);
+  --color-tertiary: var(--les-tertiary);
+  --color-outline: var(--les-outline);
+  --color-outline-variant: var(--les-outline-variant);
+  --color-error: var(--les-error);
+  --color-on-error: var(--les-on-error);
+
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+
+  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+:root {
+  --les-bg: #f4f1e8;
+  --les-fg: #21302a;
+  --les-surface: #ffffff;
+  --les-surface-variant: #e5e2d6;
+  --les-on-surface-variant: #4c5a50;
+  --les-primary: #2e5d43;
+  --les-on-primary: #ffffff;
+  --les-primary-container: #b6e5c9;
+  --les-on-primary-container: #0a2417;
+  --les-secondary: #c8643c;
+  --les-on-secondary: #ffffff;
+  --les-secondary-container: #fcdbc8;
+  --les-on-secondary-container: #3a1a0c;
+  --les-tertiary: #6b7a5a;
+  --les-outline: #7e877c;
+  --les-outline-variant: #c9cec3;
+  --les-error: #b3261e;
+  --les-on-error: #ffffff;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --les-bg: #121a15;
+    --les-fg: #e1e6dd;
+    --les-surface: #1b271f;
+    --les-surface-variant: #3f4a42;
+    --les-on-surface-variant: #bfcabe;
+    --les-primary: #7fcfa0;
+    --les-on-primary: #06311d;
+    --les-primary-container: #1e4a34;
+    --les-on-primary-container: #9cebc0;
+    --les-secondary: #e8a07c;
+    --les-on-secondary: #4a2210;
+    --les-secondary-container: #693924;
+    --les-on-secondary-container: #fcdbc8;
+    --les-tertiary: #aebe96;
+    --les-outline: #899389;
+    --les-outline-variant: #3f4a42;
+    --les-error: #f2b8b5;
+    --les-on-error: #601410;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-fg);
+}
