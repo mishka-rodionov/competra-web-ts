@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { competitionRepository } from '../../api/competitionRepository'
+import { CoordinatesPickerField } from '../../components/CoordinatesPickerField'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { LabeledSelect } from '../../components/LabeledSelect'
 import { Loading } from '../../components/Loading'
@@ -186,26 +187,11 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
         />
       </label>
       <TextInput label="Место проведения" value={form.address} onChange={(address) => patch({ address })} />
-      <div className="flex gap-2">
-        <label className="flex flex-1 flex-col gap-1">
-          <span className="text-sm text-on-surface-variant">Широта</span>
-          <input
-            value={form.latitude ?? ''}
-            onChange={(e) => patch({ latitude: e.target.value ? Number(e.target.value) : null })}
-            inputMode="decimal"
-            className="rounded-md border border-outline bg-surface px-3 py-2 text-fg"
-          />
-        </label>
-        <label className="flex flex-1 flex-col gap-1">
-          <span className="text-sm text-on-surface-variant">Долгота</span>
-          <input
-            value={form.longitude ?? ''}
-            onChange={(e) => patch({ longitude: e.target.value ? Number(e.target.value) : null })}
-            inputMode="decimal"
-            className="rounded-md border border-outline bg-surface px-3 py-2 text-fg"
-          />
-        </label>
-      </div>
+      <CoordinatesPickerField
+        latitude={form.latitude}
+        longitude={form.longitude}
+        onPick={(latitude, longitude) => patch({ latitude, longitude })}
+      />
       <TextInput label="Описание" multiline value={form.description} onChange={(description) => patch({ description })} />
       <LabeledSelect label="Статус" value={form.status} options={STATUS_OPTIONS} onChange={(status) => patch({ status })} />
 

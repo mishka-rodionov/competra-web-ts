@@ -36,9 +36,25 @@ function mapUserProfile(raw: RawUserProfile): UserProfile {
   }
 }
 
+/** Тело PATCH-запроса на обновление профиля — сервер меняет только переданные поля. snake_case, как и ответ /user/profile. */
+export interface UserProfileUpdateRequest {
+  first_name?: string | null
+  last_name?: string | null
+  middle_name?: string | null
+  birth_date?: number | null
+}
+
 export const userRepository = {
   async getUserProfile(): Promise<ApiResult<UserProfile>> {
     const result = await safeApiCall(() => authRequest<RawUserProfile>('/user/profile'))
+    if (result.kind === 'error') return result
+    return { kind: 'success', data: mapUserProfile(result.data) }
+  },
+
+  async updateProfile(request: UserProfileUpdateRequest): Promise<ApiResult<UserProfile>> {
+    const result = await safeApiCall(() =>
+      authRequest<RawUserProfile>('/user/profile', { method: 'PATCH', body: JSON.stringify(request) }),
+    )
     if (result.kind === 'error') return result
     return { kind: 'success', data: mapUserProfile(result.data) }
   },

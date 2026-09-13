@@ -54,3 +54,20 @@ export interface OrienteeringResult {
   isEditable: boolean
   isEdited: boolean
 }
+
+/** Запрос на сохранение/обновление результата — форма 1:1 с бэкендовым OrienteeringResultRequest. */
+export interface SaveResultRequest {
+  id: string
+  competitionId: string
+  groupId: number
+  participantId: string
+  startTime: number | null
+  finishTime: number | null
+  totalTime: number | null
+  rank: number | null
+  status: string
+  penaltyTime: number
+  splits: SplitTime[] | null
+  isEditable: boolean
+  isEdited: boolean
+}

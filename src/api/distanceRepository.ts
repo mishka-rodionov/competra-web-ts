@@ -2,6 +2,10 @@ import { authRequest } from './client'
 import { safeApiCall } from './safeApiCall'
 import type { Distance, SaveDistanceRequest } from '../types/distance'
 
+interface UploadResponse {
+  url: string
+}
+
 /**
  * Ходит через authRequest, как и в старом репозитории (DistanceRepository там завязан на
  * authClient целиком, хотя используется и в публичном просмотре) — эндпоинт при этом не требует
@@ -32,5 +36,19 @@ export const distanceRepository = {
     return safeApiCall(() =>
       authRequest<Distance[]>('/event/orienteering/import/courses', { method: 'POST', body: formData }),
     )
+  },
+
+  /**
+   * Загружает файл карты дистанции (растр из mapper) и возвращает его публичный URL.
+   * URL и координаты углов сохраняются отдельным вызовом saveDistances.
+   */
+  uploadDistanceMap(file: File) {
+    const formData = new FormData()
+    formData.append('type', 'distance-map')
+    formData.append('file', file)
+    return safeApiCall(async () => {
+      const response = await authRequest<UploadResponse>('/upload/file', { method: 'POST', body: formData })
+      return { status: response.status, result: response.result?.url ?? null, errors: response.errors }
+    })
   },
 }

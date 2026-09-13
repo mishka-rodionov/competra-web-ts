@@ -11,14 +11,18 @@ import { CreateClubPage } from './pages/CreateClubPage'
 import { CreateCompetitionPage } from './pages/CreateCompetitionPage'
 import { DiaryPage } from './pages/DiaryPage'
 import { GroupMappingPage } from './pages/GroupMappingPage'
+import { GroupSplitsTablePage } from './pages/GroupSplitsTablePage'
 import { ManageCompetitionPage } from './pages/ManageCompetitionPage'
 import { ManagementPage } from './pages/ManagementPage'
 import { MyJoinRequestsPage } from './pages/MyJoinRequestsPage'
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage'
+import { ProfileEditorPage } from './pages/ProfileEditorPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { RaceGraphPage } from './pages/RaceGraphPage'
 import { RatingDetailPage } from './pages/RatingDetailPage'
 import { RatingFormPage } from './pages/RatingFormPage'
 import { RatingsSearchPage } from './pages/RatingsSearchPage'
+import { ScoreGraphPage } from './pages/ScoreGraphPage'
 import { TeamDetailPage } from './pages/TeamDetailPage'
 import { WorkoutDetailPage } from './pages/WorkoutDetailPage'
 import { WorkoutEditorPage } from './pages/WorkoutEditorPage'
@@ -42,8 +46,12 @@ export const router = createHashRouter([
       { path: '/profile', element: <ProfilePage /> },
     ],
   },
+  { path: '/profile/edit', element: <ProfileEditorPage /> },
   // Вне AppShell — full-screen, без нижней навигации (как Page.CompetitionDetail в старом приложении).
   { path: '/competition/:id', element: <CompetitionDetailPage /> },
+  { path: '/competition/:id/group/:groupId/splits', element: <GroupSplitsTablePage /> },
+  { path: '/competition/:id/group/:groupId/race-graph', element: <RaceGraphPage /> },
+  { path: '/competition/:id/group/:groupId/score-graph', element: <ScoreGraphPage /> },
   { path: '/about', element: <AboutPage /> },
   { path: '/privacy', element: <PrivacyPolicyPage /> },
   { path: '/management/create', element: <CreateCompetitionPage /> },

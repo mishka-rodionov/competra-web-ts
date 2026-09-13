@@ -87,6 +87,13 @@ export function ProfilePage() {
             {profile.birthDate != null && (
               <span className="text-sm text-on-surface-variant">Дата рождения: {toLocaleDateString(profile.birthDate)}</span>
             )}
+            <button
+              type="button"
+              onClick={() => navigate('/profile/edit')}
+              className="mt-2 self-start rounded-md border border-outline px-3 py-1.5 text-sm text-fg"
+            >
+              Редактировать профиль
+            </button>
           </div>
         ) : (
           <span className="text-base font-medium text-fg">Профиль пользователя</span>

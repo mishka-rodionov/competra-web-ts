@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Loading } from '../../components/Loading'
@@ -17,10 +18,6 @@ interface ResultsTabProps {
   direction: string
 }
 
-/**
- * Кнопки «Сплиты» / «График» из старого приложения (детальные страницы группового сплита и
- * интерактивных графиков гонки/очков) — отдельная вертикаль, пока не перенесены.
- */
 export function ResultsTab({ competitionId, groups, competitionStatus, resultsStatus, direction }: ResultsTabProps) {
   const isByChoice = direction === 'BY_CHOICE'
   const { data: results, isLoading, isError, error } = useResults(competitionId, competitionStatus)
@@ -70,6 +67,8 @@ export function ResultsTab({ competitionId, groups, competitionStatus, resultsSt
         return (
           <GroupResultsCard
             key={groupId}
+            competitionId={competitionId}
+            groupId={groupId}
             groupTitle={groupNamesById.get(groupId) ?? `Группа ${groupId}`}
             groupResults={groupResults}
             isByChoice={isByChoice}
@@ -82,16 +81,41 @@ export function ResultsTab({ competitionId, groups, competitionStatus, resultsSt
 }
 
 interface GroupResultsCardProps {
+  competitionId: string
+  groupId: number
   groupTitle: string
   groupResults: OrienteeringResult[]
   isByChoice: boolean
   participantsById: Map<string, OrienteeringParticipant>
 }
 
-function GroupResultsCard({ groupTitle, groupResults, isByChoice, participantsById }: GroupResultsCardProps) {
+function GroupResultsCard({ competitionId, groupId, groupTitle, groupResults, isByChoice, participantsById }: GroupResultsCardProps) {
+  const navigate = useNavigate()
+  const hasSplits = groupResults.some((r) => r.splits && r.splits.length > 0)
+
   return (
     <div className="rounded-lg border border-outline-variant bg-surface p-4">
-      <h3 className="mb-2 text-sm font-semibold text-fg">{groupTitle}</h3>
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-fg">{groupTitle}</h3>
+        {hasSplits && (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => navigate(`/competition/${competitionId}/group/${groupId}/splits`)}
+              className="rounded-md border border-outline px-2 py-1 text-xs text-fg"
+            >
+              Сплиты
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/competition/${competitionId}/group/${groupId}/${isByChoice ? 'score-graph' : 'race-graph'}`)}
+              className="rounded-md border border-outline px-2 py-1 text-xs text-fg"
+            >
+              График
+            </button>
+          </div>
+        )}
+      </div>
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-outline-variant text-left text-xs text-on-surface-variant">

@@ -1,16 +1,12 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
+import { TrackMapView } from '../components/TrackMapView'
 import { useWorkout } from '../features/diary/hooks'
 import { formatDistanceKm } from '../features/diary/labels'
 import { formatTime } from '../lib/dateUtils'
 import { TrackCodec } from '../lib/trackCodec'
 
-/**
- * Рендер трека на карте (TrackMapView в старом приложении) отложен — та же задача,
- * что и интерактивная карта дистанции в вертикали 1 (нужно сначала выбрать библиотеку
- * карт). Пока показываем сводку по треку и число точек.
- */
 export function WorkoutTrackPage() {
   const { id } = useParams<{ id: string }>()
   const workoutId = Number(id)
@@ -34,7 +30,7 @@ export function WorkoutTrackPage() {
       ) : isError || !workout ? (
         <ErrorMessage message={isError ? (error as Error).message : 'Тренировка не найдена'} />
       ) : (
-        <div className="flex flex-col gap-3 p-4">
+        <div className="flex flex-1 flex-col gap-3 p-4">
           <div className="rounded-lg border border-outline-variant bg-surface p-4">
             <p className="text-base text-fg">
               {[
@@ -46,9 +42,9 @@ export function WorkoutTrackPage() {
                 .join(' · ') || 'Нет данных'}
             </p>
           </div>
-          <p className="text-sm text-on-surface-variant">
-            Трек: {points.length} {points.length === 1 ? 'точка' : 'точек'} GPS. Отображение на карте появится позже.
-          </p>
+          <div className="flex min-h-80 flex-1 overflow-hidden rounded-lg border border-outline-variant">
+            <TrackMapView points={points} />
+          </div>
         </div>
       )}
     </div>

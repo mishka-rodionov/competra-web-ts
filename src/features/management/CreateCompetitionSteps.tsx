@@ -1,3 +1,4 @@
+import { CoordinatesPickerField } from '../../components/CoordinatesPickerField'
 import { LabeledSelect } from '../../components/LabeledSelect'
 import { TextInput } from '../../components/TextInput'
 import { TimeZoneSelect } from '../../components/TimeZoneSelect'
@@ -16,7 +17,6 @@ interface StepProps {
   onPatch: (patch: Partial<CreateCompetitionFormState>) => void
 }
 
-/** Координаты — простые числовые поля вместо интерактивного пикера на карте (см. вертикаль 1: рендер карт отложен). */
 export function BasicStep({ form, onPatch }: StepProps) {
   return (
     <div className="flex flex-col gap-3">
@@ -44,26 +44,11 @@ export function BasicStep({ form, onPatch }: StepProps) {
       </div>
       <TimeZoneSelect zoneId={form.zoneId} onSelect={(zoneId) => onPatch({ zoneId })} />
       <TextInput label="Место проведения" value={form.address} onChange={(address) => onPatch({ address })} />
-      <div className="flex gap-2">
-        <label className="flex flex-1 flex-col gap-1">
-          <span className="text-sm text-on-surface-variant">Широта</span>
-          <input
-            value={form.latitude ?? ''}
-            onChange={(e) => onPatch({ latitude: e.target.value ? Number(e.target.value) : null })}
-            inputMode="decimal"
-            className="rounded-md border border-outline bg-surface px-3 py-2 text-fg"
-          />
-        </label>
-        <label className="flex flex-1 flex-col gap-1">
-          <span className="text-sm text-on-surface-variant">Долгота</span>
-          <input
-            value={form.longitude ?? ''}
-            onChange={(e) => onPatch({ longitude: e.target.value ? Number(e.target.value) : null })}
-            inputMode="decimal"
-            className="rounded-md border border-outline bg-surface px-3 py-2 text-fg"
-          />
-        </label>
-      </div>
+      <CoordinatesPickerField
+        latitude={form.latitude}
+        longitude={form.longitude}
+        onPick={(latitude, longitude) => onPatch({ latitude, longitude })}
+      />
       <TextInput label="Описание" multiline value={form.description} onChange={(description) => onPatch({ description })} />
 
       <h2 className="mt-2 text-base font-medium text-fg">Параметры ориентирования</h2>
