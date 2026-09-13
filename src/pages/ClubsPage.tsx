@@ -35,11 +35,16 @@ export function ClubsPage() {
     <div className="flex min-h-full flex-col">
       <header className="flex items-center justify-between border-b border-outline-variant px-4 py-3">
         <h1 className="text-lg font-medium text-fg">Клубы</h1>
-        {isLoggedIn && (
-          <button type="button" onClick={() => navigate('/clubs/my-join-requests')} className="text-sm text-primary">
-            Мои заявки
+        <div className="flex gap-3">
+          <button type="button" onClick={() => navigate('/ratings')} className="text-sm text-primary">
+            Рейтинги
           </button>
-        )}
+          {isLoggedIn && (
+            <button type="button" onClick={() => navigate('/clubs/my-join-requests')} className="text-sm text-primary">
+              Мои заявки
+            </button>
+          )}
+        </div>
       </header>
 
       <div className="flex items-center gap-2 p-4">

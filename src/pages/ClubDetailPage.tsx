@@ -8,6 +8,7 @@ import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
 import { TabBar } from '../components/TabBar'
 import { LoginForm } from '../features/auth/LoginForm'
+import { ClubRatingsTab } from '../features/clubs/ClubRatingsTab'
 import { CreateTeamDialog } from '../features/clubs/CreateTeamDialog'
 import { EditClubDialog } from '../features/clubs/EditClubDialog'
 import { useClub, useClubMembers, useMyJoinRequests, useTeamsByClub } from '../features/clubs/hooks'
@@ -19,6 +20,7 @@ import type { Club } from '../types/club'
 const TABS = [
   { key: 'members', label: 'Участники' },
   { key: 'teams', label: 'Команды' },
+  { key: 'ratings', label: 'Рейтинги' },
 ]
 
 export function ClubDetailPage() {
@@ -200,6 +202,14 @@ export function ClubDetailPage() {
                 isAdmin={isAdmin}
                 onTeamClick={(teamId) => navigate(`/teams/${teamId}`)}
                 onAddTeam={() => setShowCreateTeamDialog(true)}
+              />
+            )}
+            {tab === 'ratings' && (
+              <ClubRatingsTab
+                clubId={clubId}
+                isAdmin={isAdmin}
+                onRatingClick={(ratingId) => navigate(`/ratings/${ratingId}`)}
+                onCreateRating={() => navigate(`/ratings/create?clubId=${clubId}`)}
               />
             )}
           </div>

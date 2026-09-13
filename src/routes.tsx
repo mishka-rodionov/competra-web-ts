@@ -1,6 +1,7 @@
 import { createHashRouter } from 'react-router-dom'
 import { AppShell } from './layout/AppShell'
 import { AboutPage } from './pages/AboutPage'
+import { AddCompetitionToRatingPage } from './pages/AddCompetitionToRatingPage'
 import { ClubDetailPage } from './pages/ClubDetailPage'
 import { ClubJoinRequestsPage } from './pages/ClubJoinRequestsPage'
 import { ClubsPage } from './pages/ClubsPage'
@@ -9,11 +10,15 @@ import { CompetitionsPage } from './pages/CompetitionsPage'
 import { CreateClubPage } from './pages/CreateClubPage'
 import { CreateCompetitionPage } from './pages/CreateCompetitionPage'
 import { DiaryPage } from './pages/DiaryPage'
+import { GroupMappingPage } from './pages/GroupMappingPage'
 import { ManageCompetitionPage } from './pages/ManageCompetitionPage'
 import { ManagementPage } from './pages/ManagementPage'
 import { MyJoinRequestsPage } from './pages/MyJoinRequestsPage'
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { RatingDetailPage } from './pages/RatingDetailPage'
+import { RatingFormPage } from './pages/RatingFormPage'
+import { RatingsSearchPage } from './pages/RatingsSearchPage'
 import { TeamDetailPage } from './pages/TeamDetailPage'
 
 /**
@@ -45,4 +50,10 @@ export const router = createHashRouter([
   { path: '/clubs/:id', element: <ClubDetailPage /> },
   { path: '/clubs/:id/join-requests', element: <ClubJoinRequestsPage /> },
   { path: '/teams/:id', element: <TeamDetailPage /> },
+  { path: '/ratings', element: <RatingsSearchPage /> },
+  { path: '/ratings/create', element: <RatingFormPage /> },
+  { path: '/ratings/:id', element: <RatingDetailPage /> },
+  { path: '/ratings/:id/edit', element: <RatingFormPage /> },
+  { path: '/ratings/:id/add-competition', element: <AddCompetitionToRatingPage /> },
+  { path: '/ratings/:id/mapping/:competitionId', element: <GroupMappingPage /> },
 ])
