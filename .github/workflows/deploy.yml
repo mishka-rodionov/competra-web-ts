@@ -32,8 +32,9 @@ jobs:
       - name: Build
         run: pnpm build
 
-      # Cutover на competra.ru — на этом шаге добавить CNAME-файл в dist/,
-      # см. деплой в старом репозитории (competra-web/.github/workflows/deploy.yml).
+      - name: Add CNAME
+        run: echo "competra.ru" > dist/CNAME
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
