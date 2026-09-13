@@ -20,6 +20,9 @@ import { RatingDetailPage } from './pages/RatingDetailPage'
 import { RatingFormPage } from './pages/RatingFormPage'
 import { RatingsSearchPage } from './pages/RatingsSearchPage'
 import { TeamDetailPage } from './pages/TeamDetailPage'
+import { WorkoutDetailPage } from './pages/WorkoutDetailPage'
+import { WorkoutEditorPage } from './pages/WorkoutEditorPage'
+import { WorkoutTrackPage } from './pages/WorkoutTrackPage'
 
 /**
  * Hash-роутинг (#/...) осознанно вместо обычного BrowserRouter — GitHub Pages
@@ -56,4 +59,8 @@ export const router = createHashRouter([
   { path: '/ratings/:id/edit', element: <RatingFormPage /> },
   { path: '/ratings/:id/add-competition', element: <AddCompetitionToRatingPage /> },
   { path: '/ratings/:id/mapping/:competitionId', element: <GroupMappingPage /> },
+  { path: '/diary/create', element: <WorkoutEditorPage /> },
+  { path: '/diary/:id', element: <WorkoutDetailPage /> },
+  { path: '/diary/:id/edit', element: <WorkoutEditorPage /> },
+  { path: '/diary/:id/track', element: <WorkoutTrackPage /> },
 ])
