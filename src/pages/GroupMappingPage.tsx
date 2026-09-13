@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ratingRepository } from '../api/ratingRepository'
 import { EmptyState } from '../components/EmptyState'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { LabeledSelect } from '../components/LabeledSelect'
 import { Loading } from '../components/Loading'
 import { useRating } from '../features/ratings/hooks'
+import type { RatingGroupMappingSuggestion } from '../types/rating'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 const NO_MAPPING = 0
@@ -15,6 +16,11 @@ export function GroupMappingPage() {
   const ratingId = id!
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const location = useLocation()
+
+  // Если пришли из AddCompetitionToRatingPage, предложения уже загружены той страницей —
+  // не дёргаем сеть повторно за теми же данными (как и в старом приложении).
+  const passedSuggestions = (location.state as { suggestions?: RatingGroupMappingSuggestion[] } | null)?.suggestions
 
   const { data: rating } = useRating(ratingId)
   const { data: suggestions, isLoading, isError, error } = useQuery({
@@ -24,6 +30,8 @@ export function GroupMappingPage() {
       if (result.kind === 'error') throw new Error(result.message)
       return result.data
     },
+    initialData: passedSuggestions,
+    staleTime: passedSuggestions ? Infinity : undefined,
   })
 
   const [mapping, setMapping] = useState<Record<number, number>>({})

@@ -44,8 +44,11 @@ export function AddCompetitionToRatingPage() {
     setAddError(null)
     const result = await ratingRepository.addCompetition(ratingId, competitionId)
     if (result.kind === 'success') {
-      const suggestionsCount = result.data.groupMappingSuggestions.length
-      navigate(suggestionsCount > 0 ? `/ratings/${ratingId}/mapping/${competitionId}` : `/ratings/${ratingId}`)
+      // Как и в старом приложении, всегда ведём на маппинг групп — даже с пустым списком
+      // предложений (тогда страница сама покажет "В соревновании нет групп участников").
+      navigate(`/ratings/${ratingId}/mapping/${competitionId}`, {
+        state: { suggestions: result.data.groupMappingSuggestions },
+      })
     } else {
       setAddError('Не удалось добавить соревнование')
       setAddingId(null)

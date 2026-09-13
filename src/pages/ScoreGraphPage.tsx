@@ -60,10 +60,13 @@ export function ScoreGraphPage() {
     )
   }
 
-  const visibleSeries = data.series.filter((s) => effectiveVisibleIds.has(s.participant.id))
-
+  // Датасеты для ВСЕХ участников всегда присутствуют в массиве — видимость управляется через
+  // нативный флаг Chart.js `hidden`, а не фильтрацией массива. react-chartjs-2 сопоставляет старые
+  // и новые датасеты между рендерами по label; если участника убирать из массива при снятии
+  // чекбокса, а потом добавлять обратно, это сопоставление сбивается и линия перестаёт
+  // отрисовываться, хотя данные в chartData уже снова её содержат.
   const chartData = {
-    datasets: visibleSeries.map((series) => {
+    datasets: data.series.map((series) => {
       const originalIndex = data.series.indexOf(series)
       const color = raceGraphColor(originalIndex)
       const isDimmed = highlightedId != null && highlightedId !== series.participant.id
@@ -74,6 +77,7 @@ export function ScoreGraphPage() {
         backgroundColor: color,
         pointRadius: 3,
         borderWidth: isDimmed ? 2 : 3,
+        hidden: !effectiveVisibleIds.has(series.participant.id),
       }
     }),
   }
@@ -109,7 +113,7 @@ export function ScoreGraphPage() {
                 zoom: {
                   limits: { x: { min: 'original', max: 'original' } },
                   pan: { enabled: true, mode: 'x' },
-                  zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+                  zoom: { wheel: { enabled: true, speed: 0.02 }, pinch: { enabled: true }, mode: 'x' },
                 },
                 annotation:
                   data.timeLimitSeconds != null
@@ -138,12 +142,14 @@ export function ScoreGraphPage() {
           const isVisible = effectiveVisibleIds.has(series.participant.id)
           const isHighlighted = highlightedId === series.participant.id
           return (
-            <button
+            // Не <button disabled> с вложенным чекбоксом: в Chromium disabled-предок останавливает
+            // всплытие click/change от ЛЮБЫХ потомков, включая вложенный <input> — чекбокс нативно
+            // переключается визуально, но React-обработчик не срабатывает и участника было не
+            // включить обратно после скрытия. Обычный <div> + проверка isVisible внутри обработчика.
+            <div
               key={series.participant.id}
-              type="button"
-              disabled={!isVisible}
-              onClick={() => setHighlightedId(isHighlighted ? null : series.participant.id)}
-              className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-left ${isHighlighted ? 'bg-primary-container' : ''}`}
+              onClick={() => isVisible && setHighlightedId(isHighlighted ? null : series.participant.id)}
+              className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left ${isHighlighted ? 'bg-primary-container' : ''}`}
             >
               <input
                 type="checkbox"
@@ -164,7 +170,7 @@ export function ScoreGraphPage() {
                 {`${series.participant.lastName} ${series.participant.firstName}`.trim()}
                 {series.result?.rank != null ? ` · Место ${series.result.rank}` : ''}
               </span>
-            </button>
+            </div>
           )
         })}
       </div>

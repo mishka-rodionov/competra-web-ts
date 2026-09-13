@@ -30,6 +30,14 @@ export function AttachMapDialog({ distance, onDismiss, onSaved }: AttachMapDialo
   const coordsValid = [parsedTopLeftLat, parsedTopLeftLng, parsedBottomRightLat, parsedBottomRightLng].every((v) => !Number.isNaN(v))
   const canSave = coordsValid && (file != null || distance.mapUrl != null)
 
+  const missing = [
+    file == null && distance.mapUrl == null ? 'файл карты' : null,
+    Number.isNaN(parsedTopLeftLat) ? 'top-left lat' : null,
+    Number.isNaN(parsedTopLeftLng) ? 'top-left lng' : null,
+    Number.isNaN(parsedBottomRightLat) ? 'bottom-right lat' : null,
+    Number.isNaN(parsedBottomRightLng) ? 'bottom-right lng' : null,
+  ].filter((v): v is string => v != null)
+
   async function handleSave() {
     setSaving(true)
     setError(null)
@@ -94,6 +102,8 @@ export function AttachMapDialog({ distance, onDismiss, onSaved }: AttachMapDialo
           <input value={bottomRightLat} onChange={(e) => setBottomRightLat(e.target.value)} placeholder="Bottom-right lat" className="w-1/2 rounded-md border border-outline bg-bg px-3 py-2 text-fg" />
           <input value={bottomRightLng} onChange={(e) => setBottomRightLng(e.target.value)} placeholder="Bottom-right lng" className="w-1/2 rounded-md border border-outline bg-bg px-3 py-2 text-fg" />
         </div>
+
+        {!canSave && missing.length > 0 && <p className="text-sm text-error">Не хватает: {missing.join(', ')}</p>}
 
         {error && <ErrorMessage message={error} />}
 
