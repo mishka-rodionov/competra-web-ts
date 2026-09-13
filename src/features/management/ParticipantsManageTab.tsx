@@ -13,6 +13,13 @@ import { ParticipantEditorDialog } from './ParticipantEditorDialog'
 
 const ALL_TAB = 'all'
 
+/** null/нечисловое значение сортируется в конец — но startNumber "0" (валидный номер) не должен попасть сюда: Number("0") ложно в JS, поэтому нельзя сравнивать через `||`. */
+function sortableStartNumber(startNumber: string | null): number {
+  if (startNumber == null) return Infinity
+  const parsed = Number(startNumber)
+  return Number.isNaN(parsed) ? Infinity : parsed
+}
+
 export function ParticipantsManageTab({ competition }: { competition: OrienteeringCompetition }) {
   const competitionId = competition.competitionId
   const queryClient = useQueryClient()
@@ -37,7 +44,7 @@ export function ParticipantsManageTab({ competition }: { competition: Orienteeri
     .sort((a, b) => {
       const startDiff = (a.startTime ?? Infinity) - (b.startTime ?? Infinity)
       if (startDiff !== 0) return startDiff
-      return (Number(a.startNumber) || Infinity) - (Number(b.startNumber) || Infinity)
+      return sortableStartNumber(a.startNumber) - sortableStartNumber(b.startNumber)
     })
 
   async function handleDelete() {

@@ -50,7 +50,11 @@ export function ClubDetailPage() {
   const myPendingRequest = joinRequests?.some((r) => r.clubId === clubId && r.status === 'PENDING') ?? false
 
   async function invalidateMembers() {
-    await queryClient.invalidateQueries({ queryKey: ['club-members', clubId] })
+    // Инвалидируем и сам клуб — membersCount в нём иначе не обновится после выхода/исключения/смены роли.
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['club-members', clubId] }),
+      queryClient.invalidateQueries({ queryKey: ['club', clubId] }),
+    ])
   }
 
   async function handleJoinRequest() {

@@ -93,6 +93,10 @@ function GroupResultsCard({ competitionId, groupId, groupTitle, groupResults, is
   const navigate = useNavigate()
   const hasSplits = groupResults.some((r) => r.splits && r.splits.length > 0)
 
+  function openParticipantSplits(participantId: string) {
+    navigate(`/competition/${competitionId}/participant/${participantId}/splits`)
+  }
+
   return (
     <div className="rounded-lg border border-outline-variant bg-surface p-4">
       <div className="mb-2 flex items-center justify-between">
@@ -131,7 +135,11 @@ function GroupResultsCard({ competitionId, groupId, groupTitle, groupResults, is
             const participant = participantsById.get(result.participantId)
             const name = participant ? `${participant.lastName} ${participant.firstName}` : `Участник ${result.participantId}`
             return (
-              <tr key={result.id} className="border-b border-outline-variant last:border-0">
+              <tr
+                key={result.id}
+                onClick={() => openParticipantSplits(result.participantId)}
+                className="cursor-pointer border-b border-outline-variant last:border-0 hover:bg-surface-variant/40"
+              >
                 <td className="py-2 pr-2 text-fg">{result.rank ?? '—'}</td>
                 <td className="py-2 pr-2">
                   <div className="text-fg">{name}</div>

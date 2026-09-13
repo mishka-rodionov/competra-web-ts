@@ -15,6 +15,7 @@ import { GroupSplitsTablePage } from './pages/GroupSplitsTablePage'
 import { ManageCompetitionPage } from './pages/ManageCompetitionPage'
 import { ManagementPage } from './pages/ManagementPage'
 import { MyJoinRequestsPage } from './pages/MyJoinRequestsPage'
+import { ParticipantSplitsPage } from './pages/ParticipantSplitsPage'
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage'
 import { ProfileEditorPage } from './pages/ProfileEditorPage'
 import { ProfilePage } from './pages/ProfilePage'
@@ -52,6 +53,7 @@ export const router = createHashRouter([
   { path: '/competition/:id/group/:groupId/splits', element: <GroupSplitsTablePage /> },
   { path: '/competition/:id/group/:groupId/race-graph', element: <RaceGraphPage /> },
   { path: '/competition/:id/group/:groupId/score-graph', element: <ScoreGraphPage /> },
+  { path: '/competition/:id/participant/:participantId/splits', element: <ParticipantSplitsPage /> },
   { path: '/about', element: <AboutPage /> },
   { path: '/privacy', element: <PrivacyPolicyPage /> },
   { path: '/management/create', element: <CreateCompetitionPage /> },
