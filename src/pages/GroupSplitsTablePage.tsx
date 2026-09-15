@@ -81,21 +81,28 @@ export function GroupSplitsTablePage() {
             </thead>
             <tbody>
               {table.rows.map((row, index) => (
-                <tr key={row.participant.id} className={index % 2 === 0 ? 'bg-surface' : 'bg-surface-variant/30'}>
+                // Чётные строки — полностью непрозрачный bg-surface-variant, а не .../30: sticky-ячейка с именем
+                // наследует этот же цвет (bg-inherit), и при частичной прозрачности сквозь неё было видно
+                // горизонтально проскроленные ячейки сплитов позади неё.
+                <tr key={row.participant.id} className={index % 2 === 0 ? 'bg-surface' : 'bg-surface-variant'}>
                   <td className="sticky left-0 w-36 bg-inherit px-1 py-1.5 align-top">
-                    <div className="text-fg">{`${row.participant.lastName} ${row.participant.firstName}`.trim()}</div>
+                    <div className="font-medium text-fg">{`${row.participant.lastName} ${row.participant.firstName}`.trim()}</div>
                     {isByChoice && <div className="text-xs text-on-surface-variant">{scoreLabel(row)}</div>}
                     {row.result?.rank != null && <div className="text-xs text-on-surface-variant">Место {row.result.rank}</div>}
                   </td>
                   {row.cells.map((cell, i) => (
                     <td key={i} className="w-19 px-1 py-1.5 text-center align-top">
-                      {isByChoice && cell.controlPoint != null && <div className="text-xs text-on-surface-variant">КП{cell.controlPoint}</div>}
-                      <div className="text-xs text-on-surface-variant">{cell.cumulativeSeconds != null ? formatTime(cell.cumulativeSeconds) : '—'}</div>
-                      <div className={cell.isBestLeg ? 'font-bold text-primary' : 'text-fg'}>
+                      {isByChoice && cell.controlPoint != null && (
+                        <div className="text-[10px] text-on-surface-variant">КП{cell.controlPoint}</div>
+                      )}
+                      <div className={cell.isBestLeg ? 'text-base font-bold text-primary' : 'text-base font-semibold text-fg'}>
                         {cell.deltaSeconds != null ? formatTime(cell.deltaSeconds) : '—'}
                       </div>
+                      <div className="text-[11px] text-on-surface-variant">
+                        {cell.cumulativeSeconds != null ? formatTime(cell.cumulativeSeconds) : '—'}
+                      </div>
                       {!isByChoice && cell.paceMinPerKm != null && (
-                        <div className="text-xs text-on-surface-variant">{formatPace(cell.paceMinPerKm)}/км</div>
+                        <div className="text-[11px] text-on-surface-variant">{formatPace(cell.paceMinPerKm)}/км</div>
                       )}
                     </td>
                   ))}
