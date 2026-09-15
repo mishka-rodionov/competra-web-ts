@@ -5,7 +5,7 @@ import { useIsLoggedIn } from '../auth/useIsLoggedIn'
 import { EmptyState } from '../components/EmptyState'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
-import { LoginForm } from '../features/auth/LoginForm'
+import { AuthFlow } from '../features/auth/AuthFlow'
 import { useJoinRequestsForClub } from '../features/clubs/hooks'
 
 export function ClubJoinRequestsPage() {
@@ -17,7 +17,7 @@ export function ClubJoinRequestsPage() {
   const { data: requests, isLoading, isError, error } = useJoinRequestsForClub(clubId)
 
   if (!isLoggedIn) {
-    return <LoginForm onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
   }
 
   const pending = (requests ?? []).filter((r) => r.status === 'PENDING')

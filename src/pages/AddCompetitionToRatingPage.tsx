@@ -5,7 +5,7 @@ import { useIsLoggedIn } from '../auth/useIsLoggedIn'
 import { EmptyState } from '../components/EmptyState'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
-import { LoginForm } from '../features/auth/LoginForm'
+import { AuthFlow } from '../features/auth/AuthFlow'
 import { EMPTY_FILTER, usePublicCompetitions } from '../features/competitions/hooks'
 import { toLocaleDateString } from '../lib/dateUtils'
 
@@ -33,7 +33,7 @@ export function AddCompetitionToRatingPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
   if (!isLoggedIn) {
-    return <LoginForm onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
   }
 
   const availableCompetitions = (data?.pages.flatMap((page) => page.items) ?? []).filter((c) => !alreadyAdded.has(c.id))

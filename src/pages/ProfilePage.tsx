@@ -6,7 +6,7 @@ import { useIsLoggedIn } from '../auth/useIsLoggedIn'
 import { EmptyState } from '../components/EmptyState'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
-import { LoginForm } from '../features/auth/LoginForm'
+import { AuthFlow } from '../features/auth/AuthFlow'
 import { useUpcomingCompetitions, useUserProfile } from '../features/profile/hooks'
 import { toLocaleDateString } from '../lib/dateUtils'
 
@@ -51,7 +51,7 @@ export function ProfilePage() {
   }
 
   if (showLogin) {
-    return <LoginForm onLoginSuccess={handleLoginSuccess} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={handleLoginSuccess} onPrivacyClick={() => navigate('/privacy')} />
   }
 
   if (!isLoggedIn) {

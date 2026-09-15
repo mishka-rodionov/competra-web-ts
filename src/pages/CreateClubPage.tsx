@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { clubRepository } from '../api/clubRepository'
 import { useIsLoggedIn } from '../auth/useIsLoggedIn'
 import { ErrorMessage } from '../components/ErrorMessage'
-import { LoginForm } from '../features/auth/LoginForm'
+import { AuthFlow } from '../features/auth/AuthFlow'
 
 export function CreateClubPage() {
   const navigate = useNavigate()
@@ -15,7 +15,7 @@ export function CreateClubPage() {
   const [error, setError] = useState<string | null>(null)
 
   if (!isLoggedIn) {
-    return <LoginForm onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
   }
 
   async function handleSave() {

@@ -5,7 +5,7 @@ import { competitionRepository } from '../api/competitionRepository'
 import { useIsLoggedIn } from '../auth/useIsLoggedIn'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
-import { LoginForm } from '../features/auth/LoginForm'
+import { AuthFlow } from '../features/auth/AuthFlow'
 import { useMyCompetitions } from '../features/competitions/hooks'
 import { statusColorClass, statusLabel } from '../features/competitions/labels'
 import { toLocaleDateString } from '../lib/dateUtils'
@@ -38,7 +38,7 @@ export function ManagementPage() {
   }
 
   if (showLogin) {
-    return <LoginForm onLoginSuccess={() => setShowLogin(false)} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={() => setShowLogin(false)} onPrivacyClick={() => navigate('/privacy')} />
   }
 
   if (!isLoggedIn) {

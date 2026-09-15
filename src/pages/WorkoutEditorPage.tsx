@@ -7,7 +7,7 @@ import { ErrorMessage } from '../components/ErrorMessage'
 import { LabeledSelect } from '../components/LabeledSelect'
 import { Loading } from '../components/Loading'
 import { TextInput } from '../components/TextInput'
-import { LoginForm } from '../features/auth/LoginForm'
+import { AuthFlow } from '../features/auth/AuthFlow'
 import { useWorkout } from '../features/diary/hooks'
 import { SKI_STYLE_OPTIONS, SPORT_TYPE_OPTIONS, WORKOUT_STATUS_OPTIONS } from '../features/diary/labels'
 import { parseGpxTrackPoints } from '../lib/gpxParser'
@@ -89,7 +89,7 @@ export function WorkoutEditorPage() {
   }
 
   if (!isLoggedIn) {
-    return <LoginForm onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
   }
   if (workoutId != null && workoutLoading) return <Loading />
 

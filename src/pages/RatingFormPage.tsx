@@ -4,7 +4,7 @@ import { ratingRepository } from '../api/ratingRepository'
 import { useIsLoggedIn } from '../auth/useIsLoggedIn'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
-import { LoginForm } from '../features/auth/LoginForm'
+import { AuthFlow } from '../features/auth/AuthFlow'
 import { useRating } from '../features/ratings/hooks'
 import { RatingGroupEditor, type RatingGroupDraft } from '../features/ratings/RatingGroupEditor'
 
@@ -46,7 +46,7 @@ export function RatingFormPage() {
   }
 
   if (!isLoggedIn) {
-    return <LoginForm onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
   }
 
   if (isEdit && ratingLoading) return <Loading />

@@ -7,7 +7,7 @@ import { useIsLoggedIn } from '../auth/useIsLoggedIn'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
 import { TabBar } from '../components/TabBar'
-import { LoginForm } from '../features/auth/LoginForm'
+import { AuthFlow } from '../features/auth/AuthFlow'
 import { ClubRatingsTab } from '../features/clubs/ClubRatingsTab'
 import { CreateTeamDialog } from '../features/clubs/CreateTeamDialog'
 import { EditClubDialog } from '../features/clubs/EditClubDialog'
@@ -117,7 +117,7 @@ export function ClubDetailPage() {
   }
 
   if (showLogin) {
-    return <LoginForm onLoginSuccess={() => setShowLogin(false)} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={() => setShowLogin(false)} onPrivacyClick={() => navigate('/privacy')} />
   }
 
   return (

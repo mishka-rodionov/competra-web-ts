@@ -3,7 +3,7 @@ import { useIsLoggedIn } from '../auth/useIsLoggedIn'
 import { EmptyState } from '../components/EmptyState'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
-import { LoginForm } from '../features/auth/LoginForm'
+import { AuthFlow } from '../features/auth/AuthFlow'
 import { formatDistanceKm, formatWorkoutDuration, sportTypeLabel } from '../features/diary/labels'
 import { useWorkouts } from '../features/diary/hooks'
 import { toLocaleDateString } from '../lib/dateUtils'
@@ -15,7 +15,7 @@ export function DiaryPage() {
   const { data: workouts, isLoading, isError, error } = useWorkouts()
 
   if (!isLoggedIn) {
-    return <LoginForm onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
   }
 
   return (

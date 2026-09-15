@@ -11,6 +11,14 @@ interface AuthResponse {
   token: AuthResponseToken
 }
 
+export interface RegisterRequest {
+  first_name: string
+  last_name: string
+  birth_date: number
+  email: string
+  privacy_accepted: boolean
+}
+
 /**
  * Ходит через authRequest, как и старый AuthRepository (там тоже завязан на authClient
  * целиком) — до логина токена ещё нет, поэтому запрос уходит анонимно, разницы с
@@ -20,6 +28,16 @@ export const authRepository = {
   sendCode(email: string) {
     return safeApiCallUnit(() =>
       authRequest('/user/login', { method: 'POST', body: JSON.stringify({ email }) }),
+    )
+  },
+
+  /**
+   * Создаёт пользователя (ещё не в БД — только «временную» запись) и шлёт код на email,
+   * как и sendCode. Реальная запись появляется на verify_code — см. eSport Databases.kt.
+   */
+  register(request: RegisterRequest) {
+    return safeApiCallUnit(() =>
+      authRequest('/user/register', { method: 'POST', body: JSON.stringify(request) }),
     )
   },
 
