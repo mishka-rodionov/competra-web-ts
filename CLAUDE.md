@@ -89,5 +89,7 @@ if (entity && entity.id !== loadedId) {
 
 **NFC-фичи** (чтение чипов участников) — специфичны для Android, в Web аналога нет.
 
+**При изменении функционала, уже описанного в инструкции для организатора** (`public/guides/first-competition-guide.html`, ссылка на неё — `ORGANIZER_GUIDE_URL` в `ProfilePage.tsx`) — поправь соответствующий раздел инструкции в том же изменении, а не отдельным напоминанием пользователю.
+
 ### Цепочка IOF XML
 Mapper экспортирует дистанции → пользователь загружает файл через `POST /event/orienteering/import/courses` (`src/api/distanceRepository.ts` → `importFromXml`) → eSport парсит через `IOFXmlParser.kt`. Если меняется логика загрузки, уточни, не нужно ли обновить парсер в eSport.
