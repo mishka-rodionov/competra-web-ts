@@ -26,13 +26,12 @@ export function RatingPointsInfoDialog({ onDismiss }: { onDismiss: () => void })
                 <td className="py-1.5 text-fg">{points}</td>
               </tr>
             ))}
-            <tr>
-              <td className="py-1.5 text-fg">10–40</td>
-              <td className="py-1.5 text-fg">41 − место</td>
-            </tr>
           </tbody>
         </table>
-        <p className="text-sm text-on-surface-variant">С 41-го места очки не начисляются.</p>
+        <p className="text-sm text-fg">
+          С 10-го по 40-е место очки считаются по формуле «41 − место»: 10-е место — 31 очко, 20-е — 21 очко, 40-е — 1
+          очко. С 41-го места очки не начисляются.
+        </p>
         <p className="text-sm text-on-surface-variant">
           Если несколько участников набрали одинаковую сумму очков, они делят место — например, при двух третьих
           местах следующий участник получает пятое.
