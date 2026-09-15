@@ -62,7 +62,7 @@ export function RatingDetailPage() {
   return (
     <div className="mx-auto flex min-h-screen max-w-4xl flex-col bg-bg text-fg">
       <header className="flex items-center gap-2 border-b border-outline-variant px-2 py-3">
-        <button type="button" onClick={() => navigate('/ratings')} aria-label="Назад" className="px-2 text-xl">
+        <button type="button" onClick={() => navigate(-1)} aria-label="Назад" className="px-2 text-xl">
           ←
         </button>
         <h1 className="flex-1 truncate text-lg font-medium">{rating.name}</h1>
