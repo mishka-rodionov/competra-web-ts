@@ -1,9 +1,6 @@
-// Оператор персональных данных, ИНН/ОГРНИП и дата вступления в силу — заполнить перед публикацией.
-const OPERATOR_NAME = '[ИП Фамилия Имя Отчество]'
-const OPERATOR_INN = '[ИНН]'
-const OPERATOR_OGRNIP = '[ОГРНИП]'
+// Реквизиты ИП (название, ИНН, ОГРНИП) добавить в раздел 1, когда сервис будет привязан к ИП.
 const CONTACT_EMAIL = 'rodionov.mikhail.a@yandex.ru'
-export const EFFECTIVE_DATE = '[ДД.ММ.ГГГГ]'
+export const EFFECTIVE_DATE = '01.09.2026'
 
 export type LegalContentItem = { type: 'p'; text: string } | { type: 'bullets'; items: string[] }
 
@@ -25,7 +22,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
     title: '1. Оператор персональных данных',
     content: [
       p(
-        `Оператором персональных данных пользователей сервиса Competra является ${OPERATOR_NAME}, ИНН ${OPERATOR_INN}, ОГРНИП ${OPERATOR_OGRNIP} (далее — «Оператор», «мы»).`,
+        'Оператором персональных данных пользователей сервиса Competra является физическое лицо, администрирующее сервис (далее — «Оператор», «мы»). Реквизиты Оператора как индивидуального предпринимателя будут опубликованы здесь после регистрации ИП.',
       ),
       p(`По всем вопросам обработки персональных данных обращайтесь: ${CONTACT_EMAIL}.`),
     ],
