@@ -5,6 +5,7 @@ import { authRepository } from '../api/authRepository'
 import { useIsLoggedIn } from '../auth/useIsLoggedIn'
 import { EmptyState } from '../components/EmptyState'
 import { ErrorMessage } from '../components/ErrorMessage'
+import { FullscreenImageViewer } from '../components/FullscreenImageViewer'
 import { Loading } from '../components/Loading'
 import { AuthFlow } from '../features/auth/AuthFlow'
 import { useUpcomingCompetitions, useUserProfile } from '../features/profile/hooks'
@@ -20,6 +21,7 @@ export function ProfilePage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [showAvatarViewer, setShowAvatarViewer] = useState(false)
 
   const { data: profile, isLoading: profileLoading } = useUserProfile()
   const { data: upcoming, isLoading: upcomingLoading, isError, error } = useUpcomingCompetitions()
@@ -81,24 +83,44 @@ export function ProfilePage() {
         {profileLoading ? (
           <Loading />
         ) : profile ? (
-          <div className="flex flex-col gap-1">
-            <span className="text-lg font-medium text-fg">{`${profile.lastName} ${profile.firstName}`.trim()}</span>
-            <span className="text-base text-on-surface-variant">{profile.email}</span>
-            {profile.birthDate != null && (
-              <span className="text-sm text-on-surface-variant">Дата рождения: {toLocaleDateString(profile.birthDate)}</span>
-            )}
+          <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => navigate('/profile/edit')}
-              className="mt-2 self-start rounded-md border border-outline px-3 py-1.5 text-sm text-fg"
+              onClick={() => profile.avatarUrl && setShowAvatarViewer(true)}
+              className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-surface-variant"
+              aria-label="Просмотреть аватар"
             >
-              Редактировать профиль
+              {profile.avatarUrl ? (
+                <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-xl text-on-surface-variant">
+                  {profile.firstName.charAt(0).toUpperCase()}
+                </span>
+              )}
             </button>
+            <div className="flex flex-col gap-1">
+              <span className="text-lg font-medium text-fg">{`${profile.lastName} ${profile.firstName}`.trim()}</span>
+              <span className="text-base text-on-surface-variant">{profile.email}</span>
+              {profile.birthDate != null && (
+                <span className="text-sm text-on-surface-variant">Дата рождения: {toLocaleDateString(profile.birthDate)}</span>
+              )}
+              <button
+                type="button"
+                onClick={() => navigate('/profile/edit')}
+                className="mt-2 self-start rounded-md border border-outline px-3 py-1.5 text-sm text-fg"
+              >
+                Редактировать профиль
+              </button>
+            </div>
           </div>
         ) : (
           <span className="text-base font-medium text-fg">Профиль пользователя</span>
         )}
       </div>
+
+      {showAvatarViewer && profile?.avatarUrl && (
+        <FullscreenImageViewer url={profile.avatarUrl} onClose={() => setShowAvatarViewer(false)} />
+      )}
 
       <h2 className="text-base font-medium text-fg">Предстоящие старты</h2>
       {upcomingLoading ? (

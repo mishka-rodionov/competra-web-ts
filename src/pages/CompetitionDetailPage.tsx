@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { competitionRepository } from '../api/competitionRepository'
 import { DebugErrorBanner } from '../components/DebugErrorBanner'
 import { ErrorMessage } from '../components/ErrorMessage'
+import { FullscreenImageViewer } from '../components/FullscreenImageViewer'
 import { Loading } from '../components/Loading'
 import { TabBar } from '../components/TabBar'
 import { DistancesTab } from '../features/competition-detail/DistancesTab'
@@ -31,6 +32,7 @@ export function CompetitionDetailPage() {
   const [tab, setTab] = useState('info')
   const [registeredGroupId, setRegisteredGroupId] = useState<number | null>(null)
   const [registerError, setRegisterError] = useState<string | null>(null)
+  const [showCoverViewer, setShowCoverViewer] = useState(false)
   const { data: detail, isLoading, isError, error } = useCompetitionDetail(id!)
 
   // Регистрация — эфемерное состояние страницы, не персистится (не читаем detail.isUserRegistered) —
@@ -66,6 +68,11 @@ export function CompetitionDetailPage() {
         <ErrorMessage message={isError ? (error as Error).message : 'Соревнование не найдено'} />
       ) : (
         <>
+          {detail.imageUrl && (
+            <button type="button" onClick={() => setShowCoverViewer(true)} className="block h-40 w-full shrink-0">
+              <img src={detail.imageUrl} alt="" className="h-full w-full object-cover" />
+            </button>
+          )}
           <TabBar tabs={TABS} active={tab} onChange={setTab} />
           <div className="flex-1 overflow-y-auto">
             {tab === 'info' && <InfoTab detail={detail} />}
@@ -98,6 +105,10 @@ export function CompetitionDetailPage() {
       )}
 
       <DebugErrorBanner />
+
+      {showCoverViewer && detail?.imageUrl && (
+        <FullscreenImageViewer url={detail.imageUrl} onClose={() => setShowCoverViewer(false)} />
+      )}
     </div>
   )
 }

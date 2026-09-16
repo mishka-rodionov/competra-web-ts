@@ -42,6 +42,7 @@ export interface UserProfileUpdateRequest {
   last_name?: string | null
   middle_name?: string | null
   birth_date?: number | null
+  avatar_url?: string | null
 }
 
 export const userRepository = {
