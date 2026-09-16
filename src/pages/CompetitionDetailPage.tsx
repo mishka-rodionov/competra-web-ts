@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { competitionRepository } from '../api/competitionRepository'
 import { DebugErrorBanner } from '../components/DebugErrorBanner'
 import { ErrorMessage } from '../components/ErrorMessage'
@@ -29,7 +29,15 @@ const TABS = [
 export function CompetitionDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [tab, setTab] = useState('info')
+  // Вкладка хранится в query-параметре (а не в useState), чтобы навигация со сплитов/графиков
+  // участника или группы (navigate(-1)) возвращала на ту же вкладку, а не на дефолтную "info" —
+  // при переходе на дочерний роут эта страница размонтируется, и обычный useState сбросился бы.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const tab = TABS.some((t) => t.key === tabParam) ? tabParam! : 'info'
+  function setTab(key: string) {
+    setSearchParams(key === 'info' ? {} : { tab: key }, { replace: true })
+  }
   const [registeredGroupId, setRegisteredGroupId] = useState<number | null>(null)
   const [registerError, setRegisterError] = useState<string | null>(null)
   const [showCoverViewer, setShowCoverViewer] = useState(false)
