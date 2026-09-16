@@ -22,6 +22,13 @@ interface RawUserProfile {
   phone_number: string
 }
 
+function parseBirthDate(raw: number | string): number | null {
+  if (typeof raw === 'number') return raw
+  if (raw === '') return null
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 function mapUserProfile(raw: RawUserProfile): UserProfile {
   return {
     id: raw.id,
@@ -30,7 +37,7 @@ function mapUserProfile(raw: RawUserProfile): UserProfile {
     middleName: raw.middle_name || null,
     email: raw.email,
     avatarUrl: raw.avatar_url || null,
-    birthDate: typeof raw.birth_date === 'number' ? raw.birth_date : null,
+    birthDate: parseBirthDate(raw.birth_date),
     gender: raw.gender || null,
     phoneNumber: raw.phone_number || null,
   }
