@@ -75,7 +75,7 @@ export function ScoreGraphPage() {
         data: series.points.map((p) => ({ x: p.elapsedSeconds, y: p.cumulativeScore })),
         borderColor: isDimmed ? `${color}40` : color,
         backgroundColor: color,
-        pointRadius: 3,
+        pointRadius: 2,
         borderWidth: isDimmed ? 2 : 3,
         hidden: !effectiveVisibleIds.has(series.participant.id),
       }

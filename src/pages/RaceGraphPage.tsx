@@ -77,7 +77,7 @@ export function RaceGraphPage() {
         data: series.points.filter((p) => p.deltaSeconds != null).map((p) => ({ x: p.positionIndex, y: p.deltaSeconds! })),
         borderColor: isDimmed ? `${color}40` : color,
         backgroundColor: color,
-        pointRadius: 3,
+        pointRadius: 2,
         borderWidth: isDimmed ? 2 : 3,
         hidden: !effectiveVisibleIds.has(series.participant.id),
       }
