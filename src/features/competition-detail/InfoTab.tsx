@@ -40,9 +40,9 @@ export function InfoTab({ detail }: { detail: CompetitionDetail }) {
 
   const registeredTotal = detail.participantGroups.reduce((sum, g) => sum + g.registeredCount, 0)
   const zone = detail.timeZoneId || DEFAULT_TIME_ZONE
+  const hasCoordinates = detail.coordinates != null && (detail.coordinates.latitude !== 0 || detail.coordinates.longitude !== 0)
   const mapUrl =
-    blankToNull(detail.mapUrl) ??
-    (detail.coordinates ? `https://maps.google.com/?q=${detail.coordinates.latitude},${detail.coordinates.longitude}` : null)
+    blankToNull(detail.mapUrl) ?? (hasCoordinates ? `https://maps.google.com/?q=${detail.coordinates!.latitude},${detail.coordinates!.longitude}` : null)
   const regulationUrl = blankToNull(detail.regulationUrl)
   const website = blankToNull(detail.website)
   const contactEmail = blankToNull(detail.contactEmail)
