@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
-import { useParticipants, useResults } from '../features/competition-detail/hooks'
+import { useCompetitionDetail, useDistances, useParticipants, useResults } from '../features/competition-detail/hooks'
 import { resultStatusLabel } from '../features/competitions/labels'
 import { formatTime } from '../lib/dateUtils'
 
@@ -10,12 +10,18 @@ export function ParticipantSplitsPage() {
   const competitionId = id!
   const navigate = useNavigate()
 
+  const { data: detail, isLoading: detailLoading } = useCompetitionDetail(competitionId)
   const { data: participants, isLoading: participantsLoading, isError, error } = useParticipants(competitionId)
   const { data: results, isLoading: resultsLoading } = useResults(competitionId, '')
+  const { data: distances } = useDistances(competitionId)
 
   const participant = participants?.find((p) => p.id === participantId)
   const result = results?.find((r) => r.participantId === participantId)
-  const isLoading = participantsLoading || resultsLoading
+  const isLoading = detailLoading || participantsLoading || resultsLoading
+
+  const group = detail?.participantGroups.find((g) => g.groupId === participant?.groupId)
+  const distance = distances?.find((d) => d.id === group?.distanceId)
+  const finishControlPoint = distance?.finishControlPoint ?? null
 
   const splits = result?.splits ?? []
   const startTs = result?.startTime ?? participant?.startTime ?? null
@@ -55,29 +61,40 @@ export function ParticipantSplitsPage() {
           {splits.length === 0 || startTs == null ? (
             <p className="pt-2 text-base text-on-surface-variant">Сплиты отсутствуют</p>
           ) : (
-            <>
-              <div className="flex py-1 text-xs text-on-surface-variant">
-                <span className="w-16">КП</span>
-                <span className="flex-1">Круг</span>
-                <span className="flex-1">Время</span>
-              </div>
-              <hr className="border-outline-variant" />
-              {splits.map((split, i) => {
-                const prevTs = i === 0 ? startTs : splits[i - 1].timestamp
-                const legSeconds = (split.timestamp - prevTs) / 1000
-                const cumulSeconds = (split.timestamp - startTs) / 1000
-                return (
-                  <div key={i}>
-                    <div className="flex items-center py-1.5">
-                      <span className="w-16 text-base text-fg">{split.controlPoint}</span>
-                      <span className="flex-1 text-base text-fg">{formatTime(legSeconds)}</span>
-                      <span className="flex-1 text-base text-fg">{formatTime(cumulSeconds)}</span>
-                    </div>
-                    <hr className="border-outline-variant" />
-                  </div>
-                )
-              })}
-            </>
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-outline-variant text-left text-xs text-on-surface-variant">
+                  <th className="w-14 py-1.5 font-normal">№</th>
+                  <th className="w-14 py-1.5 font-normal">КП</th>
+                  <th className="py-1.5 text-right font-normal">Сплит</th>
+                  <th className="py-1.5 text-right font-normal">Время</th>
+                </tr>
+              </thead>
+              <tbody>
+                {splits.map((split, i) => {
+                  const prevTs = i === 0 ? startTs : splits[i - 1].timestamp
+                  const legSeconds = (split.timestamp - prevTs) / 1000
+                  const cumulSeconds = (split.timestamp - startTs) / 1000
+                  const isFinish =
+                    finishControlPoint != null ? split.controlPoint === finishControlPoint : i === splits.length - 1
+                  return (
+                    <tr
+                      key={i}
+                      className={`border-b border-outline-variant last:border-0 ${i % 2 === 0 ? 'bg-surface' : 'bg-surface-variant/40'}`}
+                    >
+                      <td className={`py-1.5 text-base ${isFinish ? 'font-semibold text-primary' : 'text-on-surface-variant'}`}>
+                        {isFinish ? 'Финиш' : i + 1}
+                      </td>
+                      <td className="py-1.5 text-base text-fg">{split.controlPoint}</td>
+                      <td className="py-1.5 text-right text-base text-fg">{formatTime(legSeconds)}</td>
+                      <td className={`py-1.5 text-right text-base ${isFinish ? 'font-semibold text-fg' : 'text-fg'}`}>
+                        {formatTime(cumulSeconds)}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           )}
         </div>
       )}
