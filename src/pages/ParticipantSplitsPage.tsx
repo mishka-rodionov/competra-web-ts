@@ -64,10 +64,10 @@ export function ParticipantSplitsPage() {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-outline-variant text-left text-xs text-on-surface-variant">
-                  <th className="w-14 py-1.5 font-normal">№</th>
-                  <th className="w-14 py-1.5 font-normal">КП</th>
-                  <th className="py-1.5 text-right font-normal">Сплит</th>
-                  <th className="py-1.5 text-right font-normal">Время</th>
+                  <th className="w-16 py-1.5 pl-1 pr-2 font-normal">№</th>
+                  <th className="w-12 py-1.5 pr-2 font-normal">КП</th>
+                  <th className="py-1.5 pr-3 text-right font-normal">Сплит</th>
+                  <th className="py-1.5 pr-1 text-right font-normal">Время</th>
                 </tr>
               </thead>
               <tbody>
@@ -82,12 +82,14 @@ export function ParticipantSplitsPage() {
                       key={i}
                       className={`border-b border-outline-variant last:border-0 ${i % 2 === 0 ? 'bg-surface' : 'bg-surface-variant/40'}`}
                     >
-                      <td className={`py-1.5 text-base ${isFinish ? 'font-semibold text-primary' : 'text-on-surface-variant'}`}>
+                      <td
+                        className={`py-1.5 pl-1 pr-2 text-base whitespace-nowrap ${isFinish ? 'font-semibold text-primary' : 'text-on-surface-variant'}`}
+                      >
                         {isFinish ? 'Финиш' : i + 1}
                       </td>
-                      <td className="py-1.5 text-base text-fg">{split.controlPoint}</td>
-                      <td className="py-1.5 text-right text-base text-fg">{formatTime(legSeconds)}</td>
-                      <td className={`py-1.5 text-right text-base ${isFinish ? 'font-semibold text-fg' : 'text-fg'}`}>
+                      <td className="py-1.5 pr-2 text-base text-fg">{split.controlPoint}</td>
+                      <td className="py-1.5 pr-3 text-right text-base text-fg">{formatTime(legSeconds)}</td>
+                      <td className={`py-1.5 pr-1 text-right text-base ${isFinish ? 'font-semibold text-fg' : 'text-fg'}`}>
                         {formatTime(cumulSeconds)}
                       </td>
                     </tr>
