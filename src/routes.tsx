@@ -2,6 +2,7 @@ import { createHashRouter } from 'react-router-dom'
 import { AppShell } from './layout/AppShell'
 import { AboutPage } from './pages/AboutPage'
 import { AddCompetitionToRatingPage } from './pages/AddCompetitionToRatingPage'
+import { AthleteStartsPage } from './pages/AthleteStartsPage'
 import { ClubDetailPage } from './pages/ClubDetailPage'
 import { ClubJoinRequestsPage } from './pages/ClubJoinRequestsPage'
 import { ClubsPage } from './pages/ClubsPage'
@@ -69,6 +70,7 @@ export const router = createHashRouter([
   { path: '/ratings/:id/edit', element: <RatingFormPage /> },
   { path: '/ratings/:id/add-competition', element: <AddCompetitionToRatingPage /> },
   { path: '/ratings/:id/mapping/:competitionId', element: <GroupMappingPage /> },
+  { path: '/ratings/:id/athlete/:groupId/:participantKey', element: <AthleteStartsPage /> },
   { path: '/diary/create', element: <WorkoutEditorPage /> },
   { path: '/diary/:id', element: <WorkoutDetailPage /> },
   { path: '/diary/:id/edit', element: <WorkoutEditorPage /> },

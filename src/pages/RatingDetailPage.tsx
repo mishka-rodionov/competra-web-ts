@@ -108,7 +108,11 @@ export function RatingDetailPage() {
               ) : (
                 <div className="flex flex-col gap-2">
                   {standings.map((standing) => (
-                    <RatingStandingRow key={standing.participantKey} standing={standing} />
+                    <RatingStandingRow
+                      key={standing.participantKey}
+                      standing={standing}
+                      onClick={() => navigate(`/ratings/${ratingId}/athlete/${effectiveGroupId}/${standing.participantKey}`)}
+                    />
                   ))}
                 </div>
               )}
