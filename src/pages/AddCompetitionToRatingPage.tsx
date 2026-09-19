@@ -8,6 +8,8 @@ import { Loading } from '../components/Loading'
 import { AuthFlow } from '../features/auth/AuthFlow'
 import { EMPTY_FILTER, usePublicCompetitions } from '../features/competitions/hooks'
 import { toLocaleDateString } from '../lib/dateUtils'
+import { analytics } from '../lib/analytics/analytics'
+import { AnalyticsEvents } from '../lib/analytics/events'
 
 export function AddCompetitionToRatingPage() {
   const { id } = useParams<{ id: string }>()
@@ -44,6 +46,7 @@ export function AddCompetitionToRatingPage() {
     setAddError(null)
     const result = await ratingRepository.addCompetition(ratingId, competitionId)
     if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.ratingCompetitionAdded(ratingId, competitionId))
       // Как и в старом приложении, всегда ведём на маппинг групп — даже с пустым списком
       // предложений (тогда страница сама покажет "В соревновании нет групп участников").
       navigate(`/ratings/${ratingId}/mapping/${competitionId}`, {

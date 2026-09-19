@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { resultRepository } from '../../api/resultRepository'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { LabeledSelect } from '../../components/LabeledSelect'
+import { analytics } from '../../lib/analytics/analytics'
+import { AnalyticsEvents } from '../../lib/analytics/events'
 import { DEFAULT_TIME_ZONE, utcMillisToZonedDate, utcMillisToZonedTime, zonedDateTimeToUtcMillis } from '../../lib/dateUtils'
 import type { OrienteeringCompetition, ParticipantGroupDetail } from '../../types/competition'
 import type { OrienteeringParticipant } from '../../types/participant'
@@ -66,6 +68,7 @@ export function ParticipantEditorDialog({
       isChipGiven: editingParticipant?.isChipGiven ?? false,
     })
     if (result.kind === 'success') {
+      if (!editingParticipant) analytics.trackEvent(AnalyticsEvents.participantAdded('manual'))
       onSaved()
     } else {
       setError(result.message)

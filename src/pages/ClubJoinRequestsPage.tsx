@@ -7,6 +7,8 @@ import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
 import { AuthFlow } from '../features/auth/AuthFlow'
 import { useJoinRequestsForClub } from '../features/clubs/hooks'
+import { analytics } from '../lib/analytics/analytics'
+import { AnalyticsEvents } from '../lib/analytics/events'
 
 export function ClubJoinRequestsPage() {
   const { id } = useParams<{ id: string }>()
@@ -25,6 +27,7 @@ export function ClubJoinRequestsPage() {
   async function review(requestId: string, approve: boolean) {
     const result = await clubRepository.reviewJoinRequest(clubId, requestId, approve)
     if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.clubJoinRequestReviewed(clubId, approve))
       await queryClient.invalidateQueries({ queryKey: ['club-join-requests', clubId] })
     }
   }

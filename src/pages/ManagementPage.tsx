@@ -8,6 +8,8 @@ import { Loading } from '../components/Loading'
 import { AuthFlow } from '../features/auth/AuthFlow'
 import { useMyCompetitions } from '../features/competitions/hooks'
 import { statusColorClass, statusLabel } from '../features/competitions/labels'
+import { analytics } from '../lib/analytics/analytics'
+import { AnalyticsEvents } from '../lib/analytics/events'
 import { toLocaleDateString } from '../lib/dateUtils'
 import type { OrienteeringCompetition } from '../types/competition'
 
@@ -29,6 +31,7 @@ export function ManagementPage() {
     setDeleteError(null)
     const result = await competitionRepository.deleteCompetition(deletingCompetition.competitionId)
     if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.competitionDeleted(deletingCompetition.competitionId))
       await queryClient.invalidateQueries({ queryKey: ['my-competitions'] })
       setDeletingCompetition(null)
     } else {

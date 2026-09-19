@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { competitionRepository } from '../api/competitionRepository'
 import { distanceRepository } from '../api/distanceRepository'
@@ -18,6 +18,8 @@ import {
 import { parseXmlCoursePreviews } from '../features/management/types'
 import type { CreateCompetitionFormState, PendingDistance, PendingGroup, XmlCoursePreview } from '../features/management/types'
 import { useUserProfile } from '../features/profile/hooks'
+import { analytics } from '../lib/analytics/analytics'
+import { AnalyticsEvents, type CreateCompetitionStep } from '../lib/analytics/events'
 import { DEFAULT_TIME_ZONE, zonedDateTimeToUtcMillis } from '../lib/dateUtils'
 import { isDebugEnvironment } from '../lib/debugEnv'
 import type { CreateGroupRequest } from '../types/group'
@@ -54,6 +56,9 @@ const INITIAL_FORM: CreateCompetitionFormState = {
 }
 
 const STEP_TITLES = ['Основное', 'Регистрация', 'Организатор', 'Дистанции', 'Группы']
+
+const STEP_NAMES: CreateCompetitionStep[] = ['common', 'registration', 'organizator', 'distance', 'groups']
+const KIND_OF_SPORT = 'Orienteering'
 
 export function CreateCompetitionPage() {
   const navigate = useNavigate()
@@ -136,6 +141,20 @@ export function CreateCompetitionPage() {
     }))
   }
 
+  useEffect(() => {
+    analytics.trackEvent(AnalyticsEvents.createCompetitionStarted(KIND_OF_SPORT))
+  }, [])
+
+  function goNext() {
+    analytics.trackEvent(AnalyticsEvents.createCompetitionStepCompleted(STEP_NAMES[step]))
+    if (step < 4) {
+      setError(null)
+      setStep(step + 1)
+    } else {
+      publish()
+    }
+  }
+
   async function publish() {
     if (!form.startDateStr) return
     setSaving(true)
@@ -155,7 +174,7 @@ export function CreateCompetitionPage() {
         title: form.title.trim(),
         startDate: startMs,
         endDate: null,
-        kindOfSport: 'Orienteering',
+        kindOfSport: KIND_OF_SPORT,
         description: form.description.trim() || null,
         address: form.address.trim() || null,
         coordinates: form.latitude != null && form.longitude != null ? { latitude: form.latitude, longitude: form.longitude } : null,
@@ -252,6 +271,7 @@ export function CreateCompetitionPage() {
       }
     }
 
+    analytics.trackEvent(AnalyticsEvents.createCompetitionFinished(competitionId, KIND_OF_SPORT))
     await queryClient.invalidateQueries({ queryKey: ['my-competitions'] })
     navigate(`/management/${competitionId}`)
   }
@@ -314,7 +334,7 @@ export function CreateCompetitionPage() {
           <button
             type="button"
             disabled={!nextEnabled}
-            onClick={() => (step < 4 ? (setError(null), setStep(step + 1)) : publish())}
+            onClick={goNext}
             className="rounded-md bg-primary px-4 py-2 text-sm text-on-primary disabled:opacity-50"
           >
             {step < 4 ? 'Далее' : 'Завершить'}

@@ -7,6 +7,8 @@ import { Loading } from '../components/Loading'
 import { AuthFlow } from '../features/auth/AuthFlow'
 import { useRating } from '../features/ratings/hooks'
 import { RatingGroupEditor, type RatingGroupDraft } from '../features/ratings/RatingGroupEditor'
+import { analytics } from '../lib/analytics/analytics'
+import { AnalyticsEvents } from '../lib/analytics/events'
 
 let nextLocalIdCounter = 0
 
@@ -85,6 +87,7 @@ export function RatingFormPage() {
       isEdit && id ? await ratingRepository.updateRating(id, request) : await ratingRepository.createRating(clubId!, request)
 
     if (result.kind === 'success') {
+      if (!isEdit) analytics.trackEvent(AnalyticsEvents.ratingCreated(result.data.id, clubId!))
       navigate(`/ratings/${result.data.id}`)
     } else {
       setError(result.message)

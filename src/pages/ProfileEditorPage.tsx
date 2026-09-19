@@ -9,6 +9,8 @@ import { Loading } from '../components/Loading'
 import { TextInput } from '../components/TextInput'
 import { AvatarCropDialog } from '../features/profile/AvatarCropDialog'
 import { useUserProfile } from '../features/profile/hooks'
+import { analytics } from '../lib/analytics/analytics'
+import { AnalyticsEvents } from '../lib/analytics/events'
 
 export function ProfileEditorPage() {
   const navigate = useNavigate()
@@ -76,6 +78,7 @@ export function ProfileEditorPage() {
       birth_date: birthDateStr ? new Date(birthDateStr).getTime() : null,
     })
     if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.profileEditSaved)
       await queryClient.invalidateQueries({ queryKey: ['user-profile'] })
       navigate('/profile')
     } else {

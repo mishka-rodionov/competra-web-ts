@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { groupRepository } from '../../api/groupRepository'
 import { resultRepository } from '../../api/resultRepository'
 import { ErrorMessage } from '../../components/ErrorMessage'
+import { analytics } from '../../lib/analytics/analytics'
+import { AnalyticsEvents } from '../../lib/analytics/events'
 import { findGroupIdIgnoreCase, type PastResultsImportPlan, type PastResultsRowPlan } from '../../lib/pastResultsImportPlanner'
 import type { OrienteeringCompetition } from '../../types/competition'
 import type { OrienteeringResult, SaveParticipantRequest, SaveResultRequest } from '../../types/participant'
@@ -128,6 +130,7 @@ export function ImportPastResultsReviewDialog({ competition, plan, existingResul
     }
     setImporting(false)
     setShowConfirm(false)
+    analytics.trackEvent(AnalyticsEvents.participantAdded('import'))
     onImported()
   }
 

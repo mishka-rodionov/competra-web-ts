@@ -12,6 +12,8 @@ import { useCompetitionDetail } from '../features/competition-detail/hooks'
 import { InfoTab } from '../features/competition-detail/InfoTab'
 import { ResultsTab } from '../features/competition-detail/ResultsTab'
 import { StartProtocolTab } from '../features/competition-detail/StartProtocolTab'
+import { analytics } from '../lib/analytics/analytics'
+import { AnalyticsEvents } from '../lib/analytics/events'
 import type { RegisterEventRequest } from '../types/competition'
 
 const TABS = [
@@ -36,6 +38,7 @@ export function CompetitionDetailPage() {
   const tabParam = searchParams.get('tab')
   const tab = TABS.some((t) => t.key === tabParam) ? tabParam! : 'info'
   function setTab(key: string) {
+    if (key === 'results' && id) analytics.trackEvent(AnalyticsEvents.resultsViewed(id))
     setSearchParams(key === 'info' ? {} : { tab: key }, { replace: true })
   }
   const [registeredGroupId, setRegisteredGroupId] = useState<number | null>(null)
@@ -46,6 +49,7 @@ export function CompetitionDetailPage() {
   // Регистрация — эфемерное состояние страницы, не персистится (не читаем detail.isUserRegistered) —
   // так же вело себя и старое приложение: обновление страницы сбрасывает "вы зарегистрированы".
   async function handleRegister(request: RegisterEventRequest) {
+    analytics.trackEvent(AnalyticsEvents.eventRegisterClicked(request.competitionId))
     const result = await competitionRepository.register(request)
     if (result.kind === 'success') {
       setRegisteredGroupId(request.groupId)

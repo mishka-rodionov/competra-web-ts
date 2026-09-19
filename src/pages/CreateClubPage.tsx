@@ -4,6 +4,8 @@ import { clubRepository } from '../api/clubRepository'
 import { useIsLoggedIn } from '../auth/useIsLoggedIn'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { AuthFlow } from '../features/auth/AuthFlow'
+import { analytics } from '../lib/analytics/analytics'
+import { AnalyticsEvents } from '../lib/analytics/events'
 
 export function CreateClubPage() {
   const navigate = useNavigate()
@@ -31,6 +33,7 @@ export function CreateClubPage() {
       allowJoinRequests,
     })
     if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.clubCreated(result.data.id))
       navigate(`/clubs/${result.data.id}`)
     } else {
       setError(result.message)

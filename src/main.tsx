@@ -7,9 +7,12 @@ import './index.css'
 // специфичностью (порядок в CSS-каскаде при равной специфичности решает импорт последним).
 import 'leaflet/dist/leaflet.css'
 import './lib/leafletIcons'
+import { initAnalytics } from './lib/analytics/analytics'
 import { router } from './routes'
 
 const queryClient = new QueryClient()
+
+initAnalytics(router)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

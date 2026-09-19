@@ -12,6 +12,8 @@ import { CompetitionRatingCard } from '../features/ratings/CompetitionRatingCard
 import { useRating, useRatingCompetitions, useStandings } from '../features/ratings/hooks'
 import { RatingPointsInfoDialog } from '../features/ratings/RatingPointsInfoDialog'
 import { RatingStandingRow } from '../features/ratings/RatingStandingRow'
+import { analytics } from '../lib/analytics/analytics'
+import { AnalyticsEvents } from '../lib/analytics/events'
 
 export function RatingDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -38,8 +40,10 @@ export function RatingDetailPage() {
 
   async function handleDelete() {
     const result = await ratingRepository.deleteRating(ratingId)
-    if (result.kind === 'success') navigate('/ratings')
-    else setActionError('Не удалось удалить рейтинг')
+    if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.ratingDeleted(ratingId))
+      navigate('/ratings')
+    } else setActionError('Не удалось удалить рейтинг')
     setShowDeleteConfirm(false)
   }
 

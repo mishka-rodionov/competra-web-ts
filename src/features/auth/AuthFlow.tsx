@@ -3,8 +3,15 @@ import { authRepository, ERROR_USER_NOT_FOUND } from '../../api/authRepository'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Loading } from '../../components/Loading'
 import { TextInput } from '../../components/TextInput'
+import { analytics } from '../../lib/analytics/analytics'
+import { AnalyticsEvents } from '../../lib/analytics/events'
 
 type Step = 'choice' | 'login' | 'register' | 'code'
+
+/** В аналитику уходит только домен email — сам адрес это PII. */
+function emailDomain(email: string): string {
+  return email.split('@')[1]?.trim().toLowerCase() ?? ''
+}
 
 interface AuthFlowProps {
   onLoginSuccess: () => void
@@ -40,6 +47,7 @@ export function AuthFlow({ onLoginSuccess, onPrivacyClick }: AuthFlowProps) {
   async function handleSendLoginCode() {
     setLoading(true)
     resetError()
+    analytics.trackEvent(AnalyticsEvents.authLoginRequested(emailDomain(email)))
     const result = await authRepository.sendCode(email)
     if (result.kind === 'success') setStep('code')
     else {
@@ -52,6 +60,7 @@ export function AuthFlow({ onLoginSuccess, onPrivacyClick }: AuthFlowProps) {
   async function handleRegister() {
     setLoading(true)
     setError(null)
+    analytics.trackEvent(AnalyticsEvents.registrationSubmitted)
     const result = await authRepository.register({
       first_name: firstName.trim(),
       last_name: lastName.trim(),
@@ -59,17 +68,25 @@ export function AuthFlow({ onLoginSuccess, onPrivacyClick }: AuthFlowProps) {
       email: email.trim(),
       privacy_accepted: consentChecked,
     })
-    if (result.kind === 'success') setStep('code')
-    else setError(result.message)
+    if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.registrationSuccess)
+      setStep('code')
+    } else setError(result.message)
     setLoading(false)
   }
 
   async function handleVerifyCode() {
     setLoading(true)
     setError(null)
+    analytics.trackEvent(AnalyticsEvents.authCodeSubmitted)
     const result = await authRepository.verifyCode(email, code)
-    if (result.kind === 'success') onLoginSuccess()
-    else setError(result.message)
+    if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.authLoginSuccess)
+      onLoginSuccess()
+    } else {
+      analytics.trackEvent(AnalyticsEvents.authLoginFailed(result.code != null ? 'invalid_code' : 'network'))
+      setError(result.message)
+    }
     setLoading(false)
   }
 

@@ -13,6 +13,8 @@ import { SKI_STYLE_OPTIONS, SPORT_TYPE_OPTIONS, WORKOUT_STATUS_OPTIONS } from '.
 import { parseGpxTrackPoints } from '../lib/gpxParser'
 import { TrackCodec } from '../lib/trackCodec'
 import type { Workout } from '../types/workout'
+import { analytics } from '../lib/analytics/analytics'
+import { AnalyticsEvents } from '../lib/analytics/events'
 
 interface FormState {
   sportType: string
@@ -147,6 +149,7 @@ export function WorkoutEditorPage() {
     })
 
     if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.diaryWorkoutSaved(form.sportType, form.status, workoutId == null))
       const saved = result.data[0]
       await queryClient.invalidateQueries({ queryKey: ['workouts'] })
       if (saved) navigate(`/diary/${saved.id}`)

@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Loading } from '../../components/Loading'
+import { analytics } from '../../lib/analytics/analytics'
+import { AnalyticsEvents } from '../../lib/analytics/events'
 import { formatTime } from '../../lib/dateUtils'
 import type { ParticipantGroupDetail } from '../../types/competition'
 import type { OrienteeringParticipant, OrienteeringResult } from '../../types/participant'
@@ -105,14 +107,21 @@ function GroupResultsCard({ competitionId, groupId, groupTitle, groupResults, is
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => navigate(`/competition/${competitionId}/group/${groupId}/splits`)}
+              onClick={() => {
+                analytics.trackEvent(AnalyticsEvents.groupSplitsTableOpened(String(groupId), competitionId))
+                navigate(`/competition/${competitionId}/group/${groupId}/splits`)
+              }}
               className="rounded-md border border-outline px-2 py-1 text-xs text-fg"
             >
               Сплиты
             </button>
             <button
               type="button"
-              onClick={() => navigate(`/competition/${competitionId}/group/${groupId}/${isByChoice ? 'score-graph' : 'race-graph'}`)}
+              onClick={() => {
+                const graphEvent = isByChoice ? AnalyticsEvents.scoreGraphOpened : AnalyticsEvents.raceGraphOpened
+                analytics.trackEvent(graphEvent(String(groupId), competitionId))
+                navigate(`/competition/${competitionId}/group/${groupId}/${isByChoice ? 'score-graph' : 'race-graph'}`)
+              }}
               className="rounded-md border border-outline px-2 py-1 text-xs text-fg"
             >
               График

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { clubRepository } from '../../api/clubRepository'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import type { Club } from '../../types/club'
+import { analytics } from '../../lib/analytics/analytics'
+import { AnalyticsEvents } from '../../lib/analytics/events'
 
 interface EditClubDialogProps {
   club: Club
@@ -29,6 +31,7 @@ export function EditClubDialog({ club, onDismiss, onSaved }: EditClubDialogProps
       allowJoinRequests,
     })
     if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.clubUpdated(club.id))
       onSaved(result.data)
     } else {
       setError(result.message)

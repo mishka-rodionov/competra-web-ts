@@ -8,6 +8,8 @@ import { Loading } from '../components/Loading'
 import { useRating } from '../features/ratings/hooks'
 import type { RatingGroupMappingSuggestion } from '../types/rating'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { analytics } from '../lib/analytics/analytics'
+import { AnalyticsEvents } from '../lib/analytics/events'
 
 const NO_MAPPING = 0
 
@@ -61,6 +63,7 @@ export function GroupMappingPage() {
 
     const result = await ratingRepository.setGroupMapping(ratingId, competitionId!, entries)
     if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.ratingGroupMappingConfirmed(ratingId, competitionId!))
       await queryClient.invalidateQueries({ queryKey: ['rating-standings', ratingId] })
       navigate(`/ratings/${ratingId}`)
     } else {

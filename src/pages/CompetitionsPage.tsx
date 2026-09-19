@@ -14,6 +14,8 @@ import {
   usePublicCompetitions,
   type CompetitionsFilter,
 } from '../features/competitions/hooks'
+import { analytics } from '../lib/analytics/analytics'
+import { AnalyticsEvents } from '../lib/analytics/events'
 import { isDebugEnvironment } from '../lib/debugEnv'
 
 const TABS = [
@@ -54,6 +56,11 @@ export function CompetitionsPage() {
     return () => observer.disconnect()
   }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
+  function openCompetition(competitionId: string) {
+    analytics.trackEvent(AnalyticsEvents.eventOpened(competitionId, 'list'))
+    navigate(`/competition/${competitionId}`)
+  }
+
   function openFilter() {
     setDraftFilter(filter)
     setShowFilter(true)
@@ -87,7 +94,7 @@ export function CompetitionsPage() {
               <CompetitionCard
                 key={competition.competitionId}
                 competition={competition.competition}
-                onClick={() => navigate(`/competition/${competition.competitionId}`)}
+                onClick={() => openCompetition(competition.competitionId)}
               />
             ))}
           </div>
@@ -104,7 +111,7 @@ export function CompetitionsPage() {
             <CompetitionCard
               key={competition.id}
               competition={competition}
-              onClick={() => competition.id && navigate(`/competition/${competition.id}`)}
+              onClick={() => competition.id && openCompetition(competition.id)}
             />
           ))}
           <div ref={sentinelRef} />
@@ -117,6 +124,12 @@ export function CompetitionsPage() {
           draft={draftFilter}
           onChange={setDraftFilter}
           onApply={() => {
+            analytics.trackEvent(
+              AnalyticsEvents.eventFilterApplied({
+                kinds_count: draftFilter.kindOfSports.length,
+                statuses_count: draftFilter.statuses.length,
+              }),
+            )
             setFilter(draftFilter)
             setShowFilter(false)
           }}

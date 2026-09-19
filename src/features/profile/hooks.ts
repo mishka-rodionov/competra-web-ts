@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { competitionRepository } from '../../api/competitionRepository'
 import { userRepository } from '../../api/userRepository'
 import { useIsLoggedIn } from '../../auth/useIsLoggedIn'
+import { analytics } from '../../lib/analytics/analytics'
 
 export function useUserProfile() {
   const isLoggedIn = useIsLoggedIn()
@@ -10,6 +11,7 @@ export function useUserProfile() {
     queryFn: async () => {
       const result = await userRepository.getUserProfile()
       if (result.kind === 'error') throw new Error(result.message)
+      analytics.setUserId(result.data.id)
       return result.data
     },
     enabled: isLoggedIn,

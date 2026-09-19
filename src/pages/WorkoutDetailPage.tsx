@@ -7,6 +7,8 @@ import { Loading } from '../components/Loading'
 import { formatDistanceKm, skiStyleLabel, sportTypeLabel } from '../features/diary/labels'
 import { useWorkout } from '../features/diary/hooks'
 import { formatTime, toLocaleDateString } from '../lib/dateUtils'
+import { analytics } from '../lib/analytics/analytics'
+import { AnalyticsEvents } from '../lib/analytics/events'
 
 export function WorkoutDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -21,6 +23,7 @@ export function WorkoutDetailPage() {
   async function handleDelete() {
     const result = await diaryRepository.deleteWorkout(workoutId)
     if (result.kind === 'success') {
+      if (workout) analytics.trackEvent(AnalyticsEvents.diaryWorkoutDeleted(workout.sportType))
       await queryClient.invalidateQueries({ queryKey: ['workouts'] })
       navigate('/diary')
     } else {

@@ -9,6 +9,8 @@ import { FullscreenImageViewer } from '../components/FullscreenImageViewer'
 import { Loading } from '../components/Loading'
 import { AuthFlow } from '../features/auth/AuthFlow'
 import { useUpcomingCompetitions, useUserProfile } from '../features/profile/hooks'
+import { analytics } from '../lib/analytics/analytics'
+import { AnalyticsEvents } from '../lib/analytics/events'
 import { toLocaleDateString } from '../lib/dateUtils'
 
 const ORGANIZER_GUIDE_URL = 'guides/first-competition-guide.html'
@@ -32,6 +34,7 @@ export function ProfilePage() {
   }
 
   function handleLogout() {
+    analytics.trackEvent(AnalyticsEvents.logout)
     authRepository.logout()
     queryClient.clear()
     navigate('/')
@@ -40,13 +43,16 @@ export function ProfilePage() {
   async function handleDeleteAccount() {
     setDeleting(true)
     setDeleteError(null)
+    analytics.trackEvent(AnalyticsEvents.accountDeletionRequested)
     const result = await authRepository.deleteAccount()
     if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.accountDeletionSucceeded)
       authRepository.logout()
       queryClient.clear()
       setShowDeleteConfirm(false)
       navigate('/')
     } else {
+      analytics.trackEvent(AnalyticsEvents.accountDeletionFailed(result.code != null ? `code_${result.code}` : 'network'))
       setDeleteError(result.message)
     }
     setDeleting(false)

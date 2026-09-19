@@ -16,6 +16,8 @@ import { MembersTab } from '../features/clubs/MembersTab'
 import { TeamsTab } from '../features/clubs/TeamsTab'
 import { useUserProfile } from '../features/profile/hooks'
 import type { Club } from '../types/club'
+import { analytics } from '../lib/analytics/analytics'
+import { AnalyticsEvents } from '../lib/analytics/events'
 
 const TABS = [
   { key: 'members', label: 'Участники' },
@@ -65,6 +67,7 @@ export function ClubDetailPage() {
     setRequesting(true)
     const result = await clubRepository.createJoinRequest(clubId)
     if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.clubJoinRequested(clubId))
       await queryClient.invalidateQueries({ queryKey: ['my-join-requests'] })
     } else {
       setActionError('Не удалось подать заявку')
@@ -76,6 +79,7 @@ export function ClubDetailPage() {
     if (!profile) return
     const result = await clubRepository.removeMember(clubId, profile.id)
     if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.clubMemberRemoved(clubId, true))
       await invalidateMembers()
     } else {
       setActionError('Не удалось выйти из клуба (возможно, вы единственный основатель)')
@@ -84,26 +88,33 @@ export function ClubDetailPage() {
 
   async function handleRemoveMember(userId: string) {
     const result = await clubRepository.removeMember(clubId, userId)
-    if (result.kind === 'success') await invalidateMembers()
-    else setActionError('Не удалось удалить участника')
+    if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.clubMemberRemoved(clubId, false))
+      await invalidateMembers()
+    } else setActionError('Не удалось удалить участника')
   }
 
   async function handleChangeRole(userId: string, role: string) {
     const result = await clubRepository.changeMemberRole(clubId, userId, { role })
-    if (result.kind === 'success') await invalidateMembers()
-    else setActionError('Не удалось изменить роль')
+    if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.clubMemberRoleChanged(clubId, role))
+      await invalidateMembers()
+    } else setActionError('Не удалось изменить роль')
   }
 
   async function handleDeleteClub() {
     const result = await clubRepository.deleteClub(clubId)
-    if (result.kind === 'success') navigate('/clubs')
-    else setActionError('Не удалось удалить клуб')
+    if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.clubDeleted(clubId))
+      navigate('/clubs')
+    } else setActionError('Не удалось удалить клуб')
     setShowDeleteConfirm(false)
   }
 
   async function handleCreateTeam(name: string, sportType: string) {
     const result = await teamRepository.createTeam(clubId, { name, sportType })
     if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.clubTeamCreated(clubId))
       await queryClient.invalidateQueries({ queryKey: ['teams', clubId] })
       setShowCreateTeamDialog(false)
     } else {
