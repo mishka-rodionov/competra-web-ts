@@ -16,7 +16,7 @@ export async function safeApiCall<T>(call: () => Promise<CommonModel<T>>): Promi
     }
     const message = response.errors?.[0]?.message ?? 'Unknown error'
     DebugErrorReporter.report(message)
-    return { kind: 'error', message }
+    return { kind: 'error', message, code: response.errors?.[0]?.code }
   } catch (e) {
     return handleError(e)
   }
@@ -29,7 +29,7 @@ export async function safeApiCallUnit(call: () => Promise<CommonModel<unknown>>)
     if (response.status === 1) return { kind: 'success', data: undefined }
     const message = response.errors?.[0]?.message ?? 'Unknown error'
     DebugErrorReporter.report(message)
-    return { kind: 'error', message }
+    return { kind: 'error', message, code: response.errors?.[0]?.code }
   } catch (e) {
     return handleError(e)
   }

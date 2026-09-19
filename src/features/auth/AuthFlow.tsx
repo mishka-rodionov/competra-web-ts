@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { authRepository } from '../../api/authRepository'
+import { authRepository, ERROR_USER_NOT_FOUND } from '../../api/authRepository'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Loading } from '../../components/Loading'
 import { TextInput } from '../../components/TextInput'
@@ -30,17 +30,22 @@ export function AuthFlow({ onLoginSuccess, onPrivacyClick }: AuthFlowProps) {
   const [consentChecked, setConsentChecked] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [userNotFound, setUserNotFound] = useState(false)
 
   function resetError() {
     setError(null)
+    setUserNotFound(false)
   }
 
   async function handleSendLoginCode() {
     setLoading(true)
-    setError(null)
+    resetError()
     const result = await authRepository.sendCode(email)
     if (result.kind === 'success') setStep('code')
-    else setError(result.message)
+    else {
+      setError(result.message)
+      setUserNotFound(result.code === ERROR_USER_NOT_FOUND)
+    }
     setLoading(false)
   }
 
@@ -181,6 +186,18 @@ export function AuthFlow({ onLoginSuccess, onPrivacyClick }: AuthFlowProps) {
 
         {loading && <Loading />}
         {error && <ErrorMessage message={error} />}
+        {step === 'login' && userNotFound && (
+          <button
+            type="button"
+            onClick={() => {
+              resetError()
+              setStep('register')
+            }}
+            className="rounded-md border border-outline px-4 py-2 text-sm text-fg"
+          >
+            Создать аккаунт
+          </button>
+        )}
       </div>
     </div>
   )

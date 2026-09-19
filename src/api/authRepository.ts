@@ -11,6 +11,9 @@ interface AuthResponse {
   token: AuthResponseToken
 }
 
+/** Код ошибки /user/login: пользователя с таким email нет (eSport Databases.kt). */
+export const ERROR_USER_NOT_FOUND = 1004
+
 export interface RegisterRequest {
   first_name: string
   last_name: string
