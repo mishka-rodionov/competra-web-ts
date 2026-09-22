@@ -86,3 +86,9 @@ body {
   background: var(--color-bg);
   color: var(--color-fg);
 }
+
+/* Карта выбора точки (MapPickerField): прицел вместо «руки», чтобы было понятно, что клик ставит точку.
+   Во время перетаскивания Leaflet сам переключает курсор через .leaflet-dragging. */
+.map-picker.leaflet-grab {
+  cursor: crosshair;
+}

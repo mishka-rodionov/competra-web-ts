@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import type L from 'leaflet'
 import { Marker, MapContainer, TileLayer, useMapEvents } from 'react-leaflet'
 import { MapInvalidateSize } from './MapInvalidateSize'
 
@@ -33,32 +33,42 @@ interface MapPickerFieldProps {
 }
 
 /**
- * Карта выбора координат старта: клик по карте ставит маркер и сразу сообщает координаты
- * наверх — проще, чем в старом приложении (там двигалась сама карта под неподвижным
- * перекрестием, а координаты фиксировались отдельной кнопкой), потому что Leaflet уже
- * поддерживает клик-по-карте "из коробки".
+ * Карта выбора координат старта: клик по карте ставит пин (его можно перетащить) и сразу сообщает
+ * координаты наверх — проще, чем в старом приложении (там двигалась сама карта под неподвижным
+ * перекрестием, а координаты фиксировались отдельной кнопкой). Компонент контролируемый: пин
+ * рисуется по latitude/longitude из пропсов, подтверждение выбора — забота родителя.
  */
 export function MapPickerField({ latitude, longitude, onPick, className }: MapPickerFieldProps) {
-  const [picked, setPicked] = useState<[number, number] | null>(latitude != null && longitude != null ? [latitude, longitude] : null)
-
-  function handlePick(lat: number, lon: number) {
-    setPicked([lat, lon])
-    onPick(lat, lon)
-  }
+  const picked: [number, number] | null = latitude != null && longitude != null ? [latitude, longitude] : null
 
   return (
     <div className="flex flex-col gap-1">
       <MapContainer
         center={picked ?? [MOSCOW_LAT, MOSCOW_LON]}
         zoom={DEFAULT_ZOOM}
-        className={className ?? 'h-72 w-full'}
+        className={`map-picker ${className ?? 'h-72 w-full'}`}
       >
         <MapInvalidateSize />
         <TileLayer url={OSM_TILE_URL} attribution={OSM_ATTRIBUTION} />
-        <ClickToPick onPick={handlePick} />
-        {picked && <Marker position={picked} />}
+        <ClickToPick onPick={onPick} />
+        {picked && (
+          <Marker
+            position={picked}
+            draggable
+            eventHandlers={{
+              dragend(e) {
+                const { lat, lng } = (e.target as L.Marker).getLatLng()
+                onPick(roundCoord(lat), roundCoord(lng))
+              },
+            }}
+          />
+        )}
       </MapContainer>
-      <span className="text-sm text-on-surface-variant">{picked ? `${formatCoord(picked[0])}, ${formatCoord(picked[1])}` : 'Кликните на карте, чтобы выбрать точку старта'}</span>
+      <span className="text-sm text-on-surface-variant">
+        {picked
+          ? `Точка старта: ${formatCoord(picked[0])}, ${formatCoord(picked[1])} — пин можно перетащить`
+          : 'Кликните на карте, чтобы поставить точку старта'}
+      </span>
     </div>
   )
 }

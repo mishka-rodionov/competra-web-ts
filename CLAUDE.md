@@ -33,7 +33,7 @@ src/
                 diary, legal, management, profile, ratings
   lib/          Бизнес-логика и утилиты без UI: dateUtils, splitsTable (сплиты/графики),
                 trackCodec + gpxParser (GPS-трек), resultsHtmlParser/resultsExcelParser
-                + pastResultsImportPlanner (импорт результатов), chartSetup, leafletIcons
+                + pastResultsImportPlanner (импорт результатов), chartSetup, leafletSetup
   pages/        Компоненты уровня роута (по одному на путь в routes.tsx)
   types/        TS-интерфейсы, зеркалящие модели бэкенда
   routes.tsx    createHashRouter — все маршруты

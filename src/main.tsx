@@ -6,7 +6,7 @@ import './index.css'
 // После index.css (Tailwind) — иначе Preflight может перебить правила Leaflet с той же
 // специфичностью (порядок в CSS-каскаде при равной специфичности решает импорт последним).
 import 'leaflet/dist/leaflet.css'
-import './lib/leafletIcons'
+import './lib/leafletSetup'
 import { initAnalytics } from './lib/analytics/analytics'
 import { router } from './routes'
 
