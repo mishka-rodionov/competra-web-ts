@@ -101,7 +101,7 @@ export function RaceGraphPage() {
               animation: false,
               maintainAspectRatio: false,
               scales: {
-                x: { type: 'linear', ticks: { callback: (v) => columnLabels.get(Number(v)) ?? v, stepSize: 1 } },
+                x: { type: 'linear', ticks: { callback: (v) => columnLabels.get(Math.round(Number(v))) ?? '', stepSize: 1 } },
                 y: { reverse: true, title: { display: true, text: 'Отставание от лидера' }, ticks: { callback: (v) => formatTime(Number(v)) } },
               },
               plugins: {
