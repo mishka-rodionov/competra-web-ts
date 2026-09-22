@@ -40,6 +40,7 @@ export interface PendingDistance {
   climbMeters: number
   controlPoints: ControlPoint[]
   finishControlPoint: number | null
+  startControlPoint: number | null
   description: string | null
 }
 

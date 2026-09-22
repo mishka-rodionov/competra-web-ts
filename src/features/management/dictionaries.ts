@@ -14,6 +14,33 @@ export const PUNCHING_SYSTEM_OPTIONS: [string, string][] = [
   ['SPORTIDENT', 'SportIdent'],
 ]
 
+/** Системы отметки, для которых имеет смысл электронная стартовая станция. */
+const ELECTRONIC_PUNCHING_SYSTEMS = new Set(['SPORTIDUINO', 'SPORTIDENT', 'SFR'])
+
+export function isElectronicPunchingSystem(punchingSystem: string): boolean {
+  return ELECTRONIC_PUNCHING_SYSTEMS.has(punchingSystem)
+}
+
+/** При старте по стартовой станции механическая/бумажная отметка (PENCIL/PUNCH) теряет смысл. */
+export function punchingSystemOptionsFor(startTimeMode: string): [string, string][] {
+  return startTimeMode === 'BY_START_STATION'
+    ? PUNCHING_SYSTEM_OPTIONS.filter(([key]) => isElectronicPunchingSystem(key))
+    : PUNCHING_SYSTEM_OPTIONS
+}
+
+/**
+ * Патч формы при смене режима старта: при переходе на «по стартовой станции» неэлектронная система
+ * отметки сбрасывается на SPORTIDUINO (как в OrienteeringCreatorViewModel в Android), чтобы не остался
+ * невалидный выбор — селектор системы отметки стоит на экране раньше селектора режима старта.
+ */
+export function startTimeModePatch(
+  startTimeMode: string,
+  punchingSystem: string,
+): { startTimeMode: string; punchingSystem: string } {
+  const resetPunching = startTimeMode === 'BY_START_STATION' && !isElectronicPunchingSystem(punchingSystem)
+  return { startTimeMode, punchingSystem: resetPunching ? 'SPORTIDUINO' : punchingSystem }
+}
+
 export const START_TIME_MODE_OPTIONS: [string, string][] = [
   ['STRICT', 'Строгое время старта'],
   ['USER_SET', 'Задаётся перед стартом'],

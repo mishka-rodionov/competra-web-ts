@@ -5,10 +5,11 @@ import { TimeZoneSelect } from '../../components/TimeZoneSelect'
 import {
   DIRECTION_OPTIONS,
   formatIntervalSeconds,
-  PUNCHING_SYSTEM_OPTIONS,
+  punchingSystemOptionsFor,
   REG_END_MODE_OPTIONS,
   START_INTERVAL_OPTIONS,
   START_TIME_MODE_OPTIONS,
+  startTimeModePatch,
 } from './dictionaries'
 import type { CreateCompetitionFormState, PendingDistance, PendingGroup, XmlCoursePreview } from './types'
 
@@ -61,21 +62,24 @@ export function BasicStep({ form, onPatch }: StepProps) {
       <LabeledSelect
         label="Система отметки"
         value={form.punchingSystem}
-        options={PUNCHING_SYSTEM_OPTIONS}
+        options={punchingSystemOptionsFor(form.startTimeMode)}
         onChange={(punchingSystem) => onPatch({ punchingSystem })}
       />
       <LabeledSelect
         label="Режим старта"
         value={form.startTimeMode}
         options={START_TIME_MODE_OPTIONS}
-        onChange={(startTimeMode) => onPatch({ startTimeMode })}
+        onChange={(startTimeMode) => onPatch(startTimeModePatch(startTimeMode, form.punchingSystem))}
       />
-      <LabeledSelect
-        label="Интервал старта"
-        value={form.startInterval}
-        options={START_INTERVAL_OPTIONS.map((s) => [s, formatIntervalSeconds(s)] as [number, string])}
-        onChange={(startInterval) => onPatch({ startInterval })}
-      />
+      {/* При старте по стартовой станции реальное время старта берётся из чипа — интервал не нужен. */}
+      {form.startTimeMode !== 'BY_START_STATION' && (
+        <LabeledSelect
+          label="Интервал старта"
+          value={form.startInterval}
+          options={START_INTERVAL_OPTIONS.map((s) => [s, formatIntervalSeconds(s)] as [number, string])}
+          onChange={(startInterval) => onPatch({ startInterval })}
+        />
+      )}
     </div>
   )
 }

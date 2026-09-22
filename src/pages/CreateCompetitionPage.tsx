@@ -94,11 +94,16 @@ export function CreateCompetitionPage() {
     else navigate('/management')
   }
 
+  // Дистанцию можно добавить до смены режима старта на «по стартовой станции» — тогда у неё не будет
+  // стартового КП, и чтение чипа на финише уйдёт в DSQ. Не даём пройти шаг, пока такие дистанции есть.
+  const distancesWithoutStartCp =
+    form.startTimeMode === 'BY_START_STATION' ? distances.filter((d) => d.startControlPoint == null) : []
+
   const nextEnabled =
     step === 0
       ? form.title.trim() !== '' && form.startDateStr !== '' && form.zoneId !== ''
       : step === 3
-        ? distances.length > 0 || importXmlContent != null || isPastEvent
+        ? (distances.length > 0 || importXmlContent != null || isPastEvent) && distancesWithoutStartCp.length === 0
         : step === 4
           ? groups.length > 0 || isPastEvent
           : true
@@ -225,6 +230,7 @@ export function CreateCompetitionPage() {
         description: d.description ?? '',
         controlPoints: d.controlPoints,
         finishControlPoint: d.finishControlPoint,
+        startControlPoint: d.startControlPoint,
       }))
       const dr = await distanceRepository.saveDistances(distRequests)
       if (dr.kind === 'error') {
@@ -321,6 +327,11 @@ export function CreateCompetitionPage() {
               />
             )}
 
+            {step === 3 && distancesWithoutStartCp.length > 0 && (
+              <ErrorMessage
+                message={`У дистанций (${distancesWithoutStartCp.map((d) => d.name ?? 'без названия').join(', ')}) не указано стартовое КП — удалите и добавьте их заново`}
+              />
+            )}
             {error && <ErrorMessage message={error} />}
           </div>
         </div>
@@ -345,6 +356,7 @@ export function CreateCompetitionPage() {
       {showDistanceDialog && (
         <DistanceDialog
           isByChoice={form.direction === 'BY_CHOICE'}
+          isStartCpRequired={form.startTimeMode === 'BY_START_STATION'}
           onDismiss={() => setShowDistanceDialog(false)}
           onSave={(distance) => {
             setDistances([...distances, distance])

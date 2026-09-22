@@ -52,6 +52,7 @@ export function ManageCompetitionPage() {
                 competitionId={competition.competitionId}
                 showImport
                 isByChoice={competition.direction === 'BY_CHOICE'}
+                isStartCpRequired={competition.startTimeMode === 'BY_START_STATION'}
               />
             )}
             {tab === 'results' && <ManageResultsTab competition={competition} />}

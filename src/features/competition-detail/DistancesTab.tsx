@@ -15,6 +15,8 @@ interface DistancesTabProps {
   /** Организаторский режим: создание вручную + импорт IOF XML (ManageCompetitionPage). */
   showImport?: boolean
   isByChoice?: boolean
+  /** Режим старта BY_START_STATION — у новой дистанции обязательно стартовое КП. */
+  isStartCpRequired?: boolean
 }
 
 /**
@@ -22,7 +24,7 @@ interface DistancesTabProps {
  * (DistanceMapView) — решение по нему отложено до отдельной задачи с картами/треками, как и в
  * вертикали 1.
  */
-export function DistancesTab({ competitionId, showImport = false, isByChoice = false }: DistancesTabProps) {
+export function DistancesTab({ competitionId, showImport = false, isByChoice = false, isStartCpRequired = false }: DistancesTabProps) {
   const queryClient = useQueryClient()
   const { data: distances, isLoading, isError, error } = useDistances(competitionId)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
@@ -115,6 +117,7 @@ export function DistancesTab({ competitionId, showImport = false, isByChoice = f
       {showCreateDialog && (
         <DistanceDialog
           isByChoice={isByChoice}
+          isStartCpRequired={isStartCpRequired}
           onDismiss={() => setShowCreateDialog(false)}
           onSave={async (pending) => {
             setShowCreateDialog(false)
@@ -129,6 +132,7 @@ export function DistancesTab({ competitionId, showImport = false, isByChoice = f
                 description: pending.description ?? '',
                 controlPoints: pending.controlPoints,
                 finishControlPoint: pending.finishControlPoint,
+                startControlPoint: pending.startControlPoint,
               },
             ])
             await invalidate()

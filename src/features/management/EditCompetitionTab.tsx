@@ -12,9 +12,10 @@ import type { OrienteeringCompetition } from '../../types/competition'
 import {
   DIRECTION_OPTIONS,
   formatIntervalSeconds,
-  PUNCHING_SYSTEM_OPTIONS,
+  punchingSystemOptionsFor,
   START_INTERVAL_OPTIONS,
   START_TIME_MODE_OPTIONS,
+  startTimeModePatch,
   STATUS_OPTIONS,
 } from './dictionaries'
 
@@ -200,21 +201,24 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
       <LabeledSelect
         label="Система отметки"
         value={form.punchingSystem}
-        options={PUNCHING_SYSTEM_OPTIONS}
+        options={punchingSystemOptionsFor(form.startTimeMode)}
         onChange={(punchingSystem) => patch({ punchingSystem })}
       />
       <LabeledSelect
         label="Режим старта"
         value={form.startTimeMode}
         options={START_TIME_MODE_OPTIONS}
-        onChange={(startTimeMode) => patch({ startTimeMode })}
+        onChange={(startTimeMode) => patch(startTimeModePatch(startTimeMode, form.punchingSystem))}
       />
-      <LabeledSelect
-        label="Интервал старта"
-        value={form.startInterval}
-        options={START_INTERVAL_OPTIONS.map((s) => [s, formatIntervalSeconds(s)] as [number, string])}
-        onChange={(startInterval) => patch({ startInterval })}
-      />
+      {/* При старте по стартовой станции реальное время старта берётся из чипа — интервал не нужен. */}
+      {form.startTimeMode !== 'BY_START_STATION' && (
+        <LabeledSelect
+          label="Интервал старта"
+          value={form.startInterval}
+          options={START_INTERVAL_OPTIONS.map((s) => [s, formatIntervalSeconds(s)] as [number, string])}
+          onChange={(startInterval) => patch({ startInterval })}
+        />
+      )}
 
       <h2 className="mt-2 text-base font-medium text-fg">Регистрация</h2>
       <div className="flex gap-2">

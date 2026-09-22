@@ -4,19 +4,27 @@ import type { PendingDistance } from './types'
 
 interface DistanceDialogProps {
   isByChoice: boolean
+  /** Старт по стартовой станции: реальное время старта берётся из отметки на этом КП. */
+  isStartCpRequired: boolean
   onDismiss: () => void
   onSave: (distance: PendingDistance) => void
 }
 
-export function DistanceDialog({ isByChoice, onDismiss, onSave }: DistanceDialogProps) {
+export function DistanceDialog({ isByChoice, isStartCpRequired, onDismiss, onSave }: DistanceDialogProps) {
   const [name, setName] = useState('')
   const [lengthMeters, setLengthMeters] = useState('')
   const [climbMeters, setClimbMeters] = useState('')
   const [controlPointsInput, setControlPointsInput] = useState('')
   const [finishCp, setFinishCp] = useState('')
+  const [startCp, setStartCp] = useState('')
+  const [showStartCpError, setShowStartCpError] = useState(false)
   const [description, setDescription] = useState('')
 
   function handleSave() {
+    if (isStartCpRequired && !startCp) {
+      setShowStartCpError(true)
+      return
+    }
     const controlPoints = parseControlPoints(controlPointsInput, isByChoice)
     onSave({
       name: name.trim() || null,
@@ -24,6 +32,7 @@ export function DistanceDialog({ isByChoice, onDismiss, onSave }: DistanceDialog
       climbMeters: parseInt(climbMeters, 10) || 0,
       controlPoints,
       finishControlPoint: finishCp ? parseInt(finishCp, 10) : null,
+      startControlPoint: isStartCpRequired && startCp ? parseInt(startCp, 10) : null,
       description: description.trim() || null,
     })
   }
@@ -72,6 +81,25 @@ export function DistanceDialog({ isByChoice, onDismiss, onSave }: DistanceDialog
           inputMode="numeric"
           className="rounded-md border border-outline bg-bg px-3 py-2 text-fg"
         />
+        {isStartCpRequired && (
+          <div className="flex flex-col gap-1">
+            <input
+              value={startCp}
+              onChange={(e) => {
+                setStartCp(e.target.value.replace(/\D/g, ''))
+                setShowStartCpError(false)
+              }}
+              placeholder="Стартовое КП *"
+              inputMode="numeric"
+              className={`rounded-md border bg-bg px-3 py-2 text-fg ${showStartCpError ? 'border-error' : 'border-outline'}`}
+            />
+            <p className={`text-sm ${showStartCpError ? 'text-error' : 'text-on-surface-variant'}`}>
+              {showStartCpError
+                ? 'Укажите номер стартового КП — по нему определяется реальное время старта'
+                : 'Номер КП на стартовой станции — по нему рассчитывается время старта'}
+            </p>
+          </div>
+        )}
         <input
           value={description}
           onChange={(e) => setDescription(e.target.value)}

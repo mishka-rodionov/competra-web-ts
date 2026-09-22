@@ -16,6 +16,8 @@ export interface Distance {
   description: string | null
   controlPoints: ControlPoint[]
   finishControlPoint: number | null
+  /** Номер КП стартовой станции — задаётся только при режиме старта BY_START_STATION. */
+  startControlPoint: number | null
   mapUrl: string | null
   mapTopLeftLat: number | null
   mapTopLeftLng: number | null
@@ -34,6 +36,7 @@ export interface SaveDistanceRequest {
   description: string
   controlPoints: ControlPoint[]
   finishControlPoint: number | null
+  startControlPoint?: number | null
   mapUrl?: string | null
   mapTopLeftLat?: number | null
   mapTopLeftLng?: number | null
