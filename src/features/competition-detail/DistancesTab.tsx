@@ -5,6 +5,7 @@ import { DistanceMapView } from '../../components/DistanceMapView'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Loading } from '../../components/Loading'
+import { distanceMapCorners } from '../../lib/mapCorners'
 import type { Distance } from '../../types/distance'
 import { AttachMapDialog } from '../management/AttachMapDialog'
 import { DistanceDialog } from '../management/DistanceDialog'
@@ -31,6 +32,7 @@ export function DistancesTab({ competitionId, showImport = false, isByChoice = f
   const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
   const [expandedMapDistance, setExpandedMapDistance] = useState<Distance | null>(null)
+  const expandedMapCorners = expandedMapDistance ? distanceMapCorners(expandedMapDistance) : null
 
   async function invalidate() {
     await queryClient.invalidateQueries({ queryKey: ['distances', competitionId] })
@@ -94,7 +96,7 @@ export function DistancesTab({ competitionId, showImport = false, isByChoice = f
         ))
       )}
 
-      {expandedMapDistance?.mapUrl && expandedMapDistance.mapTopLeftLat != null && expandedMapDistance.mapTopLeftLng != null && expandedMapDistance.mapBottomRightLat != null && expandedMapDistance.mapBottomRightLng != null && (
+      {expandedMapDistance?.mapUrl && expandedMapCorners && (
         <div className="fixed inset-0 z-20 flex flex-col bg-bg">
           <div className="flex items-center gap-2 border-b border-outline-variant bg-surface/90 px-2 py-3">
             <button type="button" onClick={() => setExpandedMapDistance(null)} aria-label="Закрыть" className="px-2 text-xl">
@@ -103,13 +105,7 @@ export function DistancesTab({ competitionId, showImport = false, isByChoice = f
             <h3 className="text-base font-medium text-fg">{expandedMapDistance.name ?? 'Карта дистанции'}</h3>
           </div>
           <div className="flex flex-1">
-            <DistanceMapView
-              mapUrl={expandedMapDistance.mapUrl}
-              topLeftLat={expandedMapDistance.mapTopLeftLat}
-              topLeftLng={expandedMapDistance.mapTopLeftLng}
-              bottomRightLat={expandedMapDistance.mapBottomRightLat}
-              bottomRightLng={expandedMapDistance.mapBottomRightLng}
-            />
+            <DistanceMapView mapUrl={expandedMapDistance.mapUrl} corners={expandedMapCorners} />
           </div>
         </div>
       )}
@@ -161,7 +157,7 @@ interface DistanceCardProps {
 
 function DistanceCard({ distance, canEditMap, onExpandMap, onMapUpdated }: DistanceCardProps) {
   const [showAttachDialog, setShowAttachDialog] = useState(false)
-  const hasMap = distance.mapUrl != null && distance.mapTopLeftLat != null && distance.mapTopLeftLng != null && distance.mapBottomRightLat != null && distance.mapBottomRightLng != null
+  const hasMap = distanceMapCorners(distance) != null
 
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-outline-variant bg-surface p-4">

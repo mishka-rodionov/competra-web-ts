@@ -21,6 +21,13 @@ export interface Distance {
   mapUrl: string | null
   mapTopLeftLat: number | null
   mapTopLeftLng: number | null
+  /**
+   * Верхний правый угол карты. Если заполнен — верхний левый и нижний правый углы точные
+   * (привязка по трём точкам, карта может быть повёрнута); если пуст — они задают bbox
+   * «север вверх». Разбор — `distanceMapCorners` в `lib/mapCorners.ts`.
+   */
+  mapTopRightLat: number | null
+  mapTopRightLng: number | null
   mapBottomRightLat: number | null
   mapBottomRightLng: number | null
   updatedAt: number
@@ -40,6 +47,8 @@ export interface SaveDistanceRequest {
   mapUrl?: string | null
   mapTopLeftLat?: number | null
   mapTopLeftLng?: number | null
+  mapTopRightLat?: number | null
+  mapTopRightLng?: number | null
   mapBottomRightLat?: number | null
   mapBottomRightLng?: number | null
 }
