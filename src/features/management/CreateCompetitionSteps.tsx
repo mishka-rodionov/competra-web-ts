@@ -11,6 +11,7 @@ import {
   START_TIME_MODE_OPTIONS,
   startTimeModePatch,
 } from './dictionaries'
+import { ControlTimeFields } from './ControlTimeFields'
 import { LimitAndFeeFields } from './LimitAndFeeFields'
 import type { CreateCompetitionFormState, PendingDistance, PendingGroup, XmlCoursePreview } from './types'
 
@@ -81,6 +82,12 @@ export function BasicStep({ form, onPatch }: StepProps) {
           onChange={(startInterval) => onPatch({ startInterval })}
         />
       )}
+      <ControlTimeFields
+        direction={form.direction}
+        controlTimeMinutes={form.controlTimeMinutes}
+        overtimePolicy={form.overtimePolicy}
+        onChange={onPatch}
+      />
     </div>
   )
 }

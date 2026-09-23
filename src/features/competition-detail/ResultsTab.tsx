@@ -62,8 +62,9 @@ export function ResultsTab({ competitionId, groups, competitionStatus, resultsSt
       )}
       {sortedGroupIds.map((groupId) => {
         const groupResults = [...(resultsByGroup.get(groupId) ?? [])].sort((a, b) => {
-          const rankA = a.status === 'DSQ' ? Infinity : (a.rank ?? Infinity)
-          const rankB = b.status === 'DSQ' ? Infinity : (b.rank ?? Infinity)
+          // Место есть только у FINISHED: OVERTIME и снятые уходят в конец.
+          const rankA = a.status === 'FINISHED' ? (a.rank ?? Infinity) : Infinity
+          const rankB = b.status === 'FINISHED' ? (b.rank ?? Infinity) : Infinity
           return rankA - rankB
         })
         return (

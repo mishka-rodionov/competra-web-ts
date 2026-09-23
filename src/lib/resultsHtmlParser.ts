@@ -33,6 +33,7 @@ function parseResultStatus(text: string): [string | null, number | null] {
   const trimmed = text.trim()
   if (trimmed === '') return [null, null]
   if (trimmed === 'снят') return ['DSQ', null]
+  if (trimmed === 'превышено кв') return ['OVERTIME', null]
   if (trimmed === 'н/с') return ['DNS', null]
   if (trimmed === 'не финишировал') return ['DNF', null]
   const seconds = parseRaceTimeSeconds(trimmed)

@@ -44,6 +44,10 @@ export interface OrienteeringCompetition {
   startTime: number | null
   startIntervalSeconds: number | null
   countdownTimer: number | null
+  /** КВ соревнования в минутах — умолчание для групп без своего значения. */
+  controlTimeMinutes: number | null
+  /** IGNORE / DISQUALIFY / SCORE_PENALTY — что делать с превысившими КВ. */
+  overtimePolicy: string
 }
 
 export interface ParticipantGroupDetail {
@@ -60,7 +64,15 @@ export interface ParticipantGroupDetail {
   distanceDescription: string | null
   maxParticipants: number | null
   registeredCount: number
+  /** Своё КВ группы в минутах (null — наследуется от соревнования). */
   timeLimitMinutes: number | null
+  /**
+   * Итоговое КВ группы с учётом наследования от соревнования. Приходит только из деталки
+   * соревнования (/public/{id}); эндпоинт /participantGroups отдаёт группы без этих двух полей.
+   */
+  controlTimeMinutes?: number | null
+  /** true, если controlTimeMinutes взято у соревнования, а не задано у группы. */
+  controlTimeInherited?: boolean
   scorePenaltyPerMinute: number | null
   maxLatenessMinutes: number | null
 }
@@ -106,6 +118,8 @@ export interface CreateCompetitionRequest {
   punchingSystem: string
   startTimeMode: string
   startIntervalSeconds: number | null
+  controlTimeMinutes: number | null
+  overtimePolicy: string
   countdownTimer?: number | null
 }
 
@@ -145,4 +159,6 @@ export interface CompetitionDetail {
   isUserRegistered: boolean
   isTest: boolean
   direction: string
+  controlTimeMinutes: number | null
+  overtimePolicy: string
 }

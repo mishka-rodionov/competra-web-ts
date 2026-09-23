@@ -68,6 +68,8 @@ export function resultStatusLabel(status: string): string {
       return 'НФ'
     case 'DNS':
       return 'НС'
+    case 'OVERTIME':
+      return 'Прев. КВ'
     case 'DSQ':
       return 'Дискв.'
     default:
@@ -81,6 +83,7 @@ export function resultStatusColorClass(status: string): string {
       return 'text-primary'
     case 'DNF':
     case 'DSQ':
+    case 'OVERTIME':
       return 'text-error'
     default:
       return 'text-on-surface-variant'

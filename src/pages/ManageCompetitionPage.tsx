@@ -44,7 +44,11 @@ export function ManageCompetitionPage() {
           <div className="flex-1 overflow-y-auto">
             {tab === 'edit' && <EditCompetitionTab competition={competition} />}
             {tab === 'groups' && (
-              <ManageGroupsTab competitionId={competition.competitionId} isByChoice={competition.direction === 'BY_CHOICE'} />
+              <ManageGroupsTab
+                competitionId={competition.competitionId}
+                isByChoice={competition.direction === 'BY_CHOICE'}
+                competitionControlTimeMinutes={competition.controlTimeMinutes}
+              />
             )}
             {tab === 'participants' && <ParticipantsManageTab competition={competition} />}
             {tab === 'distances' && (

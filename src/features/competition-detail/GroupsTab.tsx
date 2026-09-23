@@ -9,6 +9,8 @@ import { RegistrationDialog } from './RegistrationDialog'
 interface GroupsTabProps {
   competitionId: string
   groups: ParticipantGroupDetail[]
+  /** IGNORE / DISQUALIFY / SCORE_PENALTY — влияет только на подпись к КВ. */
+  overtimePolicy: string
   registrationOpen: boolean
   registeredGroupId: number | null
   registerError: string | null
@@ -19,6 +21,7 @@ interface GroupsTabProps {
 export function GroupsTab({
   competitionId,
   groups,
+  overtimePolicy,
   registrationOpen,
   registeredGroupId,
   registerError,
@@ -52,6 +55,7 @@ export function GroupsTab({
           <GroupCard
             key={group.groupId}
             group={group}
+            overtimePolicy={overtimePolicy}
             isLoggedIn={isLoggedIn}
             registrationOpen={registrationOpen}
             isRegistered={registeredGroupId === group.groupId}
@@ -78,6 +82,7 @@ export function GroupsTab({
 
 interface GroupCardProps {
   group: ParticipantGroupDetail
+  overtimePolicy: string
   isLoggedIn: boolean
   registrationOpen: boolean
   isRegistered: boolean
@@ -85,7 +90,15 @@ interface GroupCardProps {
   onRegister: () => void
 }
 
-function GroupCard({ group, isLoggedIn, registrationOpen, isRegistered, anyRegistered, onRegister }: GroupCardProps) {
+function GroupCard({
+  group,
+  overtimePolicy,
+  isLoggedIn,
+  registrationOpen,
+  isRegistered,
+  anyRegistered,
+  onRegister,
+}: GroupCardProps) {
   const spotsLeft = group.maxParticipants != null ? group.maxParticipants - group.registeredCount : null
   const ageRange =
     group.minAge != null && group.maxAge != null
@@ -107,6 +120,16 @@ function GroupCard({ group, isLoggedIn, registrationOpen, isRegistered, anyRegis
         .join(' · ')
     : null
 
+  // При IGNORE КВ справочное — говорим об этом прямо, иначе участник решит, что его снимут.
+  const controlTime =
+    group.controlTimeMinutes != null
+      ? overtimePolicy === 'DISQUALIFY'
+        ? `КВ: ${group.controlTimeMinutes} мин`
+        : overtimePolicy === 'SCORE_PENALTY'
+          ? `КВ: ${group.controlTimeMinutes} мин (штраф очками)`
+          : `КВ: ${group.controlTimeMinutes} мин (справочно)`
+      : null
+
   const isFull = spotsLeft != null && spotsLeft <= 0
 
   return (
@@ -122,6 +145,7 @@ function GroupCard({ group, isLoggedIn, registrationOpen, isRegistered, anyRegis
       {group.gender && <span className="text-sm text-on-surface-variant">{genderLabel(group.gender)}</span>}
       {ageRange && <span className="text-sm text-on-surface-variant">{ageRange}</span>}
       {distInfo && <span className="text-sm text-fg">{distInfo}</span>}
+      {controlTime && <span className="text-sm text-on-surface-variant">{controlTime}</span>}
       {group.distanceDescription?.trim() && (
         <span className="text-sm text-on-surface-variant">{group.distanceDescription}</span>
       )}

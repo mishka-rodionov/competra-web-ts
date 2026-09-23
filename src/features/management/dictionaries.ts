@@ -14,6 +14,33 @@ export const PUNCHING_SYSTEM_OPTIONS: [string, string][] = [
   ['SPORTIDENT', 'SportIdent'],
 ]
 
+export const OVERTIME_POLICY_OPTIONS: [string, string][] = [
+  ['IGNORE', 'Не учитывать'],
+  ['DISQUALIFY', 'Дисквалифицировать'],
+  ['SCORE_PENALTY', 'Штраф очками'],
+]
+
+/**
+ * Штраф очками осмыслен только в score-О («по выбору») — в остальных форматах очков нет.
+ */
+export function overtimePolicyOptionsFor(direction: string): [string, string][] {
+  return direction === 'BY_CHOICE'
+    ? OVERTIME_POLICY_OPTIONS
+    : OVERTIME_POLICY_OPTIONS.filter(([key]) => key !== 'SCORE_PENALTY')
+}
+
+/** Пояснение под селектором: что именно произойдёт с превысившими КВ. */
+export function overtimePolicyHint(policy: string): string {
+  switch (policy) {
+    case 'DISQUALIFY':
+      return 'Превысившие КВ снимаются и не получают места'
+    case 'SCORE_PENALTY':
+      return 'Опоздание штрафуется очками — настраивается у каждой группы'
+    default:
+      return 'КВ показывается участникам, но результаты засчитываются всем'
+  }
+}
+
 /** Системы отметки, для которых имеет смысл электронная стартовая станция. */
 const ELECTRONIC_PUNCHING_SYSTEMS = new Set(['SPORTIDUINO', 'SPORTIDENT', 'SFR'])
 

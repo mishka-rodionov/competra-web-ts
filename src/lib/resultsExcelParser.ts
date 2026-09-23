@@ -69,6 +69,8 @@ function parseStatusWord(text: string): string | null {
     case 'снят':
     case 'снята':
       return 'DSQ'
+    case 'превышено кв':
+      return 'OVERTIME'
     case 'н/с':
       return 'DNS'
     case 'не финишировал':

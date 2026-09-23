@@ -40,6 +40,8 @@ const INITIAL_FORM: CreateCompetitionFormState = {
   punchingSystem: 'SPORTIDENT',
   startTimeMode: 'USER_SET',
   startInterval: 60,
+  controlTimeMinutes: '',
+  overtimePolicy: 'IGNORE',
   registrationOpenImmediately: true,
   regStartDateStr: '',
   regStartTime: '10:00',
@@ -211,6 +213,8 @@ export function CreateCompetitionPage() {
       punchingSystem: form.punchingSystem,
       startTimeMode: form.startTimeMode,
       startIntervalSeconds: form.startInterval,
+      controlTimeMinutes: form.controlTimeMinutes ? parseInt(form.controlTimeMinutes, 10) : null,
+      overtimePolicy: form.overtimePolicy,
     })
     if (createResult.kind === 'error') {
       setError(createResult.message)
@@ -375,6 +379,7 @@ export function CreateCompetitionPage() {
         <GroupDialog
           distanceOptions={distanceOptions}
           isByChoice={form.direction === 'BY_CHOICE'}
+          competitionControlTimeMinutes={form.controlTimeMinutes ? parseInt(form.controlTimeMinutes, 10) : null}
           onDismiss={() => setShowGroupDialog(false)}
           onSave={(group) => {
             setGroups([...groups, group])

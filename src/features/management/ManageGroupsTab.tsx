@@ -13,9 +13,11 @@ import { useGroups } from './hooks'
 interface ManageGroupsTabProps {
   competitionId: string
   isByChoice: boolean
+  /** КВ соревнования — умолчание для групп без своего значения. */
+  competitionControlTimeMinutes: number | null
 }
 
-export function ManageGroupsTab({ competitionId, isByChoice }: ManageGroupsTabProps) {
+export function ManageGroupsTab({ competitionId, isByChoice, competitionControlTimeMinutes }: ManageGroupsTabProps) {
   const queryClient = useQueryClient()
   const { data: groups, isLoading, isError, error } = useGroups(competitionId)
   const { data: distances } = useDistances(competitionId)
@@ -53,7 +55,14 @@ export function ManageGroupsTab({ competitionId, isByChoice }: ManageGroupsTabPr
       ) : !groups || groups.length === 0 ? (
         <EmptyState text="Нет групп. Добавьте первую группу." />
       ) : (
-        groups.map((group) => <GroupRow key={group.groupId} group={group} onDelete={() => handleDelete(group.groupId)} />)
+        groups.map((group) => (
+          <GroupRow
+            key={group.groupId}
+            group={group}
+            competitionControlTimeMinutes={competitionControlTimeMinutes}
+            onDelete={() => handleDelete(group.groupId)}
+          />
+        ))
       )}
 
       {showAddDialog && (
@@ -61,6 +70,7 @@ export function ManageGroupsTab({ competitionId, isByChoice }: ManageGroupsTabPr
           competitionId={competitionId}
           distances={distances ?? []}
           isByChoice={isByChoice}
+          competitionControlTimeMinutes={competitionControlTimeMinutes}
           onDismiss={() => setShowAddDialog(false)}
           onSaved={async () => {
             await queryClient.invalidateQueries({ queryKey: ['groups', competitionId] })
@@ -72,13 +82,31 @@ export function ManageGroupsTab({ competitionId, isByChoice }: ManageGroupsTabPr
   )
 }
 
-function GroupRow({ group, onDelete }: { group: ParticipantGroupDetail; onDelete: () => void }) {
+/**
+ * Итоговое КВ группы. Наследование считаем здесь: /participantGroups отдаёт только собственное
+ * значение группы (timeLimitMinutes), без КВ соревнования.
+ */
+function controlTimeLabel(group: ParticipantGroupDetail, competitionControlTimeMinutes: number | null): string | null {
+  const minutes = group.timeLimitMinutes ?? competitionControlTimeMinutes
+  if (minutes == null) return null
+  return group.timeLimitMinutes == null ? `КВ: ${minutes} мин (от соревнования)` : `КВ: ${minutes} мин`
+}
+
+function GroupRow({
+  group,
+  competitionControlTimeMinutes,
+  onDelete,
+}: {
+  group: ParticipantGroupDetail
+  competitionControlTimeMinutes: number | null
+  onDelete: () => void
+}) {
   const details = [
     group.gender ? genderLabel(group.gender) : null,
     group.minAge != null || group.maxAge != null ? `${group.minAge ?? ''}–${group.maxAge ?? ''} лет` : null,
     group.distanceName ? `Дистанция: ${group.distanceName}` : null,
     group.maxParticipants != null ? `Мест: ${group.registeredCount}/${group.maxParticipants}` : null,
-    group.timeLimitMinutes != null ? `Лимит: ${group.timeLimitMinutes} мин` : null,
+    controlTimeLabel(group, competitionControlTimeMinutes),
     group.scorePenaltyPerMinute != null ? `Штраф: ${group.scorePenaltyPerMinute} очк/мин` : null,
   ].filter((v): v is string => !!v)
 

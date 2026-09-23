@@ -18,6 +18,7 @@ import {
   startTimeModePatch,
   STATUS_OPTIONS,
 } from './dictionaries'
+import { ControlTimeFields } from './ControlTimeFields'
 import { LimitAndFeeFields } from './LimitAndFeeFields'
 
 interface EditFormState {
@@ -35,6 +36,8 @@ interface EditFormState {
   punchingSystem: string
   startTimeMode: string
   startInterval: number
+  controlTimeMinutes: string
+  overtimePolicy: string
   regStartDateStr: string
   regStartTime: string
   regEndDateStr: string
@@ -67,6 +70,8 @@ function toForm(competition: OrienteeringCompetition): EditFormState {
     punchingSystem: competition.punchingSystem || 'SPORTIDENT',
     startTimeMode: competition.startTimeMode || 'USER_SET',
     startInterval: competition.startIntervalSeconds ?? 60,
+    controlTimeMinutes: competition.controlTimeMinutes?.toString() ?? '',
+    overtimePolicy: competition.overtimePolicy || 'IGNORE',
     regStartDateStr: c.registrationStart != null ? utcMillisToZonedDate(c.registrationStart, 'UTC') : '',
     regStartTime: c.registrationStart != null ? utcMillisToZonedTime(c.registrationStart, zoneId) : '10:00',
     regEndDateStr: c.registrationEnd != null ? utcMillisToZonedDate(c.registrationEnd, 'UTC') : '',
@@ -140,6 +145,8 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
       punchingSystem: form.punchingSystem,
       startTimeMode: form.startTimeMode,
       startIntervalSeconds: form.startInterval,
+      controlTimeMinutes: form.controlTimeMinutes ? parseInt(form.controlTimeMinutes, 10) : null,
+      overtimePolicy: form.overtimePolicy,
     })
 
     if (result.kind === 'success') {
@@ -220,6 +227,12 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
           onChange={(startInterval) => patch({ startInterval })}
         />
       )}
+      <ControlTimeFields
+        direction={form.direction}
+        controlTimeMinutes={form.controlTimeMinutes}
+        overtimePolicy={form.overtimePolicy}
+        onChange={(patchValues) => patch(patchValues)}
+      />
 
       <h2 className="mt-2 text-base font-medium text-fg">Регистрация</h2>
       <div className="flex gap-2">

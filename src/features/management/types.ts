@@ -51,6 +51,7 @@ export interface PendingGroup {
   maxAge: number | null
   maxParticipants: number | null
   distanceIndex: number
+  /** Своё КВ группы; null — наследовать КВ соревнования. */
   timeLimitMinutes: number | null
   scorePenaltyPerMinute: number | null
   maxLatenessMinutes: number | null
@@ -69,6 +70,9 @@ export interface CreateCompetitionFormState {
   punchingSystem: string
   startTimeMode: string
   startInterval: number
+  /** КВ соревнования в минутах, строкой из поля ввода; пусто — КВ не задано. */
+  controlTimeMinutes: string
+  overtimePolicy: string
   registrationOpenImmediately: boolean
   regStartDateStr: string
   regStartTime: string

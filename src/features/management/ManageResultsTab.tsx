@@ -41,6 +41,10 @@ export function ManageResultsTab({ competition }: { competition: OrienteeringCom
       punchingSystem: competition.punchingSystem,
       startTimeMode: competition.startTimeMode,
       startIntervalSeconds: competition.startIntervalSeconds,
+      // Публикация результатов переотправляет соревнование целиком — КВ и политику надо
+      // пробросить как есть, иначе сохранение обнулило бы их.
+      controlTimeMinutes: competition.controlTimeMinutes,
+      overtimePolicy: competition.overtimePolicy,
     })
     if (result.kind === 'success') {
       await queryClient.invalidateQueries({ queryKey: ['managed-competition', competitionId] })

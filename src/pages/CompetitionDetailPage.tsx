@@ -92,6 +92,7 @@ export function CompetitionDetailPage() {
               <GroupsTab
                 competitionId={detail.id}
                 groups={detail.participantGroups}
+                overtimePolicy={detail.overtimePolicy}
                 registrationOpen={detail.status === 'REGISTRATION_OPEN'}
                 registeredGroupId={registeredGroupId}
                 registerError={registerError}

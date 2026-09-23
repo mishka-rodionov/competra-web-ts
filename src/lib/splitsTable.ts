@@ -51,16 +51,19 @@ function statusSortOrder(status: string | undefined): number {
   switch (status) {
     case 'FINISHED':
       return 0
-    case 'DSQ':
+    // Превысившие КВ идут сразу за финишировавшими: результат показан, но места нет.
+    case 'OVERTIME':
       return 1
-    case 'DNF':
+    case 'DSQ':
       return 2
-    case 'DNS':
+    case 'DNF':
       return 3
-    case 'STARTED':
+    case 'DNS':
       return 4
-    case 'REGISTERED':
+    case 'STARTED':
       return 5
+    case 'REGISTERED':
+      return 6
     default:
       return 9
   }
