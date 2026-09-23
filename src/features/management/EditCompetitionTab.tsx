@@ -18,6 +18,7 @@ import {
   startTimeModePatch,
   STATUS_OPTIONS,
 } from './dictionaries'
+import { LimitAndFeeFields } from './LimitAndFeeFields'
 
 interface EditFormState {
   title: string
@@ -261,22 +262,7 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
           />
         </label>
       </div>
-      <div className="flex gap-2">
-        <input
-          value={form.maxParticipants}
-          onChange={(e) => patch({ maxParticipants: e.target.value.replace(/\D/g, '') })}
-          placeholder="Макс. участников"
-          inputMode="numeric"
-          className="w-1/2 rounded-md border border-outline bg-surface px-3 py-2 text-fg"
-        />
-        <input
-          value={form.feeAmount}
-          onChange={(e) => patch({ feeAmount: e.target.value.replace(/[^\d.]/g, '') })}
-          placeholder="Взнос (руб.)"
-          inputMode="decimal"
-          className="w-1/2 rounded-md border border-outline bg-surface px-3 py-2 text-fg"
-        />
-      </div>
+      <LimitAndFeeFields maxParticipants={form.maxParticipants} feeAmount={form.feeAmount} onChange={patch} />
 
       <h2 className="mt-2 text-base font-medium text-fg">Контакты</h2>
       <TextInput label="Организатор (ФИО)" value={form.organizerName} onChange={(organizerName) => patch({ organizerName })} />

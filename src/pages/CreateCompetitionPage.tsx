@@ -78,6 +78,14 @@ export function CreateCompetitionPage() {
   const [importedPreviews, setImportedPreviews] = useState<XmlCoursePreview[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [prefilledProfileId, setPrefilledProfileId] = useState<string | null>(null)
+
+  // Организатор по умолчанию — текущий пользователь; не перетираем, если поле уже заполнено.
+  if (profile && profile.id !== prefilledProfileId) {
+    setPrefilledProfileId(profile.id)
+    const fullName = [profile.lastName, profile.firstName, profile.middleName].filter(Boolean).join(' ')
+    if (fullName && !form.organizerName) setForm((prev) => ({ ...prev, organizerName: fullName }))
+  }
 
   function patchForm(patch: Partial<CreateCompetitionFormState>) {
     setForm((prev) => ({ ...prev, ...patch }))
@@ -141,7 +149,6 @@ export function CreateCompetitionPage() {
       contactPhone: '+79990000000',
       contactEmail: 'test@example.com',
       website: 'https://example.com',
-      regulationUrl: 'https://example.com/regulation',
       isTest: true,
     }))
   }

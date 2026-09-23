@@ -11,6 +11,7 @@ import {
   START_TIME_MODE_OPTIONS,
   startTimeModePatch,
 } from './dictionaries'
+import { LimitAndFeeFields } from './LimitAndFeeFields'
 import type { CreateCompetitionFormState, PendingDistance, PendingGroup, XmlCoursePreview } from './types'
 
 interface StepProps {
@@ -127,22 +128,7 @@ export function RegistrationStep({ form, onPatch }: StepProps) {
         options={REG_END_MODE_OPTIONS}
         onChange={(registrationEndMode) => onPatch({ registrationEndMode })}
       />
-      <div className="flex gap-2">
-        <input
-          value={form.maxParticipants}
-          onChange={(e) => onPatch({ maxParticipants: e.target.value.replace(/\D/g, '') })}
-          placeholder="Макс. участников"
-          inputMode="numeric"
-          className="w-1/2 rounded-md border border-outline bg-surface px-3 py-2 text-fg"
-        />
-        <input
-          value={form.feeAmount}
-          onChange={(e) => onPatch({ feeAmount: e.target.value.replace(/[^\d.]/g, '') })}
-          placeholder="Взнос (руб.)"
-          inputMode="decimal"
-          className="w-1/2 rounded-md border border-outline bg-surface px-3 py-2 text-fg"
-        />
-      </div>
+      <LimitAndFeeFields maxParticipants={form.maxParticipants} feeAmount={form.feeAmount} onChange={onPatch} />
     </div>
   )
 }
@@ -153,14 +139,12 @@ export function OrganizerStep({ form, onPatch }: StepProps) {
       <h2 className="text-base font-medium text-fg">Контакты организатора</h2>
       <TextInput label="Организатор (ФИО)" value={form.organizerName} onChange={(organizerName) => onPatch({ organizerName })} />
       <p className="text-sm text-on-surface-variant">
-        Не обязательно должен быть зарегистрирован в системе — просто отображается на странице соревнования.
+        По умолчанию — ваше имя из профиля. Можно указать другого человека: он не обязательно должен быть зарегистрирован в системе — просто отображается на странице соревнования.
       </p>
       <TextInput label="Телефон" required type="tel" value={form.contactPhone} onChange={(contactPhone) => onPatch({ contactPhone })} />
       <TextInput label="Email" type="email" value={form.contactEmail} onChange={(contactEmail) => onPatch({ contactEmail })} />
       <h2 className="mt-2 text-base font-medium text-fg">Ссылки</h2>
       <TextInput label="Сайт соревнования" value={form.website} onChange={(website) => onPatch({ website })} />
-      <TextInput label="Ссылка на положение" value={form.regulationUrl} onChange={(regulationUrl) => onPatch({ regulationUrl })} />
-      <TextInput label="Ссылка на карту" value={form.mapUrl} onChange={(mapUrl) => onPatch({ mapUrl })} />
     </div>
   )
 }
