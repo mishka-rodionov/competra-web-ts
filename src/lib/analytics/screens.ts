@@ -11,6 +11,7 @@ const SCREENS: Record<string, string> = {
   '/competition/:id/group/:groupId/race-graph': 'event_race_graph',
   '/competition/:id/group/:groupId/score-graph': 'event_score_graph',
   '/competition/:id/participant/:participantId/splits': 'participant_splits',
+  '/competition/:id/live-tracks/:distanceId': 'event_live_track_map',
 
   '/management': 'center_home',
   '/management/create': 'create_competition',

@@ -17,6 +17,7 @@ export type AuthFailureReason = 'invalid_code' | 'network'
 export type EventSource = 'list'
 export type ParticipantAddMethod = 'manual' | 'import'
 export type CreateCompetitionStep = 'common' | 'registration' | 'organizator' | 'distance' | 'groups'
+export type LiveTrackMapMode = 'live' | 'archive'
 
 export const AnalyticsEvents = {
   // Auth / Registration
@@ -46,6 +47,16 @@ export const AnalyticsEvents = {
   eventRegisterClicked: (eventId: string): AnalyticsEvent => ({
     name: 'event_register_clicked',
     params: { event_id: eventId },
+  }),
+  /** Зритель открыл онлайн-треки соревнования (вкладка «Онлайн-треки»). */
+  eventLiveTracksOpened: (eventId: string): AnalyticsEvent => ({
+    name: 'event_live_tracks_opened',
+    params: { event_id: eventId },
+  }),
+  /** Зритель открыл карту треков дистанции: пока идут участники (live) или архив после финиша. */
+  liveTrackMapOpened: (competitionId: string, distanceId: number, mode: LiveTrackMapMode): AnalyticsEvent => ({
+    name: 'live_track_map_opened',
+    params: { competition_id: competitionId, distance_id: distanceId, mode },
   }),
 
   // Create competition (центр)

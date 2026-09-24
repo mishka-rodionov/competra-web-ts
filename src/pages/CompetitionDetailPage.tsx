@@ -8,8 +8,9 @@ import { Loading } from '../components/Loading'
 import { TabBar } from '../components/TabBar'
 import { DistancesTab } from '../features/competition-detail/DistancesTab'
 import { GroupsTab } from '../features/competition-detail/GroupsTab'
-import { useCompetitionDetail } from '../features/competition-detail/hooks'
+import { LIVE_STATUSES, useCompetitionDetail, useTrackedDistances } from '../features/competition-detail/hooks'
 import { InfoTab } from '../features/competition-detail/InfoTab'
+import { LiveTracksTab } from '../features/competition-detail/LiveTracksTab'
 import { ResultsTab } from '../features/competition-detail/ResultsTab'
 import { StartProtocolTab } from '../features/competition-detail/StartProtocolTab'
 import { analytics } from '../lib/analytics/analytics'
@@ -24,6 +25,9 @@ const TABS = [
   { key: 'results', label: 'Результаты' },
 ]
 
+/** Вкладка онлайн-треков участников — показывается не всегда (см. showLiveTracks). */
+const LIVE_TRACKS_TAB = { key: 'tracks', label: 'Онлайн-треки' }
+
 /**
  * Отдельный full-screen роут вне AppShell (без нижней навигации) — как и в старом приложении,
  * где Page.CompetitionDetail замещал MainScaffold целиком, а не открывался поверх таб-бара.
@@ -36,15 +40,20 @@ export function CompetitionDetailPage() {
   // при переходе на дочерний роут эта страница размонтируется, и обычный useState сбросился бы.
   const [searchParams, setSearchParams] = useSearchParams()
   const tabParam = searchParams.get('tab')
-  const tab = TABS.some((t) => t.key === tabParam) ? tabParam! : 'info'
+  const { data: detail, isLoading, isError, error } = useCompetitionDetail(id!)
+  const { data: trackedDistances } = useTrackedDistances(id!)
+  // Вкладка онлайн-треков — пока соревнование идёт или если треки уже есть (архив после финиша).
+  const showLiveTracks = (detail != null && LIVE_STATUSES.has(detail.status)) || (trackedDistances?.length ?? 0) > 0
+  const tabs = showLiveTracks ? [...TABS, LIVE_TRACKS_TAB] : TABS
+  const tab = tabs.some((t) => t.key === tabParam) ? tabParam! : 'info'
   function setTab(key: string) {
     if (key === 'results' && id) analytics.trackEvent(AnalyticsEvents.resultsViewed(id))
+    if (key === LIVE_TRACKS_TAB.key && id) analytics.trackEvent(AnalyticsEvents.eventLiveTracksOpened(id))
     setSearchParams(key === 'info' ? {} : { tab: key }, { replace: true })
   }
   const [registeredGroupId, setRegisteredGroupId] = useState<number | null>(null)
   const [registerError, setRegisterError] = useState<string | null>(null)
   const [showCoverViewer, setShowCoverViewer] = useState(false)
-  const { data: detail, isLoading, isError, error } = useCompetitionDetail(id!)
 
   // Регистрация — эфемерное состояние страницы, не персистится (не читаем detail.isUserRegistered) —
   // так же вело себя и старое приложение: обновление страницы сбрасывает "вы зарегистрированы".
@@ -85,7 +94,7 @@ export function CompetitionDetailPage() {
               <img src={detail.imageUrl} alt="" className="h-full w-full object-cover" />
             </button>
           )}
-          <TabBar tabs={TABS} active={tab} onChange={setTab} />
+          <TabBar tabs={tabs} active={tab} onChange={setTab} />
           <div className="flex-1 overflow-y-auto">
             {tab === 'info' && <InfoTab detail={detail} />}
             {tab === 'groups' && (
@@ -101,6 +110,7 @@ export function CompetitionDetailPage() {
               />
             )}
             {tab === 'distances' && <DistancesTab competitionId={detail.id} />}
+            {tab === LIVE_TRACKS_TAB.key && <LiveTracksTab competitionId={detail.id} />}
             {tab === 'start' && (
               <StartProtocolTab competitionId={detail.id} groups={detail.participantGroups} timeZoneId={detail.timeZoneId} />
             )}
