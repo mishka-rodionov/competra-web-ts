@@ -102,7 +102,7 @@ function GroupRow({
   onDelete: () => void
 }) {
   const details = [
-    group.gender ? genderLabel(group.gender) : null,
+    genderLabel(group.gender),
     group.minAge != null || group.maxAge != null ? `${group.minAge ?? ''}–${group.maxAge ?? ''} лет` : null,
     group.distanceName ? `Дистанция: ${group.distanceName}` : null,
     group.maxParticipants != null ? `Мест: ${group.registeredCount}/${group.maxParticipants}` : null,

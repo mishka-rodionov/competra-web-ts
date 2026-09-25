@@ -1,14 +1,21 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { useIsLoggedIn } from '../../auth/useIsLoggedIn'
+import { birthYearsRange, checkGroupEligibility, type GroupEligibility } from '../../lib/groupEligibility'
 import type { ParticipantGroupDetail, RegisterEventRequest } from '../../types/competition'
+import type { UserProfile } from '../../types/user'
 import { genderLabel } from '../competitions/labels'
 import { RegistrationDialog } from './RegistrationDialog'
 
 interface GroupsTabProps {
   competitionId: string
   groups: ParticipantGroupDetail[]
+  /** Год соревнования в его часовом поясе — от него считается возраст (по году рождения). */
+  competitionYear: number
+  /** Профиль вошедшего пользователя — для проверки пола и возраста; null — не вошёл или грузится. */
+  profile: UserProfile | null
   /** IGNORE / DISQUALIFY / SCORE_PENALTY — влияет только на подпись к КВ. */
   overtimePolicy: string
   registrationOpen: boolean
@@ -23,6 +30,8 @@ interface GroupsTabProps {
 export function GroupsTab({
   competitionId,
   groups,
+  competitionYear,
+  profile,
   overtimePolicy,
   registrationOpen,
   registeredGroupId,
@@ -64,6 +73,8 @@ export function GroupsTab({
             key={group.groupId}
             group={group}
             overtimePolicy={overtimePolicy}
+            competitionYear={competitionYear}
+            eligibility={profile ? checkGroupEligibility(group, profile, competitionYear) : { eligible: true }}
             canRegister={isLoggedIn && !registrationStatusLoading}
             registrationOpen={registrationOpen}
             isRegistered={registeredGroupId === group.groupId}
@@ -91,6 +102,8 @@ export function GroupsTab({
 interface GroupCardProps {
   group: ParticipantGroupDetail
   overtimePolicy: string
+  competitionYear: number
+  eligibility: GroupEligibility
   canRegister: boolean
   registrationOpen: boolean
   isRegistered: boolean
@@ -101,6 +114,8 @@ interface GroupCardProps {
 function GroupCard({
   group,
   overtimePolicy,
+  competitionYear,
+  eligibility,
   canRegister,
   registrationOpen,
   isRegistered,
@@ -108,14 +123,19 @@ function GroupCard({
   onRegister,
 }: GroupCardProps) {
   const spotsLeft = group.maxParticipants != null ? group.maxParticipants - group.registeredCount : null
+  const minAge = group.minAge != null && group.minAge > 0 ? group.minAge : null
+  const maxAge = group.maxAge != null && group.maxAge > 0 ? group.maxAge : null
+  // Возраст считается по году рождения — поэтому рядом показываем и сами годы.
   const ageRange =
-    group.minAge != null && group.maxAge != null
-      ? `${group.minAge}–${group.maxAge} лет`
-      : group.minAge != null
-        ? `от ${group.minAge} лет`
-        : group.maxAge != null
-          ? `до ${group.maxAge} лет`
-          : null
+    minAge == null && maxAge == null
+      ? null
+      : `${
+          minAge != null && maxAge != null
+            ? `${minAge}–${maxAge} лет`
+            : minAge != null
+              ? `от ${minAge} лет`
+              : `до ${maxAge} лет`
+        } (${birthYearsRange(minAge, maxAge, competitionYear)})`
 
   const distInfo = group.distanceName
     ? [
@@ -150,7 +170,9 @@ function GroupCard({
           </span>
         )}
       </div>
-      {group.gender && <span className="text-sm text-on-surface-variant">{genderLabel(group.gender)}</span>}
+      {genderLabel(group.gender) && (
+        <span className="text-sm text-on-surface-variant">{genderLabel(group.gender)}</span>
+      )}
       {ageRange && <span className="text-sm text-on-surface-variant">{ageRange}</span>}
       {distInfo && <span className="text-sm text-fg">{distInfo}</span>}
       {controlTime && <span className="text-sm text-on-surface-variant">{controlTime}</span>}
@@ -159,14 +181,29 @@ function GroupCard({
       )}
 
       {canRegister && registrationOpen && !anyRegistered ? (
-        <button
-          type="button"
-          onClick={onRegister}
-          disabled={isFull}
-          className="mt-2 self-start rounded-md bg-primary px-3 py-1.5 text-sm text-on-primary disabled:opacity-50"
-        >
-          {isFull ? 'Мест нет' : 'Зарегистрироваться'}
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={onRegister}
+            disabled={isFull || !eligibility.eligible}
+            className="mt-2 self-start rounded-md bg-primary px-3 py-1.5 text-sm text-on-primary disabled:opacity-50"
+          >
+            {isFull ? 'Мест нет' : 'Зарегистрироваться'}
+          </button>
+          {!isFull && !eligibility.eligible && (
+            <span className="text-sm text-on-surface-variant">
+              {eligibility.reason}
+              {eligibility.fixInProfile && (
+                <>
+                  {' · '}
+                  <Link to="/profile/edit" className="text-primary underline">
+                    Заполнить профиль
+                  </Link>
+                </>
+              )}
+            </span>
+          )}
+        </>
       ) : isRegistered ? (
         <span className="mt-2 text-sm font-medium text-primary">✓ Вы в этой группе</span>
       ) : null}

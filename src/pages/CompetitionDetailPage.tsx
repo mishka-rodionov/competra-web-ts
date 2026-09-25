@@ -22,6 +22,7 @@ import { ResultsTab } from '../features/competition-detail/ResultsTab'
 import { StartProtocolTab } from '../features/competition-detail/StartProtocolTab'
 import { useUserProfile } from '../features/profile/hooks'
 import { analytics } from '../lib/analytics/analytics'
+import { competitionYear } from '../lib/groupEligibility'
 import { AnalyticsEvents } from '../lib/analytics/events'
 import type { RegisterEventRequest } from '../types/competition'
 
@@ -130,6 +131,8 @@ export function CompetitionDetailPage() {
               <GroupsTab
                 competitionId={detail.id}
                 groups={detail.participantGroups}
+                competitionYear={competitionYear(detail.startDate, detail.timeZoneId)}
+                profile={isLoggedIn ? (profile ?? null) : null}
                 overtimePolicy={detail.overtimePolicy}
                 registrationOpen={detail.status === 'REGISTRATION_OPEN'}
                 registeredGroupId={registeredGroupId}

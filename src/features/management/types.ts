@@ -47,6 +47,8 @@ export interface PendingDistance {
 /** Локальная группа — ссылается на дистанцию по индексу в списке шага «Дистанции». */
 export interface PendingGroup {
   title: string
+  /** "M" / "F"; null — без ограничения по полу. */
+  gender: string | null
   minAge: number | null
   maxAge: number | null
   maxParticipants: number | null

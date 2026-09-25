@@ -2,24 +2,26 @@ import { EmptyState } from '../../components/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Loading } from '../../components/Loading'
 import { DEFAULT_TIME_ZONE, utcMillisToZonedTime } from '../../lib/dateUtils'
+import { groupGenderRestriction } from '../../lib/groupEligibility'
 import type { ParticipantGroupDetail } from '../../types/competition'
 import type { OrienteeringParticipant } from '../../types/participant'
+import type { Gender } from '../../types/user'
 import { useParticipants } from './hooks'
 
 /**
  * Мужские группы первыми, затем женские, остальные — в конце. Поле gender у групп заполняется
  * редко, поэтому при отсутствии пол определяется по префиксу названия ("М17", "Ж21").
  */
-function inferGenderFromTitle(title: string): string | null {
-  if (title.toUpperCase().startsWith('М')) return 'M'
-  if (title.toUpperCase().startsWith('Ж')) return 'F'
+function inferGenderFromTitle(title: string): Gender | null {
+  if (title.toUpperCase().startsWith('М')) return 'male'
+  if (title.toUpperCase().startsWith('Ж')) return 'female'
   return null
 }
 
 function sortedStartGroups(groups: ParticipantGroupDetail[]): ParticipantGroupDetail[] {
   function priority(group: ParticipantGroupDetail): number {
-    const gender = group.gender ?? inferGenderFromTitle(group.title)
-    return gender === 'M' ? 0 : gender === 'F' ? 1 : 2
+    const gender = groupGenderRestriction(group.gender) ?? inferGenderFromTitle(group.title)
+    return gender === 'male' ? 0 : gender === 'female' ? 1 : 2
   }
   return [...groups].sort((a, b) => priority(a) - priority(b))
 }

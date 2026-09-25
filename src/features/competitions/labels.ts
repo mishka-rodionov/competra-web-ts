@@ -1,3 +1,5 @@
+import { groupGenderRestriction } from '../../lib/groupEligibility'
+
 export const SPORT_TYPES: [string, string][] = [
   ['Orienteering', 'Ориентирование'],
   ['CrossCountrySki', 'Лыжное ориентирование'],
@@ -49,14 +51,15 @@ export function sportLabel(kind: string): string {
   return SPORT_TYPES.find(([key]) => key === kind)?.[1] ?? kind
 }
 
-export function genderLabel(gender: string): string {
-  switch (gender) {
-    case 'M':
+/** Подпись пола группы (форматы веба "M"/"F" и Android "MALE"/"FEMALE"); null — без ограничения. */
+export function genderLabel(gender: string | null): string | null {
+  switch (groupGenderRestriction(gender)) {
+    case 'male':
       return 'Мужчины'
-    case 'F':
+    case 'female':
       return 'Женщины'
     default:
-      return gender
+      return null
   }
 }
 

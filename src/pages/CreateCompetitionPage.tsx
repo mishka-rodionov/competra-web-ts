@@ -271,7 +271,7 @@ export function CreateCompetitionPage() {
         groupId: null,
         competitionId,
         title: g.title,
-        gender: null,
+        gender: g.gender,
         minAge: g.minAge,
         maxAge: g.maxAge,
         distanceId: savedDistances[g.distanceIndex]?.id ?? null,

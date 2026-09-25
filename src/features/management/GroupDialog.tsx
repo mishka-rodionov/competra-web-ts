@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { LabeledSelect } from '../../components/LabeledSelect'
+import { GENDER_OPTIONS } from './dictionaries'
 import type { PendingGroup } from './types'
 
 interface GroupDialogProps {
@@ -20,6 +21,7 @@ export function GroupDialog({
   onSave,
 }: GroupDialogProps) {
   const [title, setTitle] = useState('')
+  const [gender, setGender] = useState('')
   const [minAge, setMinAge] = useState('')
   const [maxAge, setMaxAge] = useState('')
   const [maxParticipants, setMaxParticipants] = useState('')
@@ -36,6 +38,7 @@ export function GroupDialog({
     }
     onSave({
       title: title.trim(),
+      gender: gender || null,
       minAge: minAge ? parseInt(minAge, 10) : null,
       maxAge: maxAge ? parseInt(maxAge, 10) : null,
       maxParticipants: maxParticipants ? parseInt(maxParticipants, 10) : null,
@@ -56,6 +59,7 @@ export function GroupDialog({
           placeholder="Название * (М21, Ж18, Open)"
           className="rounded-md border border-outline bg-bg px-3 py-2 text-fg"
         />
+        <LabeledSelect label="Пол" value={gender} options={GENDER_OPTIONS} onChange={setGender} />
         <div className="flex gap-2">
           <input
             value={minAge}
