@@ -30,6 +30,15 @@ export function isActive(track: ViewerTrack): boolean {
   return track.status === 'ACTIVE'
 }
 
+/**
+ * Треки без устаревших сессий: если участник перезапустил трек, его закрытые сессии скрываются,
+ * пока у него есть активная.
+ */
+export function currentTracks(tracks: ViewerTrack[]): ViewerTrack[] {
+  const activeParticipants = new Set(tracks.filter(isActive).map((t) => t.participantId))
+  return tracks.filter((t) => isActive(t) || !activeParticipants.has(t.participantId))
+}
+
 /** Активный участник, от которого давно нет точек (по часам сервера). */
 export function isStale(track: ViewerTrack, serverTime: number): boolean {
   if (!isActive(track)) return false

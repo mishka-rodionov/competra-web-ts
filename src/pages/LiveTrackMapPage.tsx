@@ -6,7 +6,7 @@ import { Loading } from '../components/Loading'
 import { useDistances } from '../features/competition-detail/hooks'
 import { analytics } from '../lib/analytics/analytics'
 import { AnalyticsEvents } from '../lib/analytics/events'
-import { LiveTrackAccumulator, isActive, isStale, type ViewerTrack } from '../lib/liveTrackAccumulator'
+import { LiveTrackAccumulator, currentTracks, isActive, isStale, type ViewerTrack } from '../lib/liveTrackAccumulator'
 import { STALE_COLOR, trackColor } from '../lib/liveTrackColors'
 import { distanceMapCorners } from '../lib/mapCorners'
 
@@ -123,7 +123,8 @@ export function LiveTrackMapPage() {
   const corners = distance ? distanceMapCorners(distance) : null
   const controlPoints = distance?.controlPoints.filter((cp) => cp.latitude != null && cp.longitude != null) ?? []
 
-  const { loaded, tracks, colorIndex, serverTime, connectionLost } = useLiveTracks(competitionId, distanceId)
+  const { loaded, tracks: allTracks, colorIndex, serverTime, connectionLost } = useLiveTracks(competitionId, distanceId)
+  const tracks = currentTracks(allTracks)
 
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set())
   const [tailOnly, setTailOnly] = useState(false)
