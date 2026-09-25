@@ -31,12 +31,37 @@ export function isActive(track: ViewerTrack): boolean {
 }
 
 /**
- * Треки без устаревших сессий: если участник перезапустил трек, его закрытые сессии скрываются,
- * пока у него есть активная.
+ * Склеивает сессии одного участника (трек останавливали и включали заново) в один трек — порт
+ * `mergedByParticipant` из competra-android.
+ *
+ * Ключ — `sessionId` самой ранней сессии, чтобы цвет и позиция не менялись при новой сессии. Имя,
+ * группа и номер — из последней. Статус — активный, если активна хоть одна сессия, иначе статус
+ * последней. Промежуток между сессиями дольше [TRACK_GAP_MS] рисуется разрывом, как потеря связи.
+ * `lastPointAt` учитывает старт сессии без точек, чтобы свежий перезапуск не был «нет данных».
+ * Порядок — по первому появлению участника в исходном списке.
  */
-export function currentTracks(tracks: ViewerTrack[]): ViewerTrack[] {
-  const activeParticipants = new Set(tracks.filter(isActive).map((t) => t.participantId))
-  return tracks.filter((t) => isActive(t) || !activeParticipants.has(t.participantId))
+export function mergedByParticipant(tracks: ViewerTrack[]): ViewerTrack[] {
+  const byParticipant = new Map<string, ViewerTrack[]>()
+  for (const t of tracks) {
+    const sessions = byParticipant.get(t.participantId)
+    if (sessions) sessions.push(t)
+    else byParticipant.set(t.participantId, [t])
+  }
+  return [...byParticipant.values()].map((sessions) => {
+    if (sessions.length === 1) return sessions[0]
+    const byStart = [...sessions].sort((a, b) => a.startedAt - b.startedAt)
+    const latest = byStart[byStart.length - 1]
+    const statusSource = [...byStart].reverse().find(isActive) ?? latest
+    const activity = sessions.filter((s) => s.lastPointAt != null || isActive(s)).map((s) => s.lastPointAt ?? s.startedAt)
+    return {
+      ...latest,
+      sessionId: byStart[0].sessionId,
+      status: statusSource.status,
+      startedAt: byStart[0].startedAt,
+      lastPointAt: activity.length > 0 ? Math.max(...activity) : null,
+      points: sessions.reduce<ViewerPoint[]>((acc, s) => merge(acc, s.points), []),
+    }
+  })
 }
 
 /** Активный участник, от которого давно нет точек (по часам сервера). */

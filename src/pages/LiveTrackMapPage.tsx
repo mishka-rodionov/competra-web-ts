@@ -6,7 +6,7 @@ import { Loading } from '../components/Loading'
 import { useDistances } from '../features/competition-detail/hooks'
 import { analytics } from '../lib/analytics/analytics'
 import { AnalyticsEvents } from '../lib/analytics/events'
-import { LiveTrackAccumulator, currentTracks, isActive, isStale, type ViewerTrack } from '../lib/liveTrackAccumulator'
+import { LiveTrackAccumulator, isActive, mergedByParticipant, isStale, type ViewerTrack } from '../lib/liveTrackAccumulator'
 import { STALE_COLOR, trackColor } from '../lib/liveTrackColors'
 import { distanceMapCorners } from '../lib/mapCorners'
 
@@ -55,7 +55,8 @@ function useLiveTracks(competitionId: string, distanceId: number): LiveTracksSta
       if (disposed) return
       if (live.kind === 'success') accumulator.applySnapshot(live.data)
       const ok = live.kind === 'success'
-      const tracks = accumulator.list()
+      // Перезапуски трека одним участником показываем как один трек.
+      const tracks = mergedByParticipant(accumulator.list())
       for (const track of [...tracks].sort((a, b) => a.startedAt - b.startedAt)) {
         if (!colors.has(track.sessionId)) colors.set(track.sessionId, colors.size)
       }
@@ -123,8 +124,7 @@ export function LiveTrackMapPage() {
   const corners = distance ? distanceMapCorners(distance) : null
   const controlPoints = distance?.controlPoints.filter((cp) => cp.latitude != null && cp.longitude != null) ?? []
 
-  const { loaded, tracks: allTracks, colorIndex, serverTime, connectionLost } = useLiveTracks(competitionId, distanceId)
-  const tracks = currentTracks(allTracks)
+  const { loaded, tracks, colorIndex, serverTime, connectionLost } = useLiveTracks(competitionId, distanceId)
 
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set())
   const [tailOnly, setTailOnly] = useState(false)
