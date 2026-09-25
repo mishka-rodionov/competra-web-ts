@@ -37,13 +37,18 @@ export function GroupsTab({
       {anyRegistered && (
         <div className="flex flex-col items-start gap-2">
           <span className="text-base text-primary">Вы зарегистрированы</span>
-          <button
-            type="button"
-            onClick={onCancelRegistration}
-            className="rounded-md border border-outline px-3 py-1.5 text-sm text-fg"
-          >
-            Отменить регистрацию
-          </button>
+          {/* После завершения регистрации (в т.ч. досрочного, организатором) отменить её нельзя. */}
+          {registrationOpen ? (
+            <button
+              type="button"
+              onClick={onCancelRegistration}
+              className="rounded-md border border-outline px-3 py-1.5 text-sm text-fg"
+            >
+              Отменить регистрацию
+            </button>
+          ) : (
+            <span className="text-sm text-on-surface-variant">Регистрация завершена — отменить её уже нельзя</span>
+          )}
         </div>
       )}
       {registerError && <ErrorMessage message={registerError} />}

@@ -71,7 +71,13 @@ export function CompetitionDetailPage() {
   async function handleCancelRegistration() {
     if (!detail) return
     const result = await competitionRepository.cancelRegistration(detail.id)
-    if (result.kind === 'success') setRegisteredGroupId(null)
+    if (result.kind === 'success') {
+      setRegisteredGroupId(null)
+      setRegisterError(null)
+    } else {
+      // Например, организатор уже завершил регистрацию — бэкенд отвечает 409 с текстом причины.
+      setRegisterError(result.message)
+    }
   }
 
   return (
