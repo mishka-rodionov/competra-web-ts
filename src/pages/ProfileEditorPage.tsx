@@ -5,12 +5,14 @@ import { uploadRepository } from '../api/uploadRepository'
 import { userRepository } from '../api/userRepository'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { FullscreenImageViewer } from '../components/FullscreenImageViewer'
+import { GenderSelector } from '../components/GenderSelector'
 import { Loading } from '../components/Loading'
 import { TextInput } from '../components/TextInput'
 import { AvatarCropDialog } from '../features/profile/AvatarCropDialog'
 import { useUserProfile } from '../features/profile/hooks'
 import { analytics } from '../lib/analytics/analytics'
 import { AnalyticsEvents } from '../lib/analytics/events'
+import type { Gender } from '../types/user'
 
 export function ProfileEditorPage() {
   const navigate = useNavigate()
@@ -23,6 +25,7 @@ export function ProfileEditorPage() {
   const [firstName, setFirstName] = useState('')
   const [middleName, setMiddleName] = useState('')
   const [birthDateStr, setBirthDateStr] = useState('')
+  const [gender, setGender] = useState<Gender | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -37,6 +40,7 @@ export function ProfileEditorPage() {
     setFirstName(profile.firstName)
     setMiddleName(profile.middleName ?? '')
     setBirthDateStr(profile.birthDate != null ? new Date(profile.birthDate).toISOString().slice(0, 10) : '')
+    setGender(profile.gender)
   }
 
   function handleAvatarFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
@@ -76,6 +80,7 @@ export function ProfileEditorPage() {
       last_name: lastName.trim(),
       middle_name: middleName.trim() || null,
       birth_date: birthDateStr ? new Date(birthDateStr).getTime() : null,
+      ...(gender != null && { gender }),
     })
     if (result.kind === 'success') {
       analytics.trackEvent(AnalyticsEvents.profileEditSaved)
@@ -142,6 +147,7 @@ export function ProfileEditorPage() {
               className="rounded-md border border-outline bg-surface px-3 py-2 text-fg"
             />
           </label>
+          <GenderSelector value={gender} onChange={setGender} />
 
           {error && <ErrorMessage message={error} />}
 

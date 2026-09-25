@@ -1,7 +1,7 @@
 import { authRequest } from './client'
 import { safeApiCall } from './safeApiCall'
 import type { ApiResult } from './types'
-import type { UserProfile } from '../types/user'
+import type { Gender, UserProfile } from '../types/user'
 
 /**
  * Реальный ответ /user/profile — snake_case, в отличие от event/orienteering/* (camelCase).
@@ -29,6 +29,10 @@ function parseBirthDate(raw: number | string): number | null {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+function parseGender(raw: string): Gender | null {
+  return raw === 'male' || raw === 'female' ? raw : null
+}
+
 function mapUserProfile(raw: RawUserProfile): UserProfile {
   return {
     id: raw.id,
@@ -38,7 +42,7 @@ function mapUserProfile(raw: RawUserProfile): UserProfile {
     email: raw.email,
     avatarUrl: raw.avatar_url || null,
     birthDate: parseBirthDate(raw.birth_date),
-    gender: raw.gender || null,
+    gender: parseGender(raw.gender),
     phoneNumber: raw.phone_number || null,
   }
 }
@@ -50,6 +54,7 @@ export interface UserProfileUpdateRequest {
   middle_name?: string | null
   birth_date?: number | null
   avatar_url?: string | null
+  gender?: Gender | null
 }
 
 export const userRepository = {

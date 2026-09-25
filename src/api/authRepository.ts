@@ -1,4 +1,5 @@
 import { tokenStorage } from '../auth/tokenStorage'
+import type { Gender } from '../types/user'
 import { authRequest } from './client'
 import { safeApiCall, safeApiCallUnit } from './safeApiCall'
 
@@ -18,6 +19,7 @@ export interface RegisterRequest {
   first_name: string
   last_name: string
   birth_date: number
+  gender: Gender
   email: string
   privacy_accepted: boolean
 }

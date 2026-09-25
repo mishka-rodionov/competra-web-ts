@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { authRepository, ERROR_USER_NOT_FOUND } from '../../api/authRepository'
 import { ErrorMessage } from '../../components/ErrorMessage'
+import { GenderSelector } from '../../components/GenderSelector'
 import { Loading } from '../../components/Loading'
 import { TextInput } from '../../components/TextInput'
 import { analytics } from '../../lib/analytics/analytics'
 import { AnalyticsEvents } from '../../lib/analytics/events'
+import type { Gender } from '../../types/user'
 
 type Step = 'choice' | 'login' | 'register' | 'code'
 
@@ -23,7 +25,7 @@ interface AuthFlowProps {
  * приложении (LoginPage подменяла содержимое Profile/Management, не была отдельной страницей).
  *
  * Повторяет флоу Android-приложения: отдельный вход (email → код) и отдельная регистрация
- * (имя, фамилия, дата рождения, email, согласие → код) — оба ведут на общий шаг ввода кода.
+ * (имя, фамилия, дата рождения, пол, email, согласие → код) — оба ведут на общий шаг ввода кода.
  * Согласие на обработку персональных данных запрашивается только при регистрации: у уже
  * существующего пользователя оно уже получено на бэкенде (privacyAcceptedAt).
  */
@@ -34,6 +36,7 @@ export function AuthFlow({ onLoginSuccess, onPrivacyClick }: AuthFlowProps) {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [birthDateStr, setBirthDateStr] = useState('')
+  const [gender, setGender] = useState<Gender | null>(null)
   const [consentChecked, setConsentChecked] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -58,6 +61,7 @@ export function AuthFlow({ onLoginSuccess, onPrivacyClick }: AuthFlowProps) {
   }
 
   async function handleRegister() {
+    if (gender == null) return
     setLoading(true)
     setError(null)
     analytics.trackEvent(AnalyticsEvents.registrationSubmitted)
@@ -65,6 +69,7 @@ export function AuthFlow({ onLoginSuccess, onPrivacyClick }: AuthFlowProps) {
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       birth_date: new Date(birthDateStr).getTime(),
+      gender,
       email: email.trim(),
       privacy_accepted: consentChecked,
     })
@@ -91,7 +96,12 @@ export function AuthFlow({ onLoginSuccess, onPrivacyClick }: AuthFlowProps) {
   }
 
   const canRegister =
-    firstName.trim() !== '' && lastName.trim() !== '' && birthDateStr !== '' && email.trim() !== '' && consentChecked
+    firstName.trim() !== '' &&
+    lastName.trim() !== '' &&
+    birthDateStr !== '' &&
+    gender != null &&
+    email.trim() !== '' &&
+    consentChecked
 
   return (
     <div className="flex flex-1 items-center justify-center p-6">
@@ -156,6 +166,7 @@ export function AuthFlow({ onLoginSuccess, onPrivacyClick }: AuthFlowProps) {
                 className="rounded-md border border-outline bg-surface px-3 py-2 text-fg"
               />
             </label>
+            <GenderSelector value={gender} onChange={setGender} required />
             <TextInput label="Email" value={email} onChange={setEmail} type="email" required />
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={consentChecked} onChange={(e) => setConsentChecked(e.target.checked)} />
