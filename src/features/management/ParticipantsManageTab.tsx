@@ -5,9 +5,12 @@ import { EmptyState } from '../../components/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Loading } from '../../components/Loading'
 import { TabBar } from '../../components/TabBar'
+import { analytics } from '../../lib/analytics/analytics'
+import { AnalyticsEvents } from '../../lib/analytics/events'
+import { buildDnsResultRequest, canBeMarkedDns, isParticipantDeletionLocked } from '../../lib/participantRules'
 import type { OrienteeringCompetition } from '../../types/competition'
 import type { OrienteeringParticipant } from '../../types/participant'
-import { useParticipants } from '../competition-detail/hooks'
+import { useParticipants, useResults } from '../competition-detail/hooks'
 import { useGroups } from './hooks'
 import { ParticipantEditorDialog } from './ParticipantEditorDialog'
 
@@ -30,6 +33,13 @@ export function ParticipantsManageTab({ competition }: { competition: Orienteeri
   const [editingParticipant, setEditingParticipant] = useState<OrienteeringParticipant | null | undefined>(undefined)
   const [deletingParticipant, setDeletingParticipant] = useState<OrienteeringParticipant | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [dnsSavingId, setDnsSavingId] = useState<string | null>(null)
+
+  const competitionStatus = competition.competition.status
+  // После старта участников не удаляют — вместо удаления доступна отметка «Не стартовал»
+  const isDeletionLocked = isParticipantDeletionLocked(competitionStatus)
+  const { data: results } = useResults(competitionId, competitionStatus)
+  const resultByParticipant = new Map((results ?? []).map((r) => [r.participantId, r]))
 
   const isLoading = groupsLoading || participantsLoading
   const hasAllTab = (groups?.length ?? 0) > 1
@@ -54,7 +64,23 @@ export function ParticipantsManageTab({ competition }: { competition: Orienteeri
       await queryClient.invalidateQueries({ queryKey: ['participants', competitionId] })
       setDeletingParticipant(null)
     } else {
-      setDeleteError('Не удалось удалить участника')
+      // Сервер отвечает 422 с понятным текстом, если соревнование уже стартовало
+      setDeletingParticipant(null)
+      setDeleteError(result.code === 422 ? result.message : 'Не удалось удалить участника')
+    }
+  }
+
+  async function handleToggleDns(participant: OrienteeringParticipant, isDns: boolean) {
+    setDeleteError(null)
+    setDnsSavingId(participant.id)
+    const request = buildDnsResultRequest(participant, resultByParticipant.get(participant.id), isDns, competitionStatus)
+    const result = await resultRepository.saveResults([request])
+    setDnsSavingId(null)
+    if (result.kind === 'success') {
+      if (isDns) analytics.trackEvent(AnalyticsEvents.participantDnsMarked(competitionId))
+      await queryClient.invalidateQueries({ queryKey: ['results', competitionId] })
+    } else {
+      setDeleteError('Не удалось сохранить отметку «Не стартовал»')
     }
   }
 
@@ -88,25 +114,44 @@ export function ParticipantsManageTab({ competition }: { competition: Orienteeri
         <EmptyState text="В этой группе пока нет участников" />
       ) : (
         <div className="flex flex-col gap-2 p-4">
-          {visibleParticipants.map((p) => (
-            <div key={p.id} className="flex items-center justify-between gap-2 rounded-lg border border-outline-variant bg-surface p-3">
-              <div className="flex flex-col">
-                <span className="text-fg">
-                  №{p.startNumber ?? '—'} {p.lastName} {p.firstName}
-                </span>
-                {effectiveTab === ALL_TAB && p.groupName && <span className="text-sm text-primary">{p.groupName}</span>}
-                {p.commandName?.trim() && <span className="text-sm text-on-surface-variant">{p.commandName}</span>}
+          {visibleParticipants.map((p) => {
+            const resultStatus = resultByParticipant.get(p.id)?.status
+            const isDns = resultStatus === 'DNS'
+            return (
+              <div key={p.id} className="flex items-center justify-between gap-2 rounded-lg border border-outline-variant bg-surface p-3">
+                <div className="flex flex-col">
+                  <span className="text-fg">
+                    №{p.startNumber ?? '—'} {p.lastName} {p.firstName}
+                  </span>
+                  {effectiveTab === ALL_TAB && p.groupName && <span className="text-sm text-primary">{p.groupName}</span>}
+                  {p.commandName?.trim() && <span className="text-sm text-on-surface-variant">{p.commandName}</span>}
+                  {isDns && <span className="text-sm text-error">Не стартовал</span>}
+                </div>
+                <div className="flex shrink-0 gap-3">
+                  <button type="button" onClick={() => setEditingParticipant(p)} className="text-sm text-fg">
+                    Изменить
+                  </button>
+                  {!isDeletionLocked ? (
+                    <button type="button" onClick={() => setDeletingParticipant(p)} className="text-sm text-error">
+                      Удалить
+                    </button>
+                  ) : (
+                    // Участник со стартом/финишем уже стартовал — для него отметка недоступна
+                    (isDns || canBeMarkedDns(resultStatus)) && (
+                      <button
+                        type="button"
+                        disabled={dnsSavingId === p.id}
+                        onClick={() => handleToggleDns(p, !isDns)}
+                        className={`text-sm disabled:opacity-50 ${isDns ? 'text-fg' : 'text-error'}`}
+                      >
+                        {isDns ? 'Снять «Не стартовал»' : 'Не стартовал'}
+                      </button>
+                    )
+                  )}
+                </div>
               </div>
-              <div className="flex shrink-0 gap-3">
-                <button type="button" onClick={() => setEditingParticipant(p)} className="text-sm text-fg">
-                  Изменить
-                </button>
-                <button type="button" onClick={() => setDeletingParticipant(p)} className="text-sm text-error">
-                  Удалить
-                </button>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

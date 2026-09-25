@@ -80,6 +80,11 @@ export const AnalyticsEvents = {
     name: 'participant_added',
     params: { method },
   }),
+  /** Организатор отметил участника «Не стартовал» (DNS) — после старта вместо удаления. */
+  participantDnsMarked: (competitionId: string): AnalyticsEvent => ({
+    name: 'participant_dns_marked',
+    params: { competition_id: competitionId },
+  }),
 
   // Results
   resultsViewed: (eventId: string): AnalyticsEvent => ({
