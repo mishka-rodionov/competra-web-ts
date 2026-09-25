@@ -35,7 +35,7 @@ export function AddCompetitionToRatingPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
   if (!isLoggedIn) {
-    return <AuthFlow onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={() => {}} />
   }
 
   const availableCompetitions = (data?.pages.flatMap((page) => page.items) ?? []).filter((c) => !alreadyAdded.has(c.id))

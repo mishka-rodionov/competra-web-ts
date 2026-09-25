@@ -19,7 +19,7 @@ export function ClubJoinRequestsPage() {
   const { data: requests, isLoading, isError, error } = useJoinRequestsForClub(clubId)
 
   if (!isLoggedIn) {
-    return <AuthFlow onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={() => {}} />
   }
 
   const pending = (requests ?? []).filter((r) => r.status === 'PENDING')

@@ -59,7 +59,7 @@ export function ProfilePage() {
   }
 
   if (showLogin) {
-    return <AuthFlow onLoginSuccess={handleLoginSuccess} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={handleLoginSuccess} />
   }
 
   if (!isLoggedIn) {

@@ -17,7 +17,7 @@ export function CreateClubPage() {
   const [error, setError] = useState<string | null>(null)
 
   if (!isLoggedIn) {
-    return <AuthFlow onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={() => {}} />
   }
 
   async function handleSave() {

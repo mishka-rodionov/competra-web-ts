@@ -91,7 +91,7 @@ export function WorkoutEditorPage() {
   }
 
   if (!isLoggedIn) {
-    return <AuthFlow onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={() => {}} />
   }
   if (workoutId != null && workoutLoading) return <Loading />
 

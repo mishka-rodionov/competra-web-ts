@@ -48,7 +48,7 @@ export function RatingFormPage() {
   }
 
   if (!isLoggedIn) {
-    return <AuthFlow onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={() => {}} />
   }
 
   if (isEdit && ratingLoading) return <Loading />

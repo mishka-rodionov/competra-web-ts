@@ -15,7 +15,7 @@ export function DiaryPage() {
   const { data: workouts, isLoading, isError, error } = useWorkouts()
 
   if (!isLoggedIn) {
-    return <AuthFlow onLoginSuccess={() => {}} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={() => {}} />
   }
 
   return (

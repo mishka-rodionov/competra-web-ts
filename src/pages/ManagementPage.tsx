@@ -41,7 +41,7 @@ export function ManagementPage() {
   }
 
   if (showLogin) {
-    return <AuthFlow onLoginSuccess={() => setShowLogin(false)} onPrivacyClick={() => navigate('/privacy')} />
+    return <AuthFlow onLoginSuccess={() => setShowLogin(false)} />
   }
 
   if (!isLoggedIn) {
