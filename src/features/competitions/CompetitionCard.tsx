@@ -20,7 +20,10 @@ export function CompetitionCard({ competition, onClick }: CompetitionCardProps) 
           {statusLabel(competition.status)}
         </span>
       </div>
-      <span className="text-sm text-on-surface-variant">{toLocaleDateString(competition.startDate)}</span>
+      <span className="text-sm text-on-surface-variant">
+        {toLocaleDateString(competition.startDate)}
+        {competition.isTest && <span className="ml-2 font-medium text-tertiary">Тестовое</span>}
+      </span>
       {competition.address && <span className="text-sm text-on-surface-variant">{competition.address}</span>}
     </button>
   )

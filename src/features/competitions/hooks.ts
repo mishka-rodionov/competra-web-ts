@@ -14,13 +14,14 @@ export function isFilterEmpty(filter: CompetitionsFilter): boolean {
   return filter.kindOfSports.length === 0 && filter.statuses.length === 0
 }
 
-export function usePublicCompetitions(filter: CompetitionsFilter) {
+export function usePublicCompetitions(filter: CompetitionsFilter, includeTest = false) {
   return useInfiniteQuery({
-    queryKey: ['public-competitions', filter],
+    queryKey: ['public-competitions', filter, includeTest],
     queryFn: async ({ pageParam }) => {
       const result = await competitionRepository.getPublicCompetitions({
         kindOfSports: filter.kindOfSports,
         statuses: filter.statuses,
+        includeTest,
         page: pageParam,
         limit: PAGE_SIZE,
       })

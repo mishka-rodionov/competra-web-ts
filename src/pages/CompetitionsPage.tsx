@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useIsLoggedIn } from '../auth/useIsLoggedIn'
 import { EmptyState } from '../components/EmptyState'
 import { ErrorMessage } from '../components/ErrorMessage'
@@ -17,6 +17,12 @@ import {
 import { analytics } from '../lib/analytics/analytics'
 import { AnalyticsEvents } from '../lib/analytics/events'
 import { isDebugEnvironment } from '../lib/debugEnv'
+import {
+  INCLUDE_TEST_PARAM,
+  parseIncludeTestParam,
+  readIncludeTestFlag,
+  setIncludeTestFlag,
+} from '../lib/includeTestFlag'
 
 const TABS = [
   { key: 'public', label: 'Публичные' },
@@ -31,9 +37,27 @@ export function CompetitionsPage() {
   const [showFilter, setShowFilter] = useState(false)
   const isLoggedIn = useIsLoggedIn()
   const showTabs = isDebugEnvironment()
+  const [includeTest, setIncludeTest] = useState(readIncludeTestFlag)
+  // `#/?includeTest=1` — смена хэша не пересоздаёт страницу, поэтому параметр ловим через роутер
+  const [searchParams, setSearchParams] = useSearchParams()
+  const urlIncludeTest = parseIncludeTestParam(searchParams.get(INCLUDE_TEST_PARAM))
+  if (urlIncludeTest != null && urlIncludeTest !== includeTest) {
+    setIncludeTest(urlIncludeTest)
+  }
+  useEffect(() => {
+    if (urlIncludeTest == null) return
+    setIncludeTestFlag(urlIncludeTest)
+    setSearchParams(
+      (params) => {
+        params.delete(INCLUDE_TEST_PARAM)
+        return params
+      },
+      { replace: true },
+    )
+  }, [urlIncludeTest, setSearchParams])
 
   const { data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    usePublicCompetitions(filter)
+    usePublicCompetitions(filter, includeTest)
   const competitions = data?.pages.flatMap((page) => page.items) ?? []
 
   const {
@@ -61,6 +85,11 @@ export function CompetitionsPage() {
     navigate(`/competition/${competitionId}`)
   }
 
+  function disableIncludeTest() {
+    setIncludeTestFlag(false)
+    setIncludeTest(false)
+  }
+
   function openFilter() {
     setDraftFilter(filter)
     setShowFilter(true)
@@ -76,6 +105,15 @@ export function CompetitionsPage() {
           </button>
         )}
       </header>
+
+      {includeTest && selectedTab === 'public' && (
+        <div className="flex items-center justify-between gap-2 border-b border-outline-variant bg-surface-variant px-4 py-2 text-sm text-on-surface-variant">
+          <span>Показаны тестовые соревнования</span>
+          <button type="button" onClick={disableIncludeTest} className="text-primary">
+            Выключить
+          </button>
+        </div>
+      )}
 
       {showTabs && <TabBar tabs={TABS} active={selectedTab} onChange={(key) => setSelectedTab(key as 'public' | 'mine')} />}
 

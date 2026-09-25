@@ -12,6 +12,8 @@ import type {
 export interface GetPublicCompetitionsParams {
   kindOfSports?: string[]
   statuses?: string[]
+  /** Включить тестовые соревнования (`isTest`) — сервер по умолчанию их из ленты исключает. */
+  includeTest?: boolean
   page?: number
   limit?: number
 }
@@ -20,6 +22,7 @@ function buildQuery(params: GetPublicCompetitionsParams): string {
   const search = new URLSearchParams()
   params.kindOfSports?.forEach((v) => search.append('kind_of_sports', v))
   params.statuses?.forEach((v) => search.append('statuses', v))
+  if (params.includeTest) search.set('includeTest', 'true')
   search.set('page', String(params.page ?? 0))
   search.set('limit', String(params.limit ?? 20))
   return search.toString()
