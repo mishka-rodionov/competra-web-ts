@@ -13,6 +13,8 @@ interface GroupsTabProps {
   overtimePolicy: string
   registrationOpen: boolean
   registeredGroupId: number | null
+  /** Профиль или список участников ещё грузятся — неизвестно, зарегистрирован ли пользователь. */
+  registrationStatusLoading: boolean
   registerError: string | null
   onRegister: (request: RegisterEventRequest) => void
   onCancelRegistration: () => void
@@ -24,6 +26,7 @@ export function GroupsTab({
   overtimePolicy,
   registrationOpen,
   registeredGroupId,
+  registrationStatusLoading,
   registerError,
   onRegister,
   onCancelRegistration,
@@ -61,7 +64,7 @@ export function GroupsTab({
             key={group.groupId}
             group={group}
             overtimePolicy={overtimePolicy}
-            isLoggedIn={isLoggedIn}
+            canRegister={isLoggedIn && !registrationStatusLoading}
             registrationOpen={registrationOpen}
             isRegistered={registeredGroupId === group.groupId}
             anyRegistered={anyRegistered}
@@ -88,7 +91,7 @@ export function GroupsTab({
 interface GroupCardProps {
   group: ParticipantGroupDetail
   overtimePolicy: string
-  isLoggedIn: boolean
+  canRegister: boolean
   registrationOpen: boolean
   isRegistered: boolean
   anyRegistered: boolean
@@ -98,7 +101,7 @@ interface GroupCardProps {
 function GroupCard({
   group,
   overtimePolicy,
-  isLoggedIn,
+  canRegister,
   registrationOpen,
   isRegistered,
   anyRegistered,
@@ -155,7 +158,7 @@ function GroupCard({
         <span className="text-sm text-on-surface-variant">{group.distanceDescription}</span>
       )}
 
-      {isLoggedIn && registrationOpen && !anyRegistered ? (
+      {canRegister && registrationOpen && !anyRegistered ? (
         <button
           type="button"
           onClick={onRegister}

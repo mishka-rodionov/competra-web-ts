@@ -1,6 +1,8 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { competitionRepository } from '../api/competitionRepository'
+import { useIsLoggedIn } from '../auth/useIsLoggedIn'
 import { DebugErrorBanner } from '../components/DebugErrorBanner'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { FullscreenImageViewer } from '../components/FullscreenImageViewer'
@@ -8,11 +10,17 @@ import { Loading } from '../components/Loading'
 import { TabBar } from '../components/TabBar'
 import { DistancesTab } from '../features/competition-detail/DistancesTab'
 import { GroupsTab } from '../features/competition-detail/GroupsTab'
-import { LIVE_STATUSES, useCompetitionDetail, useTrackedDistances } from '../features/competition-detail/hooks'
+import {
+  LIVE_STATUSES,
+  useCompetitionDetail,
+  useParticipants,
+  useTrackedDistances,
+} from '../features/competition-detail/hooks'
 import { InfoTab } from '../features/competition-detail/InfoTab'
 import { LiveTracksTab } from '../features/competition-detail/LiveTracksTab'
 import { ResultsTab } from '../features/competition-detail/ResultsTab'
 import { StartProtocolTab } from '../features/competition-detail/StartProtocolTab'
+import { useUserProfile } from '../features/profile/hooks'
 import { analytics } from '../lib/analytics/analytics'
 import { AnalyticsEvents } from '../lib/analytics/events'
 import type { RegisterEventRequest } from '../types/competition'
@@ -51,18 +59,33 @@ export function CompetitionDetailPage() {
     if (key === LIVE_TRACKS_TAB.key && id) analytics.trackEvent(AnalyticsEvents.eventLiveTracksOpened(id))
     setSearchParams(key === 'info' ? {} : { tab: key }, { replace: true })
   }
-  const [registeredGroupId, setRegisteredGroupId] = useState<number | null>(null)
   const [registerError, setRegisterError] = useState<string | null>(null)
   const [showCoverViewer, setShowCoverViewer] = useState(false)
 
-  // Регистрация — эфемерное состояние страницы, не персистится (не читаем detail.isUserRegistered) —
-  // так же вело себя и старое приложение: обновление страницы сбрасывает "вы зарегистрированы".
+  // Группу, в которой зарегистрирован пользователь, ищем среди участников по userId — как в Android
+  // (EventParticipantGroupViewModel). Так статус переживает обновление страницы.
+  const queryClient = useQueryClient()
+  const isLoggedIn = useIsLoggedIn()
+  const { data: profile, isLoading: isProfileLoading } = useUserProfile()
+  const { data: participants, isLoading: isParticipantsLoading } = useParticipants(id!)
+  const registrationStatusLoading = isLoggedIn && (isProfileLoading || isParticipantsLoading)
+  const registeredGroupId = (profile && participants?.find((p) => p.userId === profile.id)?.groupId) ?? null
+
+  /** Список участников и счётчики мест в группах — после регистрации/отмены перечитываем с сервера. */
+  async function refreshRegistration() {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['participants', id] }),
+      queryClient.invalidateQueries({ queryKey: ['competition-detail', id] }),
+      queryClient.invalidateQueries({ queryKey: ['registered-competitions'] }),
+    ])
+  }
+
   async function handleRegister(request: RegisterEventRequest) {
     analytics.trackEvent(AnalyticsEvents.eventRegisterClicked(request.competitionId))
     const result = await competitionRepository.register(request)
     if (result.kind === 'success') {
-      setRegisteredGroupId(request.groupId)
       setRegisterError(null)
+      await refreshRegistration()
     } else {
       setRegisterError(result.message)
     }
@@ -72,8 +95,8 @@ export function CompetitionDetailPage() {
     if (!detail) return
     const result = await competitionRepository.cancelRegistration(detail.id)
     if (result.kind === 'success') {
-      setRegisteredGroupId(null)
       setRegisterError(null)
+      await refreshRegistration()
     } else {
       // Например, организатор уже завершил регистрацию — бэкенд отвечает 409 с текстом причины.
       setRegisterError(result.message)
@@ -110,6 +133,7 @@ export function CompetitionDetailPage() {
                 overtimePolicy={detail.overtimePolicy}
                 registrationOpen={detail.status === 'REGISTRATION_OPEN'}
                 registeredGroupId={registeredGroupId}
+                registrationStatusLoading={registrationStatusLoading}
                 registerError={registerError}
                 onRegister={handleRegister}
                 onCancelRegistration={handleCancelRegistration}
