@@ -14,7 +14,7 @@ export async function safeApiCall<T>(call: () => Promise<CommonModel<T>>): Promi
     if (response.status === 1 && response.result != null) {
       return { kind: 'success', data: response.result }
     }
-    const message = response.errors?.[0]?.message ?? 'Unknown error'
+    const message = errorMessage(response)
     DebugErrorReporter.report(message)
     return { kind: 'error', message, code: response.errors?.[0]?.code }
   } catch (e) {
@@ -27,12 +27,21 @@ export async function safeApiCallUnit(call: () => Promise<CommonModel<unknown>>)
   try {
     const response = await call()
     if (response.status === 1) return { kind: 'success', data: undefined }
-    const message = response.errors?.[0]?.message ?? 'Unknown error'
+    const message = errorMessage(response)
     DebugErrorReporter.report(message)
     return { kind: 'error', message, code: response.errors?.[0]?.code }
   } catch (e) {
     return handleError(e)
   }
+}
+
+/**
+ * Текст первой ошибки из CommonModel. Если сервер ответил без errors (или вообще не в
+ * формате CommonModel — так раньше делал /user/verify_code с голым {"error": "..."}),
+ * показываем понятную фразу вместо «Unknown error».
+ */
+function errorMessage(response: CommonModel<unknown>): string {
+  return response.errors?.[0]?.message || 'Не удалось выполнить запрос. Попробуйте ещё раз'
 }
 
 function handleError(e: unknown): { kind: 'error'; message: string; code?: number } {
