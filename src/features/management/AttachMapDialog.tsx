@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { distanceRepository } from '../../api/distanceRepository'
 import { ErrorMessage } from '../../components/ErrorMessage'
+import { downscaleImageFile, MAX_DISTANCE_MAP_SIDE } from '../../lib/downscaleImage'
 import type { Distance } from '../../types/distance'
 
 interface AttachMapDialogProps {
@@ -62,6 +63,7 @@ export function AttachMapDialog({ distance, onDismiss, onSaved }: AttachMapDialo
   const [mapperText, setMapperText] = useState('')
   const [pasteStatus, setPasteStatus] = useState<{ kind: 'success' | 'error'; message: string } | null>(null)
   const [saving, setSaving] = useState(false)
+  const [savingLabel, setSavingLabel] = useState('Сохранение…')
   const [error, setError] = useState<string | null>(null)
 
   const parsed = Object.fromEntries(CORNER_KEYS.map((key) => [key, corners[key] ? Number(corners[key]) : NaN])) as Record<CornerKey, number>
@@ -126,7 +128,10 @@ export function AttachMapDialog({ distance, onDismiss, onSaved }: AttachMapDialo
 
     let mapUrl = distance.mapUrl
     if (file) {
-      const uploadResult = await distanceRepository.uploadDistanceMap(file)
+      setSavingLabel('Подготовка карты…')
+      const prepared = await downscaleImageFile(file, MAX_DISTANCE_MAP_SIDE)
+      setSavingLabel('Загрузка карты…')
+      const uploadResult = await distanceRepository.uploadDistanceMap(prepared)
       if (uploadResult.kind === 'error') {
         setError(uploadResult.message)
         setSaving(false)
@@ -134,6 +139,7 @@ export function AttachMapDialog({ distance, onDismiss, onSaved }: AttachMapDialo
       }
       mapUrl = uploadResult.data
     }
+    setSavingLabel('Сохранение…')
 
     const result = await distanceRepository.saveDistances([
       {
@@ -223,7 +229,7 @@ export function AttachMapDialog({ distance, onDismiss, onSaved }: AttachMapDialo
             Отмена
           </button>
           <button type="button" onClick={handleSave} disabled={saving || !canSave} className="flex-1 rounded-md bg-primary px-4 py-2 text-sm text-on-primary disabled:opacity-50">
-            {saving ? 'Сохранение…' : 'Сохранить'}
+            {saving ? savingLabel : 'Сохранить'}
           </button>
         </div>
       </div>
