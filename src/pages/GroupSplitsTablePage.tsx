@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
 import { useCompetitionDetail, useDistances, useParticipants, useResults } from '../features/competition-detail/hooks'
+import { resultPlaceLabel } from '../features/competitions/labels'
 import { formatTime } from '../lib/dateUtils'
 import { buildSplitsTable, sortedForResults } from '../lib/splitsTable'
 import type { SplitsTableRow } from '../types/splits'
@@ -88,7 +89,9 @@ export function GroupSplitsTablePage() {
                   <td className="sticky left-0 w-36 bg-inherit px-1 py-1.5 align-top">
                     <div className="font-medium text-fg">{`${row.participant.lastName} ${row.participant.firstName}`.trim()}</div>
                     {isByChoice && <div className="text-xs text-on-surface-variant">{scoreLabel(row)}</div>}
-                    {row.result?.rank != null && <div className="text-xs text-on-surface-variant">Место {row.result.rank}</div>}
+                    {row.result && resultPlaceLabel(row.result) !== '—' && (
+                      <div className="text-xs text-on-surface-variant">Место {resultPlaceLabel(row.result)}</div>
+                    )}
                   </td>
                   {row.cells.map((cell, i) => (
                     <td key={i} className="w-19 px-1 py-1.5 text-center align-top">

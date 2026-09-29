@@ -80,6 +80,15 @@ export function resultStatusLabel(status: string): string {
   }
 }
 
+/**
+ * Место для отображения: только у FINISHED и только положительное. Бэкенд проставляет
+ * снятым/не финишировавшим rank = -1 — такие участники вне зачёта, место им не показываем
+ * (статус и так виден в отдельной колонке).
+ */
+export function resultPlaceLabel(result: { status: string; rank: number | null }): string {
+  return result.status === 'FINISHED' && result.rank != null && result.rank > 0 ? String(result.rank) : '—'
+}
+
 export function resultStatusColorClass(status: string): string {
   switch (status) {
     case 'FINISHED':

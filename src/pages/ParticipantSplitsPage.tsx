@@ -2,8 +2,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
 import { useCompetitionDetail, useDistances, useParticipants, useResults } from '../features/competition-detail/hooks'
-import { resultStatusLabel } from '../features/competitions/labels'
+import { resultPlaceLabel, resultStatusLabel } from '../features/competitions/labels'
 import { formatTime } from '../lib/dateUtils'
+import { partitionSplitsByStart } from '../lib/splitsTable'
 
 export function ParticipantSplitsPage() {
   const { id, participantId } = useParams<{ id: string; participantId: string }>()
@@ -23,8 +24,8 @@ export function ParticipantSplitsPage() {
   const distance = distances?.find((d) => d.id === group?.distanceId)
   const finishControlPoint = distance?.finishControlPoint ?? null
 
-  const splits = result?.splits ?? []
   const startTs = result?.startTime ?? participant?.startTime ?? null
+  const { preStart, race: splits } = partitionSplitsByStart(result?.splits, startTs)
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col bg-bg text-fg">
@@ -49,7 +50,7 @@ export function ParticipantSplitsPage() {
 
           {result && (
             <div className="flex justify-between rounded-lg border border-outline-variant bg-surface p-4">
-              <SummaryColumn label="Место" value={result.rank?.toString() ?? '—'} />
+              <SummaryColumn label="Место" value={resultPlaceLabel(result)} />
               <SummaryColumn label="Общее время" value={result.totalTime != null ? formatTime(result.totalTime) : '—'} />
               <SummaryColumn label="Статус" value={resultStatusLabel(result.status)} />
             </div>
@@ -71,6 +72,17 @@ export function ParticipantSplitsPage() {
                 </tr>
               </thead>
               <tbody>
+                {/* Отметки до старта (например, финишной станции в стартовом городке) — в гонку не входят,
+                    но показываем их приглушённо, чтобы организатор видел содержимое чипа целиком. */}
+                {startTs != null &&
+                  preStart.map((split, i) => (
+                    <tr key={`pre-${i}`} className="border-b border-outline-variant text-on-surface-variant">
+                      <td className="py-1.5 pl-1 pr-2 text-xs whitespace-nowrap">До старта</td>
+                      <td className="py-1.5 pr-2 text-base">{split.controlPoint}</td>
+                      <td className="py-1.5 pr-3 text-right text-base">—</td>
+                      <td className="py-1.5 pr-1 text-right text-base">{formatTime((split.timestamp - startTs) / 1000)}</td>
+                    </tr>
+                  ))}
                 {splits.map((split, i) => {
                   const prevTs = i === 0 ? startTs : splits[i - 1].timestamp
                   const legSeconds = (split.timestamp - prevTs) / 1000

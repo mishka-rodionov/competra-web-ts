@@ -3,7 +3,7 @@ import { resultRepository } from '../../api/resultRepository'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { formatTime } from '../../lib/dateUtils'
 import type { ImportResultRow, ImportResultsDiff } from '../../lib/resultsHtmlParser'
-import { resultStatusColorClass, resultStatusLabel } from '../competitions/labels'
+import { resultPlaceLabel, resultStatusColorClass, resultStatusLabel } from '../competitions/labels'
 import type { OrienteeringCompetition } from '../../types/competition'
 import type { OrienteeringParticipant, OrienteeringResult } from '../../types/participant'
 
@@ -50,6 +50,11 @@ function buildRows(
   return rows
 }
 
+/** Снятые (rank = -1) и без места — в конец группы, а не в начало. */
+function placeSortKey(display: DisplayResult | null): number {
+  return display != null && resultPlaceLabel(display) !== '—' ? display.rank! : Infinity
+}
+
 function groupRows(rows: ReviewRow[]): [string, ReviewRow[]][] {
   const byGroup = new Map<string, ReviewRow[]>()
   for (const row of rows) {
@@ -60,7 +65,7 @@ function groupRows(rows: ReviewRow[]): [string, ReviewRow[]][] {
   }
   return [...byGroup.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([title, groupRows]) => [
     title,
-    [...groupRows].sort((a, b) => (a.display?.rank ?? Infinity) - (b.display?.rank ?? Infinity)),
+    [...groupRows].sort((a, b) => placeSortKey(a.display) - placeSortKey(b.display)),
   ])
 }
 
@@ -256,7 +261,7 @@ function ReviewResultRow({
     <div className={`flex flex-col gap-0.5 py-1 ${bgClass}`}>
       <div className="flex items-center gap-2">
         <div className="w-8">{showCheckbox && change && <input type="checkbox" checked={checked} onChange={(e) => onCheckedChange(e.target.checked)} />}</div>
-        <span className="w-8 text-sm text-fg">{display?.rank ?? '—'}</span>
+        <span className="w-8 text-sm text-fg">{display ? resultPlaceLabel(display) : '—'}</span>
         <div className={isByChoice ? 'w-32 flex-none' : 'flex-1'}>
           <div className="text-fg">{`${row.participant.lastName} ${row.participant.firstName}`}</div>
           {row.participant.startNumber && <div className="text-xs text-on-surface-variant">№{row.participant.startNumber}</div>}

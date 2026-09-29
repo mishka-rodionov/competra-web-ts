@@ -7,7 +7,7 @@ import { AnalyticsEvents } from '../../lib/analytics/events'
 import { formatTime } from '../../lib/dateUtils'
 import type { ParticipantGroupDetail } from '../../types/competition'
 import type { OrienteeringParticipant, OrienteeringResult } from '../../types/participant'
-import { resultStatusColorClass, resultStatusLabel } from '../competitions/labels'
+import { resultPlaceLabel, resultStatusColorClass, resultStatusLabel } from '../competitions/labels'
 import { useParticipants, useResults } from './hooks'
 
 const LIVE_STATUSES = new Set(['IN_PROGRESS', 'STARTED'])
@@ -150,7 +150,7 @@ function GroupResultsCard({ competitionId, groupId, groupTitle, groupResults, is
                 onClick={() => openParticipantSplits(result.participantId)}
                 className="cursor-pointer border-b border-outline-variant last:border-0 hover:bg-surface-variant/40"
               >
-                <td className="py-2 pr-2 text-fg">{result.rank ?? '—'}</td>
+                <td className="py-2 pr-2 text-fg">{resultPlaceLabel(result)}</td>
                 <td className="py-2 pr-2">
                   <div className="text-fg">{name}</div>
                   {participant?.startNumber && (

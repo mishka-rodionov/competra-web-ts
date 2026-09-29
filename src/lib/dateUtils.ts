@@ -18,6 +18,9 @@ export function utcMillisToZonedTime(ms: number, zoneId: string): string {
 
 /** "1:23:45" для часов>0, иначе "23:45". totalSeconds — целое число секунд. */
 export function formatTime(totalSeconds: number): string {
+  // Отрицательное время бывает у сплитов снятых участников (отметки не по порядку) — знак выносим
+  // вперёд, иначе он попадал в каждую часть: "-14:-30".
+  if (totalSeconds < 0) return `-${formatTime(-totalSeconds)}`
   const hours = Math.floor(totalSeconds / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)
   const seconds = Math.floor(totalSeconds % 60)
