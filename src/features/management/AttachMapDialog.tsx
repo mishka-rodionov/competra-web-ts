@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { distanceRepository } from '../../api/distanceRepository'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { downscaleImageFile, MAX_DISTANCE_MAP_SIDE } from '../../lib/downscaleImage'
+import { readPngTextChunks } from '../../lib/pngText'
 import type { Distance } from '../../types/distance'
 
 interface AttachMapDialogProps {
@@ -46,13 +47,15 @@ function parseMapperCorners(text: string): Partial<Record<CornerKey, string>> {
  * указывает углы. Mapper (кнопка «Экспорт карт дистанций для Competra…» на панели планирования
  * дистанций или «Copy WGS84 map corners for Competra» в диалоге экспорта) копирует в
  * буфер три точных угла — верхний левый, верхний правый и нижний правый; текст можно вставить
- * целиком, поля заполнятся сами.
+ * целиком, поля заполнятся сами. Те же `ключ=значение` mapper кладёт в метаданные PNG, поэтому
+ * при выборе такого файла углы подставляются без буфера обмена.
  *
  * Верхний правый угол необязателен: без него (старые экспорты mapper) углы трактуются как bbox
  * «север вверх», и повёрнутая карта ляжет со сдвигом.
  */
 export function AttachMapDialog({ distance, onDismiss, onSaved }: AttachMapDialogProps) {
   const [file, setFile] = useState<File | null>(null)
+  const latestFileRef = useRef<File | null>(null)
   const [corners, setCorners] = useState<Record<CornerKey, string>>(() => ({
     mapTopLeftLat: distance.mapTopLeftLat?.toString() ?? '',
     mapTopLeftLng: distance.mapTopLeftLng?.toString() ?? '',
@@ -81,7 +84,7 @@ export function AttachMapDialog({ distance, onDismiss, onSaved }: AttachMapDialo
   }
 
   /** Разбирает текст из mapper и заполняет углы; возвращает, удалось ли найти координаты. */
-  function applyMapperText(text: string): boolean {
+  function applyMapperText(text: string, source: 'clipboard' | 'file' = 'clipboard'): boolean {
     const fromMapper = parseMapperCorners(text)
     if (!REQUIRED_CORNER_KEYS.every((key) => fromMapper[key] != null)) return false
     // Текст из mapper заменяет все углы целиком — иначе при вставке старого экспорта (4 значения,
@@ -91,10 +94,34 @@ export function AttachMapDialog({ distance, onDismiss, onSaved }: AttachMapDialo
     setPasteStatus({
       kind: 'success',
       message: isRotated
-        ? 'Координаты вставлены: три угла карты.'
+        ? source === 'file'
+          ? 'Координаты углов взяты из файла карты.'
+          : 'Координаты вставлены: три угла карты.'
         : 'Координаты вставлены, но это старый формат mapper (без верхнего правого угла) — повёрнутая карта ляжет со сдвигом. Обновите mapper.',
     })
     return true
+  }
+
+  /**
+   * Выбор файла карты. Если это PNG из mapper с координатами углов в метаданных — сразу заполняем
+   * углы; иначе поля не трогаем (координаты можно вставить из буфера обмена или ввести вручную).
+   */
+  async function handleFileChange(next: File | null) {
+    setFile(next)
+    latestFileRef.current = next
+    if (!next) return
+    let texts: Record<string, string>
+    try {
+      texts = await readPngTextChunks(next)
+    } catch {
+      return
+    }
+    // Пока файл читался, могли выбрать другой — его углы не должны затереться старыми.
+    if (latestFileRef.current !== next) return
+    const text = CORNER_KEYS.filter((key) => texts[key] != null)
+      .map((key) => `${key}=${texts[key]}`)
+      .join('\n')
+    if (applyMapperText(text, 'file')) setMapperText('')
   }
 
   function handleMapperText(text: string) {
@@ -118,7 +145,8 @@ export function AttachMapDialog({ distance, onDismiss, onSaved }: AttachMapDialo
     if (!applyMapperText(text)) {
       setPasteStatus({
         kind: 'error',
-        message: 'В буфере обмена нет координат из mapper. В mapper включите «Copy WGS84 map corners for Competra» при экспорте и нажмите «Copy».',
+        message:
+          'В буфере обмена нет координат из mapper. Экспортируйте карты кнопкой «Экспорт карт дистанций для Competra…» на панели планирования mapper и нажмите «Копировать» в появившемся окне.',
       })
     }
   }
@@ -199,13 +227,13 @@ export function AttachMapDialog({ distance, onDismiss, onSaved }: AttachMapDialo
 
         <label className="cursor-pointer rounded-md border border-outline px-4 py-2 text-center text-sm text-fg">
           {file ? `Выбран файл: ${file.name}` : 'Выбрать файл карты (PNG/JPG)'}
-          <input type="file" accept="image/png,image/jpeg" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          <input type="file" accept="image/png,image/jpeg" className="hidden" onChange={(e) => void handleFileChange(e.target.files?.[0] ?? null)} />
         </label>
 
         <p className="text-sm text-fg">
           Картинки и координаты углов: в mapper на панели планирования дистанций, на вкладке «Дистанции», нажмите «Экспорт карт дистанций для
-          Competra…». Mapper сохранит по картинке на каждую дистанцию и скопирует координаты углов — они общие для всех картинок. Выберите
-          здесь файл этой дистанции и нажмите «Вставить из mapper».
+          Competra…». Mapper сохранит по картинке на каждую дистанцию. Выберите здесь файл этой дистанции — координаты углов подставятся из
+          него сами. Для картинок из старых версий mapper нажмите «Вставить из mapper».
         </p>
         <button type="button" onClick={handlePasteFromClipboard} className="rounded-md bg-secondary-container px-4 py-2 text-sm font-medium text-on-secondary-container">
           Вставить из mapper
