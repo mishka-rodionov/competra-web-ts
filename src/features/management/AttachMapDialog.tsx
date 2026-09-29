@@ -43,7 +43,8 @@ function parseMapperCorners(text: string): Partial<Record<CornerKey, string>> {
 
 /**
  * Диалог прикрепления карты дистанции: организатор выбирает растр, экспортированный из mapper, и
- * указывает углы. Mapper («Copy WGS84 map corners for Competra» в диалоге экспорта) копирует в
+ * указывает углы. Mapper (кнопка «Экспорт карт дистанций для Competra…» на панели планирования
+ * дистанций или «Copy WGS84 map corners for Competra» в диалоге экспорта) копирует в
  * буфер три точных угла — верхний левый, верхний правый и нижний правый; текст можно вставить
  * целиком, поля заполнятся сами.
  *
@@ -202,8 +203,9 @@ export function AttachMapDialog({ distance, onDismiss, onSaved }: AttachMapDialo
         </label>
 
         <p className="text-sm text-fg">
-          Координаты углов: в mapper при экспорте карты включите «Copy WGS84 map corners for Competra», нажмите «Copy» в появившемся окне, затем здесь —
-          «Вставить из mapper».
+          Картинки и координаты углов: в mapper на панели планирования дистанций, на вкладке «Дистанции», нажмите «Экспорт карт дистанций для
+          Competra…». Mapper сохранит по картинке на каждую дистанцию и скопирует координаты углов — они общие для всех картинок. Выберите
+          здесь файл этой дистанции и нажмите «Вставить из mapper».
         </p>
         <button type="button" onClick={handlePasteFromClipboard} className="rounded-md bg-secondary-container px-4 py-2 text-sm font-medium text-on-secondary-container">
           Вставить из mapper
