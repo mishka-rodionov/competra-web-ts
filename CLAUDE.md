@@ -91,7 +91,9 @@ if (entity && entity.id !== loadedId) {
 
 **NFC-фичи** (чтение чипов участников) — специфичны для Android, в Web аналога нет.
 
-**При изменении функционала, уже описанного в инструкции для организатора** (`public/guides/first-competition-guide.html`, ссылка на неё — `ORGANIZER_GUIDE_URL` в `ProfilePage.tsx`) — поправь соответствующий раздел инструкции в том же изменении, а не отдельным напоминанием пользователю.
+**При изменении функционала, уже описанного в инструкциях для организатора** — поправь соответствующий раздел инструкции в том же изменении, а не отдельным напоминанием пользователю. Инструкций две, обе открываются кнопками в профиле (`ProfilePage.tsx`):
+- `public/guides/first-competition-guide.html` (`ORGANIZER_GUIDE_URL`) — проведение соревнования в Competra;
+- `public/guides/mapper-course-planning-guide.html` (`MAPPER_GUIDE_URL`) — подготовка дистанций в Mapper и их перенос в Competra. Шаги 06 и 08 описывают этот веб-клиент: импорт IOF XML на вкладке «Дистанции» (`DistancesTab.tsx`, `CreateCompetitionSteps.tsx`) и прикрепление карты с координатами из PNG (`AttachMapDialog.tsx`, `src/lib/pngText.ts`). Остальные шаги описывают Mapper (`/Users/rodionov/android_projects/mapper`) — в его `CLAUDE.md` есть такое же правило.
 
 ### Цепочка IOF XML
 Mapper экспортирует дистанции → пользователь загружает файл через `POST /event/orienteering/import/courses` (`src/api/distanceRepository.ts` → `importFromXml`) → eSport парсит через `IOFXmlParser.kt`. Если меняется логика загрузки, уточни, не нужно ли обновить парсер в eSport.
