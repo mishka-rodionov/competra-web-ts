@@ -15,8 +15,10 @@ import type {
 
 const EARTH_RADIUS_METERS = 6_371_000
 
-/** Расстояние между двумя КП по WGS84 (haversine), в метрах. Null, если у одного из КП нет координат. */
-export function controlPointDistanceMeters(from: ControlPoint | null | undefined, to: ControlPoint | null | undefined): number | null {
+type GeoPoint = Pick<ControlPoint, 'latitude' | 'longitude'>
+
+/** Расстояние между двумя точками по WGS84 (haversine), в метрах. Null, если у одной из точек нет координат. */
+export function controlPointDistanceMeters(from: GeoPoint | null | undefined, to: GeoPoint | null | undefined): number | null {
   const lat1 = from?.latitude
   const lon1 = from?.longitude
   const lat2 = to?.latitude
@@ -36,11 +38,27 @@ export function paceMinPerKm(deltaSeconds: number, legLengthMeters: number | nul
   return deltaSeconds / 60 / (legLengthMeters / 1000)
 }
 
-/** Длина перегона (м) для каждой позиции cpOrder: null для первой позиции и там, где нет координат. */
+function startPoint(distance: Distance | undefined): GeoPoint | null {
+  return distance ? { latitude: distance.startLatitude ?? null, longitude: distance.startLongitude ?? null } : null
+}
+
+function finishPoint(distance: Distance | undefined): GeoPoint | null {
+  return distance ? { latitude: distance.finishLatitude ?? null, longitude: distance.finishLongitude ?? null } : null
+}
+
+/**
+ * Длина перегона (м) для каждой позиции cpOrder. Первый перегон — от старта, перегон на финишную
+ * станцию (она приходит последним сплитом, но в controlPoints дистанции её нет) — до финиша.
+ * Null там, где у одного из концов перегона нет координат (например, дистанция создана вручную).
+ */
 function legLengthsMeters(distance: Distance | undefined, cpOrder: number[]): (number | null)[] {
   const expected = distance?.controlPoints
   if (!expected) return cpOrder.map(() => null)
-  return cpOrder.map((_, i) => (i === 0 ? null : controlPointDistanceMeters(expected[i - 1], expected[i])))
+  const pointAt = (i: number): GeoPoint | null => {
+    if (i < expected.length) return expected[i]
+    return i === expected.length && cpOrder[i] === distance?.finishControlPoint ? finishPoint(distance) : null
+  }
+  return cpOrder.map((_, i) => controlPointDistanceMeters(i === 0 ? startPoint(distance) : pointAt(i - 1), pointAt(i)))
 }
 
 function anchorStartTime(participant: OrienteeringParticipant, result: OrienteeringResult | null | undefined): number | null {
@@ -136,17 +154,19 @@ function rawByChoiceScore(result: OrienteeringResult | null, scoreByNumber: Map<
 }
 
 /**
- * Дистанция, пройденная участником (BY_CHOICE), в метрах — сумма расстояний между
- * последовательно взятыми КП по их координатам. Первый взятый КП не учитывается — координата
- * точки старта неизвестна. Перегоны с неизвестными координатами в сумму не входят.
+ * Дистанция, пройденная участником (BY_CHOICE), в метрах — сумма расстояний от старта через
+ * последовательно взятые КП (включая финишную станцию) по их координатам. Перегоны с неизвестными
+ * координатами (в т.ч. от старта, если его координат нет) в сумму не входят.
  */
-function byChoiceDistanceMeters(splits: SplitTime[], controlPointByNumber: Map<number, ControlPoint>): number | null {
-  if (controlPointByNumber.size === 0 || splits.length < 2) return null
+function byChoiceDistanceMeters(splits: SplitTime[], distance: Distance | undefined): number | null {
+  const controlPointByNumber = new Map<number, GeoPoint>((distance?.controlPoints ?? []).map((cp) => [cp.number, cp]))
+  if (controlPointByNumber.size === 0 || splits.length === 0) return null
+  const finish = finishPoint(distance)
+  if (distance?.finishControlPoint != null && finish) controlPointByNumber.set(distance.finishControlPoint, finish)
+  const route = [startPoint(distance), ...splits.map((s) => controlPointByNumber.get(s.controlPoint) ?? null)]
   let sum = 0
-  for (let i = 1; i < splits.length; i++) {
-    const from = controlPointByNumber.get(splits[i - 1].controlPoint)
-    const to = controlPointByNumber.get(splits[i].controlPoint)
-    sum += controlPointDistanceMeters(from, to) ?? 0
+  for (let i = 1; i < route.length; i++) {
+    sum += controlPointDistanceMeters(route[i - 1], route[i]) ?? 0
   }
   return sum > 0 ? sum : null
 }
@@ -173,7 +193,6 @@ export function buildSplitsTable(
 
   if (direction === 'BY_CHOICE') {
     const scoreByNumber = new Map((distance?.controlPoints ?? []).map((cp) => [cp.number, cp.score]))
-    const controlPointByNumber = new Map((distance?.controlPoints ?? []).map((cp) => [cp.number, cp]))
     const maxSplitsCount = Math.max(0, ...pairs.map(({ result }) => result?.splits?.length ?? 0))
     const columns: SplitsTableColumn[] = Array.from({ length: maxSplitsCount }, (_, i) => ({ positionIndex: i + 1, controlPoint: 0 }))
 
@@ -203,7 +222,7 @@ export function buildSplitsTable(
         result,
         cells,
         rawScore: rawByChoiceScore(result, scoreByNumber),
-        totalDistanceMeters: byChoiceDistanceMeters(splits, controlPointByNumber),
+        totalDistanceMeters: byChoiceDistanceMeters(splits, distance),
       }
     })
 

@@ -154,6 +154,10 @@ export function AttachMapDialog({ distance, onDismiss, onSaved }: AttachMapDialo
         finishControlPoint: distance.finishControlPoint,
         // Бэкенд перезаписывает поле целиком — без него стартовое КП обнулилось бы при привязке карты.
         startControlPoint: distance.startControlPoint,
+        startLatitude: distance.startLatitude,
+        startLongitude: distance.startLongitude,
+        finishLatitude: distance.finishLatitude,
+        finishLongitude: distance.finishLongitude,
         mapUrl,
         mapTopLeftLat: parsed.mapTopLeftLat,
         mapTopLeftLng: parsed.mapTopLeftLng,
