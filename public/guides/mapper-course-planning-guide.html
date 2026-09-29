@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Дистанции в Mapper для Competra</title>
+<style>
+  :root{ color-scheme: light dark; }
+  html,body{ margin:0; padding:0; }
+  img{ max-width:100%; }
+
+  @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
+  :root{
+    --bg:#F6F2E8;
+    --surface:#FFFFFF;
+    --surface-2:#ECE6D4;
+    --ink:#1E2A20;
+    --ink-soft:#54604F;
+    --accent:#2E6B4E;
+    --accent-strong:#1F4D38;
+    --flag:#BE4B2A;
+    --line:#DAD2B9;
+    --font-display:'Unbounded', 'Arial Narrow', sans-serif;
+    --font-body:'Manrope', 'Segoe UI', sans-serif;
+    --font-mono:'JetBrains Mono', 'Courier New', monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14190F;
+      --surface:#1C2317;
+      --surface-2:#24301F;
+      --ink:#E9E7D8;
+      --ink-soft:#9FAC93;
+      --accent:#75C596;
+      --accent-strong:#9BDBB4;
+      --flag:#E58A63;
+      --line:#333F2B;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14190F;
+    --surface:#1C2317;
+    --surface-2:#24301F;
+    --ink:#E9E7D8;
+    --ink-soft:#9FAC93;
+    --accent:#75C596;
+    --accent-strong:#9BDBB4;
+    --flag:#E58A63;
+    --line:#333F2B;
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .page{
+    max-width:740px;
+    margin:0 auto;
+    padding:56px 24px 88px;
+  }
+
+  header.intro{
+    margin-bottom:40px;
+  }
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--flag);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:18px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:22px;
+    height:1px;
+    background:var(--flag);
+    display:inline-block;
+  }
+  h1{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:clamp(28px,5vw,40px);
+    line-height:1.14;
+    letter-spacing:-0.01em;
+    margin:0 0 18px;
+    text-wrap:balance;
+    color:var(--ink);
+  }
+  .subtitle{
+    font-size:16.5px;
+    line-height:1.65;
+    color:var(--ink-soft);
+    max-width:60ch;
+    margin:0;
+  }
+
+  .checklist{
+    margin:36px 0 8px;
+    border:1px solid var(--line);
+    background:var(--surface);
+    border-radius:14px;
+    padding:20px 22px;
+  }
+  .checklist-title{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    font-weight:700;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:0 0 14px;
+  }
+  .checklist ul{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px 20px;
+  }
+  .checklist li{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    font-size:14.5px;
+    line-height:1.45;
+    color:var(--ink);
+  }
+  .checklist svg{
+    flex:none;
+    width:18px;
+    height:18px;
+    margin-top:1px;
+    stroke:var(--accent);
+  }
+
+  .stages{
+    margin-top:52px;
+    border-top:1px solid var(--line);
+  }
+  .stage{
+    display:grid;
+    grid-template-columns:64px 1fr;
+    gap:22px;
+    padding:30px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .stage-num{
+    font-family:var(--font-mono);
+    font-weight:700;
+    font-size:26px;
+    color:var(--flag);
+    line-height:1;
+    padding-top:4px;
+    font-variant-numeric:tabular-nums;
+  }
+  .stage h2{
+    font-family:var(--font-display);
+    font-weight:500;
+    font-size:19px;
+    margin:0 0 10px;
+    color:var(--ink);
+    text-wrap:balance;
+  }
+  .stage p{
+    font-size:15px;
+    line-height:1.68;
+    color:var(--ink);
+    margin:0 0 14px;
+    max-width:62ch;
+  }
+  .stage p strong{ color:var(--accent-strong); font-weight:700; }
+
+  .tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .tag{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    font-weight:500;
+    letter-spacing:.02em;
+    color:var(--ink-soft);
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:5px 9px;
+    white-space:nowrap;
+  }
+
+  .wizard{
+    margin:18px 0 4px;
+    border:1px solid var(--line);
+    background:var(--surface-2);
+    border-radius:12px;
+    padding:18px 20px 20px;
+  }
+  .wizard-title{
+    font-family:var(--font-mono);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:0 0 14px;
+  }
+  .wizard-steps{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+  }
+  .wizard-steps li{
+    padding:14px 0 0;
+    margin-top:14px;
+    border-top:1px solid var(--line);
+  }
+  .wizard-steps li:first-child{
+    padding-top:0;
+    margin-top:0;
+    border-top:none;
+  }
+  .wizard-step-title{
+    display:block;
+    font-family:var(--font-display);
+    font-weight:500;
+    font-size:14.5px;
+    color:var(--ink);
+    margin-bottom:6px;
+  }
+  .wizard-steps p{
+    font-size:13.5px;
+    line-height:1.62;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+    max-width:60ch;
+  }
+  .required{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:7px;
+  }
+  .req-label{
+    font-family:var(--font-mono);
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--flag);
+  }
+  .req-tag{
+    font-family:var(--font-mono);
+    font-size:11px;
+    font-weight:700;
+    color:var(--flag);
+    background:transparent;
+    border:1px solid var(--flag);
+    border-radius:6px;
+    padding:3px 8px;
+  }
+
+  .callout{
+    margin:26px 0 0;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-left:3px solid var(--accent);
+    border-radius:0 10px 10px 0;
+    padding:16px 18px;
+  }
+  .callout-label{
+    font-family:var(--font-mono);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 6px;
+  }
+  .callout p{
+    margin:0;
+    font-size:14px;
+    line-height:1.6;
+    color:var(--ink-soft);
+  }
+
+  footer.closing{
+    margin-top:48px;
+    padding-top:8px;
+  }
+  footer.closing p{
+    font-size:15px;
+    line-height:1.68;
+    color:var(--ink-soft);
+    max-width:62ch;
+    margin:0 0 14px;
+  }
+  footer.closing p:last-child{ margin-bottom:0; }
+  footer.closing strong{ color:var(--ink); font-weight:700; }
+
+  @media (max-width:520px){
+    .stage{ grid-template-columns:1fr; gap:8px; }
+    .stage-num{ font-size:20px; }
+    .checklist ul{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="intro">
+    <div class="eyebrow">Competra · гид организатора</div>
+    <h1>Как подготовить дистанции в Mapper</h1>
+    <p class="subtitle">Инструкция для тех, кто рисует дистанции в OpenOrienteering Mapper и хочет перенести их в Competra — от расстановки контрольных пунктов до карт, которые участники увидят в приложении.</p>
+  </header>
+
+  <div class="checklist">
+    <p class="checklist-title">Что понадобится до начала</p>
+    <ul>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>Компьютер с Mapper, в котором есть панель «Планирование дистанций»</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l6-16 4 10 3-6 3 12"/></svg>Карта района в Mapper с геопривязкой</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>Номера NFC-станций, которые будут стоять на КП</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="9" r="2.4"/><path d="M15 20c.3-2.6 2-4.6 4-5"/></svg>Событие в Competra и список групп по дистанциям</li>
+    </ul>
+  </div>
+
+  <div class="stages">
+
+    <section class="stage">
+      <div class="stage-num">01</div>
+      <div>
+        <h2>Проверьте геопривязку карты</h2>
+        <p>Откройте карту в Mapper и выберите <strong>«Карта → Геопривязка…»</strong>. Карта должна быть привязана к реальным координатам: по ним Competra узнаёт, где стоят КП, старт и финиш, и накладывает карту дистанции на подложку. Без геопривязки дистанции экспортируются без координат, а экспорт карт для Competra будет недоступен.</p>
+        <div class="tags"><span class="tag">Карта</span><span class="tag">Геопривязка</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="stage-num">02</div>
+      <div>
+        <h2>Откройте панель планирования</h2>
+        <p>Выберите <strong>«Карта → Дистанции → Планирование дистанций»</strong>. Справа появится панель с двумя вкладками: <strong>«КП»</strong> — все контрольные пункты на карте, и <strong>«Дистанции»</strong> — дистанции из этих КП. Пока панель открыта, КП и линии дистанции видны поверх карты.</p>
+        <p>КП и дистанции хранятся в отдельном файле <strong>.courses</strong> рядом с файлом карты и сохраняются вместе с картой. Имя этого файла показано вверху панели. Кнопка «Импорт файла дистанций…» загружает дистанции из другого файла, «Недавние…» возвращает файл, с которым карта уже работала, а «Очистить дистанции с карты» начинает планирование с нуля.</p>
+        <div class="tags"><span class="tag">Карта</span><span class="tag">Дистанции</span><span class="tag">Планирование дистанций</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="stage-num">03</div>
+      <div>
+        <h2>Расставьте контрольные пункты</h2>
+        <p>Включите инструмент <strong>«Карта → Дистанции → Расставить КП»</strong>. На вкладке «КП» выберите, что ставить: <strong>△ Старт</strong>, <strong>○ КП</strong>, <strong>◎ Финиш</strong> или <strong>✕ Пересечение</strong>. Щелчок по карте ставит пункт, щелчок по пункту выделяет его, перетаскивание перемещает, клавиша Delete удаляет выделенный пункт, Escape выключает инструмент. Любое действие отменяется через Ctrl+Z.</p>
+        <p>Номера Mapper присваивает сам, по порядку расстановки: 31, 32, 33 и дальше. Если станция на местности имеет другой номер, впишите его в поле <strong>«B – Код»</strong> — он появится в списке КП, на карте и в легенде. <strong>В Competra уходит номер из списка КП</strong>, поэтому он должен совпадать с номером NFC-станции. Коды не должны повторяться: иначе Mapper не выгрузит дистанции и подскажет, какие коды совпали. Старт и финиш без кода получают номера 240 и 245.</p>
+        <p><strong>✕ Пересечение</strong> — обязательное место прохода: мост, проход в заборе, переход через дорогу. Оно рисуется на карте и входит в длину дистанции, но в Competra не передаётся — станции на нём нет.</p>
+
+        <div class="wizard">
+          <p class="wizard-title">Описание КП для легенды</p>
+          <ol class="wizard-steps">
+            <li>
+              <span class="wizard-step-title">Выберите пункт в списке</span>
+              <p>Под списком на вкладке «КП» откроется блок «Описание КП» — столбцы легенды по стандарту IOF.</p>
+            </li>
+            <li>
+              <span class="wizard-step-title">Заполните столбцы B–H</span>
+              <p>«B – Код», «C – Часть», «D – Ориентир», «E – Вид», «F – Размеры», «G – Расположение», «H – Прочее». Код и размеры вводятся вручную, остальные значения выбираются из списков и рисуются в легенде стандартными пиктограммами. Все столбцы необязательны — часто достаточно кода и ориентира.</p>
+            </li>
+          </ol>
+        </div>
+        <div class="tags"><span class="tag">Расставить КП</span><span class="tag">КП</span><span class="tag">Описание КП</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="stage-num">04</div>
+      <div>
+        <h2>Соберите дистанции</h2>
+        <p>Перейдите на вкладку <strong>«Дистанции»</strong> и нажмите <strong>«+»</strong>. Назовите дистанцию так, как её увидят участники, — удобно сразу перечислить группы: «М21, Ж35». Выберите тип: <strong>«Линейная»</strong> — пункты проходят строго по порядку, или <strong>«С баллами»</strong> — в любом порядке, за каждый КП начисляются баллы.</p>
+        <p>Чтобы добавить пункты, выделите их на вкладке «КП» в нужном порядке — щелчками, с Ctrl для нескольких, — выберите дистанцию в поле «Добавить в дистанцию:» и нажмите <strong>«Добавить»</strong>. Порядок в списке «Пункты» меняется кнопками «Вверх» и «Вниз». Начните дистанцию со старта и закончите финишем. Длину Mapper посчитает сам по прямым между пунктами, <strong>«Набор высоты»</strong> введите вручную. У дистанции с баллами задайте «Баллы» для каждого пункта или «Баллы по умолчанию».</p>
+        <div class="tags"><span class="tag">Дистанции</span><span class="tag">+</span><span class="tag">Добавить в дистанцию</span><span class="tag">Набор высоты</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="stage-num">05</div>
+      <div>
+        <h2>Оформите карту дистанции</h2>
+        <p>Выберите дистанцию в списке — на карте появятся её КП, линии перегонов и легенда. Всё оформление настраивается мышью прямо на карте:</p>
+
+        <div class="wizard">
+          <p class="wizard-title">Что можно поправить</p>
+          <ol class="wizard-steps">
+            <li>
+              <span class="wizard-step-title">Легенда</span>
+              <p>Перетащите таблицу легенды в свободное место карты, размер меняйте за угол или полем «Масштаб легенды». Для длинных дистанций разбейте легенду на несколько блоков полем «Столбцы легенды» — каждый блок перетаскивается отдельно.</p>
+            </li>
+            <li>
+              <span class="wizard-step-title">Номера КП</span>
+              <p>Перетащите номер, если он закрывает важный объект карты.</p>
+            </li>
+            <li>
+              <span class="wizard-step-title">Разрывы линий</span>
+              <p>Щелчок правой кнопкой по линии перегона или по кружку КП делает в ней разрыв — так линия не перекроет тропу или ориентир. Разрыв можно перетащить, повторный щелчок правой кнопкой по нему убирает разрыв.</p>
+            </li>
+            <li>
+              <span class="wizard-step-title">Название дистанции на карте</span>
+              <p>Напишите в обычном тексте карты <strong>{course}</strong>, например «Группы: {course}». При печати и экспорте Mapper подставит туда название дистанции, которая печатается, — править текст перед каждой группой больше не нужно.</p>
+            </li>
+          </ol>
+        </div>
+        <div class="tags"><span class="tag">Масштаб легенды</span><span class="tag">Столбцы легенды</span><span class="tag">{course}</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="stage-num">06</div>
+      <div>
+        <h2>Перенесите дистанции в Competra</h2>
+        <p>В Mapper выберите <strong>«Карта → Дистанции → Экспорт IOF (полная база дистанций)…»</strong> и сохраните XML-файл. В нём все дистанции с КП, длиной, набором высоты и координатами пунктов.</p>
+        <p>На сайте Competra откройте своё событие в «Управлении», вкладку <strong>«Дистанции»</strong>, и в блоке «Импорт из Mapper» нажмите <strong>«Загрузить IOF XML файл»</strong>. Если событие ещё только создаётся, тот же файл можно выбрать на шаге «Дистанции» мастера создания — блок «Импорт из Mapper (IOF XML)».</p>
+        <div class="tags"><span class="tag">Экспорт IOF</span><span class="tag">Дистанции</span><span class="tag">Импорт из Mapper</span><span class="tag">Загрузить IOF XML файл</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="stage-num">07</div>
+      <div>
+        <h2>Сохраните карты дистанций</h2>
+        <p>На вкладке «Дистанции» в Mapper нажмите <strong>«Экспорт карт дистанций для Competra…»</strong>. Отметьте нужные дистанции, выберите область карты — «Область печати» (как настроено в «Файл → Печать») или «Вся карта», — разрешение и папку, затем нажмите <strong>«Экспортировать»</strong>.</p>
+        <p>Mapper сохранит отдельную картинку PNG для каждой дистанции и запишет в неё координаты углов карты. После экспорта откроется окно «Границы карты для Competra» с кнопками «Копировать» и «Открыть папку» — координаты там общие для всех картинок и уже скопированы в буфер обмена.</p>
+        <div class="tags"><span class="tag">Экспорт карт дистанций для Competra</span><span class="tag">Область печати</span><span class="tag">Экспортировать</span></div>
+      </div>
+    </section>
+
+    <section class="stage" style="border-bottom:none;">
+      <div class="stage-num">08</div>
+      <div>
+        <h2>Прикрепите карты к дистанциям</h2>
+        <p>На сайте, на той же вкладке «Дистанции», нажмите <strong>«Прикрепить карту»</strong> у нужной дистанции и выберите её картинку. Координаты углов подставятся из файла сами — появится надпись «Координаты углов взяты из файла карты». Нажмите <strong>«Сохранить»</strong> и повторите для остальных дистанций.</p>
+        <p>Если картинка сохранена старой версией Mapper или в формате JPG, координат в ней нет: нажмите «Вставить из mapper», чтобы взять их из буфера обмена, или вставьте текст из окна «Границы карты для Competra» в поле ниже.</p>
+        <div class="tags"><span class="tag">Прикрепить карту</span><span class="tag">Вставить из mapper</span><span class="tag">Сохранить</span></div>
+
+        <div class="callout">
+          <p class="callout-label">Когда загружать карты</p>
+          <p>Прикрепляйте карты после окончания соревнования — иначе участники смогут увидеть дистанцию до старта.</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="closing">
+    <p>После этого участники увидят в приложении свою дистанцию на карте, а длины перегонов в сплитах посчитаются по координатам КП.</p>
+    <p><strong>Если дистанции изменились</strong> — поправьте их в Mapper, снова выгрузите IOF XML и карты и загрузите на сайт. Бумажные карты печатаются из того же файла: выберите дистанцию в панели и откройте «Файл → Печать».</p>
+  </footer>
+
+</div>
+
+</body>
+</html>

@@ -14,6 +14,7 @@ import { AnalyticsEvents } from '../lib/analytics/events'
 import { toLocaleDateString } from '../lib/dateUtils'
 
 const ORGANIZER_GUIDE_URL = 'guides/first-competition-guide.html'
+const MAPPER_GUIDE_URL = 'guides/mapper-course-planning-guide.html'
 
 export function ProfilePage() {
   const navigate = useNavigate()
@@ -217,6 +218,14 @@ function ProfileLinks() {
         className="w-full rounded-md border border-outline px-4 py-2 text-center text-sm text-fg"
       >
         Инструкция для организатора
+      </a>
+      <a
+        href={MAPPER_GUIDE_URL}
+        target="_blank"
+        rel="noreferrer"
+        className="w-full rounded-md border border-outline px-4 py-2 text-center text-sm text-fg"
+      >
+        Инструкция по работе в Mapper
       </a>
       <button
         type="button"
