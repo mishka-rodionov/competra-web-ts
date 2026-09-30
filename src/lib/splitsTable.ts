@@ -171,12 +171,66 @@ function byChoiceDistanceMeters(splits: SplitTime[], distance: Distance | undefi
   return sum > 0 ? sum : null
 }
 
+/** Перегон короче этого не участвует в рейтинге — см. isRankableLeg в buildSplitsTable. */
+const MIN_RANKABLE_LEG_MS = 1000
+
+/**
+ * Последовательность КП колонок таблицы (FORWARD/MARKING).
+ *
+ * Берётся из дистанции (КП + финиш), если у неё задан финишный КП. Иначе — самая частая
+ * последовательность отметок среди финишировавших (при равенстве — самая короткая): у отдельного
+ * финишировавшего могут быть лишние отметки (отметил чужой КП, потом нашёл свой), и раньше, когда
+ * колонки брались по самому длинному результату, такой участник сдвигал всю таблицу. Если
+ * финишировавших нет — самый длинный результат группы.
+ */
+function courseSequence(pairs: { result: OrienteeringResult | null }[], distance: Distance | undefined): number[] {
+  if (distance?.finishControlPoint != null && distance.controlPoints.length > 0) {
+    return [...distance.controlPoints.map((cp) => cp.number), distance.finishControlPoint]
+  }
+  const counts = new Map<string, { sequence: number[]; count: number }>()
+  for (const { result } of pairs) {
+    if (result?.status !== 'FINISHED' || !result.splits?.length) continue
+    const sequence = result.splits.map((s) => s.controlPoint)
+    const key = sequence.join(',')
+    const entry = counts.get(key)
+    if (entry) entry.count++
+    else counts.set(key, { sequence, count: 1 })
+  }
+  const best = [...counts.values()].sort((a, b) => b.count - a.count || a.sequence.length - b.sequence.length)[0]
+  if (best) return best.sequence
+  return pairs
+    .map(({ result }) => result?.splits ?? [])
+    .reduce<SplitTime[]>((longest, splits) => (splits.length > longest.length ? splits : longest), [])
+    .map((s) => s.controlPoint)
+}
+
+/**
+ * Сопоставляет отметки участника с КП дистанции: для каждой позиции cpOrder — первая ещё не
+ * использованная отметка этого КП после предыдущей сопоставленной (тот же последовательный поиск,
+ * что и при проверке прохождения дистанции). Лишние отметки в таблицу не попадают, у пропущенного
+ * КП — null; повторяющиеся КП (петли) получают каждое своё вхождение.
+ */
+function matchToCourse(splits: SplitTime[], cpOrder: number[]): (SplitTime | null)[] {
+  let searchIndex = 0
+  return cpOrder.map((cp) => {
+    for (let i = searchIndex; i < splits.length; i++) {
+      if (splits[i].controlPoint === cp) {
+        searchIndex = i + 1
+        return splits[i]
+      }
+    }
+    return null
+  })
+}
+
 /**
  * Строит сравнительную таблицу сплитов по группе участников.
  *
- * Для FORWARD/MARKING колонки берутся из самого длинного массива splits среди финишировавших
- * (позиционно, а не по номеру КП — корректно работает и с петлями в дистанции), с рангами и
- * лучшим перегоном. Ранги считаются только по корректным отметкам (см. ranksAt).
+ * Для FORWARD/MARKING колонки — КП дистанции по порядку (см. courseSequence), отметки участника
+ * раскладываются по ним последовательным поиском (см. matchToCourse): лишние отметки не сдвигают
+ * строку, у пропущенного КП ячейка пустая, петли в дистанции обрабатываются корректно. В рейтинг
+ * перегона/общего времени попадают только сравнимые значения — без пропусков перед КП и без
+ * перегонов короче секунды.
  *
  * Для BY_CHOICE у каждого участника свой набор и порядок КП: колонки строятся по позиции
  * (1..максимум сплитов в группе), а какой именно КП стоит за каждой позицией у конкретного
@@ -229,37 +283,40 @@ export function buildSplitsTable(
     return { columns, rows }
   }
 
-  // Порядок КП колонок — по самому длинному результату среди финишировавших: у снятого участника
-  // могут быть лишние/перепутанные отметки, и тогда он задал бы неверный порядок всей таблице.
-  // Колонок — по максимуму среди всех, чтобы лишние сплиты снятых тоже были видны.
-  const longestSplits = (list: (SplitTime[] | null | undefined)[]) =>
-    list
-      .filter((splits): splits is SplitTime[] => !!splits)
-      .reduce<SplitTime[]>((longest, splits) => (splits.length > longest.length ? splits : longest), [])
-  const referenceSplits = longestSplits(pairs.filter(({ result }) => result?.status === 'FINISHED').map(({ result }) => result?.splits))
-  const cpOrder = longestSplits(pairs.map(({ result }) => result?.splits)).map(
-    (s, i) => referenceSplits[i]?.controlPoint ?? s.controlPoint,
-  )
-
+  const cpOrder = courseSequence(pairs, distance)
   const columns: SplitsTableColumn[] = cpOrder.map((cp, i) => ({ positionIndex: i + 1, controlPoint: cp }))
   const legLengths = legLengthsMeters(distance, cpOrder)
+  const matchedByParticipantId = new Map(pairs.map(({ participant, result }) => [participant.id, matchToCourse(result?.splits ?? [], cpOrder)]))
 
-  /** Отметка на позиции i — тот же КП, что и у колонки (у снятого с пропуском КП сплиты сдвинуты). */
-  const isOnCourse = (splits: SplitTime[], i: number) => splits[i].controlPoint === cpOrder[i]
+  /** Время отметки предыдущего взятого КП дистанции до позиции i, либо старт. */
+  const prevTimestamp = (matched: (SplitTime | null)[], i: number, startTs: number): number => {
+    for (let j = i - 1; j >= 0; j--) {
+      const split = matched[j]
+      if (split) return split.timestamp
+    }
+    return startTs
+  }
 
   /**
-   * Ранги по позиции i среди участников, для которых measure вернула время. Ранжируем только
-   * корректные значения (КП совпадает с колонкой, время > 0): отрицательный сплит снятого участника
-   * (отметки не по порядку) иначе оказывался «лучшим» на перегоне.
+   * Перегон на позицию i сравним с другими: взяты и этот КП, и предыдущий по дистанции, а сам перегон
+   * не короче секунды. Отметки быстрее секунды не бывает — это КП, засчитанный организатором вручную
+   * с временем предыдущей отметки (кнопка «Засчитать» на экране считывания чипа в Android).
    */
-  const ranksAt = (i: number, measure: (splits: SplitTime[], startTs: number) => number | null): Map<string, number> =>
+  const isRankableLeg = (matched: (SplitTime | null)[], i: number, startTs: number): boolean => {
+    const split = matched[i]
+    if (!split) return false
+    if (i > 0 && !matched[i - 1]) return false
+    return split.timestamp - prevTimestamp(matched, i, startTs) >= MIN_RANKABLE_LEG_MS
+  }
+
+  /** Ранги среди участников, для которых measure вернула время (> 0). */
+  const ranks = (measure: (matched: (SplitTime | null)[], startTs: number) => number | null): Map<string, number> =>
     new Map(
       pairs
         .map(({ participant, result }) => {
-          const splits = result?.splits
           const startTs = anchorStartTime(participant, result)
-          if (!splits || startTs == null || i >= splits.length) return null
-          const value = measure(splits, startTs)
+          if (startTs == null) return null
+          const value = measure(matchedByParticipantId.get(participant.id) ?? [], startTs)
           return value != null && value > 0 ? ([participant.id, value] as const) : null
         })
         .filter((v): v is readonly [string, number] => v != null)
@@ -267,33 +324,38 @@ export function buildSplitsTable(
         .map(([id], rank) => [id, rank + 1] as const),
     )
 
+  // Общее время на КП сравнимо, только если все КП до него взяты: у снятого с пропуском иначе
+  // оказывалось бы «лучшее» время на следующих КП.
   const cumulRanks = cpOrder.map((_, i) =>
-    ranksAt(i, (splits, startTs) => (isOnCourse(splits, i) ? splits[i].timestamp - startTs : null)),
+    ranks((matched, startTs) => {
+      const split = matched[i]
+      if (!split || matched.slice(0, i).some((m) => !m) || !isRankableLeg(matched, i, startTs)) return null
+      return split.timestamp - startTs
+    }),
   )
 
   const deltaRanks = cpOrder.map((_, i) =>
-    ranksAt(i, (splits, startTs) => {
-      if (!isOnCourse(splits, i) || (i > 0 && !isOnCourse(splits, i - 1))) return null
-      const prevTs = i === 0 ? startTs : splits[i - 1].timestamp
-      return splits[i].timestamp - prevTs
+    ranks((matched, startTs) => {
+      const split = matched[i]
+      if (!split || !isRankableLeg(matched, i, startTs)) return null
+      return split.timestamp - prevTimestamp(matched, i, startTs)
     }),
   )
 
   const rows: SplitsTableRow[] = pairs.map(({ participant, result }) => {
-    const splits = result?.splits ?? []
+    const matched = matchedByParticipantId.get(participant.id) ?? []
     const startTs = anchorStartTime(participant, result)
 
     const cells: SplitsTableCell[] = cpOrder.map((_, i) => {
-      if (startTs == null || i >= splits.length) {
+      const split = matched[i]
+      if (startTs == null || !split) {
         return { deltaSeconds: null, cumulativeSeconds: null, deltaRank: null, cumulativeRank: null, isBestLeg: false, paceMinPerKm: null, controlPoint: null }
       }
-      const splitTs = splits[i].timestamp
-      const prevTs = i === 0 ? startTs : splits[i - 1].timestamp
-      const cumulSec = (splitTs - startTs) / 1000
-      const deltaSec = (splitTs - prevTs) / 1000
+      const cumulSec = (split.timestamp - startTs) / 1000
+      const deltaSec = (split.timestamp - prevTimestamp(matched, i, startTs)) / 1000
       const cumulativeRank = cumulRanks[i].get(participant.id) ?? null
       const deltaRank = deltaRanks[i].get(participant.id) ?? null
-      // Темп — только для перегонов, попавших в рейтинг: у отрицательного/сдвинутого сплита он бессмыслен.
+      // Темп — только для перегонов, попавших в рейтинг: у перегона через пропущенный КП он бессмыслен.
       const pace = deltaRank != null ? paceMinPerKm(deltaSec, legLengths[i] ?? null) : null
 
       return { deltaSeconds: deltaSec, cumulativeSeconds: cumulSec, deltaRank, cumulativeRank, isBestLeg: deltaRank === 1, paceMinPerKm: pace, controlPoint: null }
