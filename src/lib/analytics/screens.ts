@@ -19,6 +19,7 @@ const SCREENS: Record<string, string> = {
 
   '/profile': 'profile_home',
   '/profile/edit': 'profile_editor',
+  '/profile/result-links': 'profile_result_links',
   '/about': 'about_app',
   '/privacy': 'privacy_policy',
 

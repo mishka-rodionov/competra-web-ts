@@ -20,6 +20,8 @@ pnpm format     # prettier --write .
 pnpm preview    # Локальный просмотр prod-сборки
 ```
 
+Чтобы прогнать клиент против локального бэкенда (например, до деплоя новых эндпоинтов eSport), задай `VITE_API_BASE_URL=http://127.0.0.1:8080/api` в `.env.local` (по умолчанию — прод `https://api.competra.ru/api`). CORS бэкенда разрешает `localhost:3000`. Не забудь удалить строку после проверки.
+
 CI (`.github/workflows/deploy.yml`) на каждый пуш в `master`: `pnpm install --frozen-lockfile` → `pnpm build` → записывает `CNAME` (`competra.ru`) в `dist/` → деплоит через `actions/deploy-pages`.
 
 ## Architecture

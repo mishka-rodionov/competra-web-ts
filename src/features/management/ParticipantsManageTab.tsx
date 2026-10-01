@@ -125,6 +125,7 @@ export function ParticipantsManageTab({ competition }: { competition: Orienteeri
                   </span>
                   {effectiveTab === ALL_TAB && p.groupName && <span className="text-sm text-primary">{p.groupName}</span>}
                   {p.commandName?.trim() && <span className="text-sm text-on-surface-variant">{p.commandName}</span>}
+                  {p.userId && <span className="text-sm text-primary">Привязан к профилю пользователя</span>}
                   {isDns && <span className="text-sm text-error">Не стартовал</span>}
                 </div>
                 <div className="flex shrink-0 gap-3">

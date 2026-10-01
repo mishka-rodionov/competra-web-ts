@@ -5,10 +5,12 @@ import { Loading } from '../components/Loading'
 import { TabBar } from '../components/TabBar'
 import { DistancesTab } from '../features/competition-detail/DistancesTab'
 import { EditCompetitionTab } from '../features/management/EditCompetitionTab'
+import { LinkRequestsTab } from '../features/management/LinkRequestsTab'
 import { useManagedCompetition } from '../features/management/hooks'
 import { ManageGroupsTab } from '../features/management/ManageGroupsTab'
 import { ManageResultsTab } from '../features/management/ManageResultsTab'
 import { ParticipantsManageTab } from '../features/management/ParticipantsManageTab'
+import { usePendingLinkCounts } from '../features/participant-links/hooks'
 
 const TABS = [
   { key: 'edit', label: 'Общее' },
@@ -16,6 +18,7 @@ const TABS = [
   { key: 'participants', label: 'Участники' },
   { key: 'distances', label: 'Дистанции' },
   { key: 'results', label: 'Результаты' },
+  { key: 'links', label: 'Заявки' },
 ]
 
 /** Организаторский экран — редактирование уже созданного соревнования (в отличие от /competition/:id, публичного просмотра). */
@@ -24,6 +27,9 @@ export function ManageCompetitionPage() {
   const navigate = useNavigate()
   const [tab, setTab] = useState('edit')
   const { data: competition, isLoading, isError, error } = useManagedCompetition(id!)
+  const { data: pendingCounts } = usePendingLinkCounts()
+  const pendingLinks = pendingCounts?.[id!] ?? 0
+  const tabs = TABS.map((t) => (t.key === 'links' && pendingLinks > 0 ? { ...t, label: `Заявки (${pendingLinks})` } : t))
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col bg-bg text-fg">
@@ -40,7 +46,7 @@ export function ManageCompetitionPage() {
         <ErrorMessage message={isError ? (error as Error).message : 'Соревнование не найдено'} />
       ) : (
         <>
-          <TabBar tabs={TABS} active={tab} onChange={setTab} />
+          <TabBar tabs={tabs} active={tab} onChange={setTab} />
           <div className="flex-1 overflow-y-auto">
             {tab === 'edit' && <EditCompetitionTab competition={competition} />}
             {tab === 'groups' && (
@@ -60,6 +66,7 @@ export function ManageCompetitionPage() {
               />
             )}
             {tab === 'results' && <ManageResultsTab competition={competition} />}
+            {tab === 'links' && <LinkRequestsTab competitionId={competition.competitionId} />}
           </div>
         </>
       )}

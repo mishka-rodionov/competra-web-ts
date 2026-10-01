@@ -3,6 +3,7 @@ import { competitionRepository } from '../../api/competitionRepository'
 import { userRepository } from '../../api/userRepository'
 import { useIsLoggedIn } from '../../auth/useIsLoggedIn'
 import { analytics } from '../../lib/analytics/analytics'
+import type { OrienteeringCompetition } from '../../types/competition'
 
 export function useUserProfile() {
   const isLoggedIn = useIsLoggedIn()
@@ -18,18 +19,42 @@ export function useUserProfile() {
   })
 }
 
-export function useUpcomingCompetitions() {
+/**
+ * Соревнования, где у пользователя есть привязанный участник — и самостоятельные регистрации,
+ * и одобренные заявки на привязку ручных результатов. Будущие и прошедшие — один запрос, разный select.
+ */
+function useRegisteredCompetitions<T>(select: (data: OrienteeringCompetition[]) => T) {
   const isLoggedIn = useIsLoggedIn()
   return useQuery({
     queryKey: ['registered-competitions'],
     queryFn: async () => {
       const result = await competitionRepository.getRegisteredCompetitions()
       if (result.kind === 'error') throw new Error(result.message)
-      const now = Date.now()
       return result.data
-        .filter((c) => c.competition.startDate >= now)
-        .sort((a, b) => a.competition.startDate - b.competition.startDate)
     },
+    select,
     enabled: isLoggedIn,
   })
+}
+
+function selectUpcoming(data: OrienteeringCompetition[]) {
+  const now = Date.now()
+  return data
+    .filter((c) => c.competition.startDate >= now)
+    .sort((a, b) => a.competition.startDate - b.competition.startDate)
+}
+
+function selectPast(data: OrienteeringCompetition[]) {
+  const now = Date.now()
+  return data
+    .filter((c) => c.competition.startDate < now)
+    .sort((a, b) => b.competition.startDate - a.competition.startDate)
+}
+
+export function useUpcomingCompetitions() {
+  return useRegisteredCompetitions(selectUpcoming)
+}
+
+export function usePastCompetitions() {
+  return useRegisteredCompetitions(selectPast)
 }

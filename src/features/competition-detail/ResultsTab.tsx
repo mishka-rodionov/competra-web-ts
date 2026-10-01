@@ -8,6 +8,7 @@ import { formatTime } from '../../lib/dateUtils'
 import type { ParticipantGroupDetail } from '../../types/competition'
 import type { OrienteeringParticipant, OrienteeringResult } from '../../types/participant'
 import { resultPlaceLabel, resultStatusColorClass, resultStatusLabel } from '../competitions/labels'
+import { LinkSuggestionBanner } from '../participant-links/LinkSuggestionBanner'
 import { useParticipants, useResults } from './hooks'
 
 const LIVE_STATUSES = new Set(['IN_PROGRESS', 'STARTED'])
@@ -46,6 +47,7 @@ export function ResultsTab({ competitionId, groups, competitionStatus, resultsSt
 
   return (
     <div className="flex flex-col gap-3 p-4">
+      <LinkSuggestionBanner competitionId={competitionId} />
       {(isLive || resultsStatus === 'PRELIMINARY') && (
         <div className="flex gap-2">
           {isLive && (

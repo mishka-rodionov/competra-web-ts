@@ -2,7 +2,8 @@ import { tokenStorage } from '../auth/tokenStorage'
 import type { CommonModel } from './types'
 import { UnauthorizedError } from './types'
 
-export const BASE_URL = 'https://api.competra.ru/api'
+/** VITE_API_BASE_URL (в `.env.local`) — прогнать клиент против локального бэкенда до его деплоя. */
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.competra.ru/api'
 
 interface AuthTokens {
   accessToken: string

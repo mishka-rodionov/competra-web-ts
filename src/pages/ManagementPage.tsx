@@ -8,6 +8,7 @@ import { Loading } from '../components/Loading'
 import { AuthFlow } from '../features/auth/AuthFlow'
 import { useMyCompetitions } from '../features/competitions/hooks'
 import { statusColorClass, statusLabel } from '../features/competitions/labels'
+import { usePendingLinkCounts } from '../features/participant-links/hooks'
 import { analytics } from '../lib/analytics/analytics'
 import { AnalyticsEvents } from '../lib/analytics/events'
 import { toLocaleDateString } from '../lib/dateUtils'
@@ -23,6 +24,7 @@ export function ManagementPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const { data: competitions, isLoading, isError, error } = useMyCompetitions(isLoggedIn)
+  const { data: pendingLinkCounts } = usePendingLinkCounts()
   const sorted = [...(competitions ?? [])].sort((a, b) => b.competition.startDate - a.competition.startDate)
 
   async function handleDelete() {
@@ -111,6 +113,11 @@ export function ManagementPage() {
               <span className="text-sm text-on-surface-variant">{toLocaleDateString(competition.competition.startDate)}</span>
               {competition.competition.address && (
                 <span className="text-sm text-on-surface-variant">{competition.competition.address}</span>
+              )}
+              {(pendingLinkCounts?.[competition.competitionId] ?? 0) > 0 && (
+                <span className="self-start rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                  Заявки на привязку результатов: {pendingLinkCounts?.[competition.competitionId]}
+                </span>
               )}
               <div className="flex items-center justify-between pt-2">
                 <button

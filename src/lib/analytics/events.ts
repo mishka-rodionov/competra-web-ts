@@ -18,6 +18,8 @@ export type EventSource = 'list'
 export type ParticipantAddMethod = 'manual' | 'import'
 export type CreateCompetitionStep = 'common' | 'registration' | 'organizator' | 'distance' | 'groups'
 export type LiveTrackMapMode = 'live' | 'archive'
+export type ResultLinkSource = 'suggestion' | 'manual'
+export type ResultUnlinkedBy = 'self' | 'organizer'
 
 export const AnalyticsEvents = {
   // Auth / Registration
@@ -102,6 +104,30 @@ export const AnalyticsEvents = {
   scoreGraphOpened: (groupId: string, competitionId: string): AnalyticsEvent => ({
     name: 'score_graph_opened',
     params: { group_id: groupId, competition_id: competitionId },
+  }),
+
+  // Привязка вручную внесённых результатов к аккаунту
+  /** Открыт экран «Мои результаты в протоколах» — сколько подсказок по имени нашлось. */
+  resultLinkSuggestionsViewed: (count: number): AnalyticsEvent => ({
+    name: 'result_link_suggestions_viewed',
+    params: { count },
+  }),
+  /** Отправлена заявка на привязку — одно событие на соревнование. */
+  resultLinkRequested: (competitionId: string, source: ResultLinkSource, count: number): AnalyticsEvent => ({
+    name: 'result_link_requested',
+    params: { competition_id: competitionId, source, count },
+  }),
+  resultLinkRequestCancelled: (competitionId: string): AnalyticsEvent => ({
+    name: 'result_link_request_cancelled',
+    params: { competition_id: competitionId },
+  }),
+  resultLinkRequestReviewed: (competitionId: string, approved: boolean): AnalyticsEvent => ({
+    name: 'result_link_request_reviewed',
+    params: { competition_id: competitionId, approved },
+  }),
+  resultUnlinked: (competitionId: string, by: ResultUnlinkedBy): AnalyticsEvent => ({
+    name: 'result_unlinked',
+    params: { competition_id: competitionId, by },
   }),
 
   // Profile

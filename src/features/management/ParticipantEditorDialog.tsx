@@ -1,4 +1,6 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { participantLinkRepository } from '../../api/participantLinkRepository'
 import { resultRepository } from '../../api/resultRepository'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { LabeledSelect } from '../../components/LabeledSelect'
@@ -7,6 +9,7 @@ import { AnalyticsEvents } from '../../lib/analytics/events'
 import { DEFAULT_TIME_ZONE, utcMillisToZonedDate, utcMillisToZonedTime, zonedDateTimeToUtcMillis } from '../../lib/dateUtils'
 import type { OrienteeringCompetition, ParticipantGroupDetail } from '../../types/competition'
 import type { OrienteeringParticipant } from '../../types/participant'
+import { invalidateLinkQueries } from '../participant-links/hooks'
 
 interface ParticipantEditorDialogProps {
   competition: OrienteeringCompetition
@@ -38,6 +41,24 @@ export function ParticipantEditorDialog({
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmingUnlink, setConfirmingUnlink] = useState(false)
+  const queryClient = useQueryClient()
+
+  // Привязка к аккаунту меняется только отдельным запросом: сохранение участника userId не трогает.
+  async function handleUnlink() {
+    if (!editingParticipant) return
+    setSaving(true)
+    setError(null)
+    const result = await participantLinkRepository.unlinkParticipant(editingParticipant.id)
+    if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.resultUnlinked(competition.competitionId, 'organizer'))
+      await invalidateLinkQueries(queryClient, competition.competitionId)
+      onSaved()
+    } else {
+      setError(result.message)
+      setSaving(false)
+    }
+  }
 
   async function handleSave() {
     const group = groups.find((g) => g.groupId === groupId)
@@ -115,6 +136,26 @@ export function ParticipantEditorDialog({
           placeholder="Команда (опционально)"
           className="rounded-md border border-outline bg-bg px-3 py-2 text-fg"
         />
+        {editingParticipant?.userId && (
+          <div className="flex flex-col gap-2 rounded-md bg-primary/10 p-3">
+            <span className="text-sm text-fg">Участник привязан к профилю пользователя</span>
+            {confirmingUnlink ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm text-fg">Результат пропадёт из профиля спортсмена. Отвязать?</span>
+                <button type="button" disabled={saving} onClick={handleUnlink} className="text-sm text-error disabled:opacity-50">
+                  Отвязать
+                </button>
+                <button type="button" disabled={saving} onClick={() => setConfirmingUnlink(false)} className="text-sm text-fg">
+                  Отмена
+                </button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => setConfirmingUnlink(true)} className="self-start text-sm text-error">
+                Отвязать от профиля
+              </button>
+            )}
+          </div>
+        )}
         {error && <ErrorMessage message={error} />}
         <div className="mt-2 flex gap-2">
           <button

@@ -21,6 +21,7 @@ import { LiveTrackMapPage } from './pages/LiveTrackMapPage'
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage'
 import { ProfileEditorPage } from './pages/ProfileEditorPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { ResultLinksPage } from './pages/ResultLinksPage'
 import { RaceGraphPage } from './pages/RaceGraphPage'
 import { RatingDetailPage } from './pages/RatingDetailPage'
 import { RatingFormPage } from './pages/RatingFormPage'
@@ -50,6 +51,7 @@ export const router = createHashRouter([
     ],
   },
   { path: '/profile/edit', element: <ProfileEditorPage /> },
+  { path: '/profile/result-links', element: <ResultLinksPage /> },
   // Вне AppShell — full-screen, без нижней навигации (как Page.CompetitionDetail в старом приложении).
   { path: '/competition/:id', element: <CompetitionDetailPage /> },
   { path: '/competition/:id/group/:groupId/splits', element: <GroupSplitsTablePage /> },

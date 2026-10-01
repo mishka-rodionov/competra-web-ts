@@ -8,10 +8,12 @@ import { ErrorMessage } from '../components/ErrorMessage'
 import { FullscreenImageViewer } from '../components/FullscreenImageViewer'
 import { Loading } from '../components/Loading'
 import { AuthFlow } from '../features/auth/AuthFlow'
-import { useUpcomingCompetitions, useUserProfile } from '../features/profile/hooks'
+import { useLinkSuggestions, useMyLinkRequests } from '../features/participant-links/hooks'
+import { usePastCompetitions, useUpcomingCompetitions, useUserProfile } from '../features/profile/hooks'
 import { analytics } from '../lib/analytics/analytics'
 import { AnalyticsEvents } from '../lib/analytics/events'
 import { toLocaleDateString } from '../lib/dateUtils'
+import type { OrienteeringCompetition } from '../types/competition'
 
 const ORGANIZER_GUIDE_URL = 'guides/first-competition-guide.html'
 const MAPPER_GUIDE_URL = 'guides/mapper-course-planning-guide.html'
@@ -28,6 +30,7 @@ export function ProfilePage() {
 
   const { data: profile, isLoading: profileLoading } = useUserProfile()
   const { data: upcoming, isLoading: upcomingLoading, isError, error } = useUpcomingCompetitions()
+  const { data: past } = usePastCompetitions()
 
   function handleLoginSuccess() {
     setShowLogin(false)
@@ -137,22 +140,16 @@ export function ProfilePage() {
       ) : !upcoming || upcoming.length === 0 ? (
         <EmptyState text="Нет предстоящих стартов" />
       ) : (
-        <div className="flex flex-col gap-2">
-          {upcoming.map((competition) => (
-            <button
-              key={competition.competitionId}
-              type="button"
-              onClick={() => navigate(`/competition/${competition.competitionId}`)}
-              className="flex flex-col gap-1 rounded-lg border border-outline-variant bg-surface p-4 text-left"
-            >
-              <span className="text-sm font-medium text-fg">{competition.competition.title}</span>
-              <span className="text-sm text-on-surface-variant">{toLocaleDateString(competition.competition.startDate)}</span>
-              {competition.competition.address && (
-                <span className="text-sm text-on-surface-variant">{competition.competition.address}</span>
-              )}
-            </button>
-          ))}
-        </div>
+        <CompetitionList competitions={upcoming} />
+      )}
+
+      <ResultLinksCard />
+
+      {past && past.length > 0 && (
+        <>
+          <h2 className="text-base font-medium text-fg">Прошедшие старты</h2>
+          <CompetitionList competitions={past} />
+        </>
       )}
 
       <hr className="border-outline-variant" />
@@ -203,6 +200,64 @@ export function ProfilePage() {
         </div>
       )}
     </div>
+  )
+}
+
+function CompetitionList({ competitions }: { competitions: OrienteeringCompetition[] }) {
+  const navigate = useNavigate()
+  return (
+    <div className="flex flex-col gap-2">
+      {competitions.map((competition) => (
+        <button
+          key={competition.competitionId}
+          type="button"
+          onClick={() => navigate(`/competition/${competition.competitionId}`)}
+          className="flex flex-col gap-1 rounded-lg border border-outline-variant bg-surface p-4 text-left"
+        >
+          <span className="text-sm font-medium text-fg">{competition.competition.title}</span>
+          <span className="text-sm text-on-surface-variant">{toLocaleDateString(competition.competition.startDate)}</span>
+          {competition.competition.address && (
+            <span className="text-sm text-on-surface-variant">{competition.competition.address}</span>
+          )}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Вход к привязке ручных результатов. Показывается всегда: даже без подсказок по имени человек
+ * может найти свой результат, записанный иначе, — подсказка объясняет как. Выделяется, если что-то нашлось.
+ */
+function ResultLinksCard() {
+  const navigate = useNavigate()
+  const { data: suggestions } = useLinkSuggestions()
+  const { data: requests } = useMyLinkRequests()
+  const suggestionsCount = suggestions?.length ?? 0
+  const pendingCount = requests?.filter((r) => r.status === 'PENDING').length ?? 0
+  const highlighted = suggestionsCount > 0
+
+  const subtitle =
+    suggestionsCount > 0
+      ? `Найдены результаты, похожие на ваши: ${suggestionsCount}`
+      : pendingCount > 0
+        ? `Заявок на рассмотрении: ${pendingCount}`
+        : 'Привяжите результаты, которые организатор внёс вручную'
+
+  return (
+    <button
+      type="button"
+      onClick={() => navigate('/profile/result-links')}
+      className={`flex items-center justify-between gap-2 rounded-lg border p-4 text-left ${
+        highlighted ? 'border-primary bg-primary/10' : 'border-outline-variant bg-surface'
+      }`}
+    >
+      <span className="flex flex-col gap-0.5">
+        <span className="text-sm font-medium text-fg">Мои результаты в протоколах</span>
+        <span className={`text-sm ${highlighted ? 'text-primary' : 'text-on-surface-variant'}`}>{subtitle}</span>
+      </span>
+      <span className="text-xl text-on-surface-variant">›</span>
+    </button>
   )
 }
 

@@ -3,6 +3,7 @@ import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
 import { useCompetitionDetail, useDistances, useParticipants, useResults } from '../features/competition-detail/hooks'
 import { resultPlaceLabel, resultStatusLabel } from '../features/competitions/labels'
+import { ParticipantLinkActions } from '../features/participant-links/ParticipantLinkActions'
 import { formatTime } from '../lib/dateUtils'
 import { partitionSplitsByStart } from '../lib/splitsTable'
 
@@ -47,6 +48,18 @@ export function ParticipantSplitsPage() {
             {participant.startNumber && <p className="text-sm text-on-surface-variant">№{participant.startNumber}</p>}
             {participant.groupName && <p className="text-sm text-on-surface-variant">{participant.groupName}</p>}
           </div>
+
+          <ParticipantLinkActions
+            participant={participant}
+            participants={participants ?? []}
+            label={[
+              `${participant.lastName} ${participant.firstName}`.trim(),
+              participant.groupName,
+              result && resultPlaceLabel(result) !== '—' ? `${resultPlaceLabel(result)} место` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          />
 
           {result && (
             <div className="flex justify-between rounded-lg border border-outline-variant bg-surface p-4">
