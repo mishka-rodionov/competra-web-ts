@@ -5,6 +5,7 @@ import type {
   ChangeRoleRequest,
   Club,
   ClubJoinRequest,
+  ClubMatch,
   ClubMember,
   CreateClubRequest,
   UpdateClubRequest,
@@ -17,6 +18,11 @@ export const clubRepository = {
     search.set('page', String(page))
     search.set('limit', String(limit))
     return safeApiCall(() => publicRequest<PagedResponse<Club>>(`/clubs?${search}`))
+  },
+
+  /** Клубы с названием, совпадающим с подписью команды (без учёта регистра), где пользователь не состоит. */
+  matchClubs(name: string) {
+    return safeApiCall(() => authRequest<ClubMatch[]>(`/clubs/match?${new URLSearchParams({ name })}`))
   },
 
   getClub(id: string) {

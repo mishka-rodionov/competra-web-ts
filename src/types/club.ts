@@ -40,6 +40,13 @@ export interface UpdateClubRequest {
   allowJoinRequests: boolean
 }
 
+/** Клуб, чьё название совпало с подписью команды при регистрации и где пользователь не состоит. */
+export interface ClubMatch {
+  id: string
+  name: string
+  allowJoinRequests: boolean
+}
+
 /** role: "ADMIN" | "MEMBER" | "FOUNDER" (передача роли основателя). */
 export interface ChangeRoleRequest {
   role: string

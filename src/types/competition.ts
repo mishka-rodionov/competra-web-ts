@@ -82,6 +82,29 @@ export interface RegisterEventRequest {
   groupId: number
   firstName: string
   lastName: string
+  /** Подпись команды для протокола (свободный текст или выбор из подсказок). */
+  commandName?: string | null
+  /** Клубная команда пользователя — только если подпись совпадает с её подписью; сервер проверяет членство. */
+  teamId?: string | null
+}
+
+/** Клубная команда (teamId != null) или клуб без команды пользователя с готовой подписью для протокола. */
+export interface RegistrationTeamOption {
+  teamId: string | null
+  clubId: string
+  clubName: string
+  teamName: string | null
+  /** «Клуб (Команда)» или название клуба. */
+  label: string
+}
+
+/** Ответ `GET /event/orienteering/competitions/{id}/registration-team-options`. */
+export interface RegistrationTeamOptions {
+  options: RegistrationTeamOption[]
+  /** Подписи команд, уже встречающиеся в протоколе соревнования. */
+  protocolNames: string[]
+  /** Что подставить в поле сразу; null — оставить пустым. */
+  suggestedCommandName: string | null
 }
 
 export interface CompetitionFields {

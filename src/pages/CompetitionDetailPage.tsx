@@ -23,7 +23,7 @@ import { StartProtocolTab } from '../features/competition-detail/StartProtocolTa
 import { useUserProfile } from '../features/profile/hooks'
 import { analytics } from '../lib/analytics/analytics'
 import { competitionYear } from '../lib/groupEligibility'
-import { AnalyticsEvents } from '../lib/analytics/events'
+import { AnalyticsEvents, type RegistrationTeamSource } from '../lib/analytics/events'
 import type { RegisterEventRequest } from '../types/competition'
 
 const TABS = [
@@ -81,10 +81,11 @@ export function CompetitionDetailPage() {
     ])
   }
 
-  async function handleRegister(request: RegisterEventRequest) {
+  async function handleRegister(request: RegisterEventRequest, teamSource: RegistrationTeamSource) {
     analytics.trackEvent(AnalyticsEvents.eventRegisterClicked(request.competitionId))
     const result = await competitionRepository.register(request)
     if (result.kind === 'success') {
+      analytics.trackEvent(AnalyticsEvents.eventRegistered(request.competitionId, teamSource))
       setRegisterError(null)
       await refreshRegistration()
     } else {

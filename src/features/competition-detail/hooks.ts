@@ -82,3 +82,34 @@ export function useResults(competitionId: string, competitionStatus: string) {
     refetchInterval: LIVE_STATUSES.has(competitionStatus) ? LIVE_POLL_INTERVAL_MS : false,
   })
 }
+
+/**
+ * Подсказки для поля «Команда» в диалоге регистрации. Ошибка не бросается наружу: без подсказок
+ * поле остаётся обычным текстовым.
+ */
+export function useRegistrationTeamOptions(competitionId: string) {
+  return useQuery({
+    queryKey: ['registration-team-options', competitionId],
+    queryFn: async () => {
+      const result = await competitionRepository.getRegistrationTeamOptions(competitionId)
+      if (result.kind === 'error') throw new Error(result.message)
+      return result.data
+    },
+    staleTime: 0,
+    retry: false,
+  })
+}
+
+/** Клубы с названием, совпавшим с подписью команды; null — не искать. */
+export function useClubMatches(name: string | null) {
+  return useQuery({
+    queryKey: ['club-match', name],
+    queryFn: async () => {
+      const result = await clubRepository.matchClubs(name!)
+      if (result.kind === 'error') throw new Error(result.message)
+      return result.data
+    },
+    enabled: name != null,
+    retry: false,
+  })
+}

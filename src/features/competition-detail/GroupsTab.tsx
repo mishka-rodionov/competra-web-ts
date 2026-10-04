@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { useIsLoggedIn } from '../../auth/useIsLoggedIn'
+import type { RegistrationTeamSource } from '../../lib/analytics/events'
 import { birthYearsRange, checkGroupEligibility, type GroupEligibility } from '../../lib/groupEligibility'
 import type { ParticipantGroupDetail, RegisterEventRequest } from '../../types/competition'
 import type { UserProfile } from '../../types/user'
@@ -23,7 +24,7 @@ interface GroupsTabProps {
   /** Профиль или список участников ещё грузятся — неизвестно, зарегистрирован ли пользователь. */
   registrationStatusLoading: boolean
   registerError: string | null
-  onRegister: (request: RegisterEventRequest) => void
+  onRegister: (request: RegisterEventRequest, teamSource: RegistrationTeamSource) => void
   onCancelRegistration: () => void
 }
 
@@ -89,8 +90,8 @@ export function GroupsTab({
           group={dialogGroup}
           competitionId={competitionId}
           onDismiss={() => setDialogGroup(null)}
-          onConfirm={(request) => {
-            onRegister(request)
+          onConfirm={(request, teamSource) => {
+            onRegister(request, teamSource)
             setDialogGroup(null)
           }}
         />

@@ -20,6 +20,7 @@ export type CreateCompetitionStep = 'common' | 'registration' | 'organizator' | 
 export type LiveTrackMapMode = 'live' | 'archive'
 export type ResultLinkSource = 'suggestion' | 'manual'
 export type ResultUnlinkedBy = 'self' | 'organizer'
+export type RegistrationTeamSource = 'club_team' | 'club' | 'protocol' | 'custom' | 'none'
 
 export const AnalyticsEvents = {
   // Auth / Registration
@@ -49,6 +50,11 @@ export const AnalyticsEvents = {
   eventRegisterClicked: (eventId: string): AnalyticsEvent => ({
     name: 'event_register_clicked',
     params: { event_id: eventId },
+  }),
+  /** Регистрация на соревнование прошла; team_source — откуда взялась подпись команды. */
+  eventRegistered: (eventId: string, teamSource: RegistrationTeamSource): AnalyticsEvent => ({
+    name: 'event_registered',
+    params: { event_id: eventId, team_source: teamSource },
   }),
   /** Зритель открыл онлайн-треки соревнования (вкладка «Онлайн-треки»). */
   eventLiveTracksOpened: (eventId: string): AnalyticsEvent => ({
@@ -153,6 +159,11 @@ export const AnalyticsEvents = {
   clubCreated: (clubId: string): AnalyticsEvent => ({ name: 'club_created', params: { club_id: clubId } }),
   clubUpdated: (clubId: string): AnalyticsEvent => ({ name: 'club_updated', params: { club_id: clubId } }),
   clubDeleted: (clubId: string): AnalyticsEvent => ({ name: 'club_deleted', params: { club_id: clubId } }),
+  /** Нажата подсказка «такой клуб есть в Competra» под полем команды при регистрации на соревнование. */
+  clubJoinHintClicked: (clubId: string): AnalyticsEvent => ({
+    name: 'club_join_hint_clicked',
+    params: { club_id: clubId },
+  }),
   clubJoinRequested: (clubId: string): AnalyticsEvent => ({
     name: 'club_join_requested',
     params: { club_id: clubId },

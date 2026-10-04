@@ -7,6 +7,7 @@ import type {
   CreateCompetitionRequest,
   OrienteeringCompetition,
   RegisterEventRequest,
+  RegistrationTeamOptions,
 } from '../types/competition'
 
 export interface GetPublicCompetitionsParams {
@@ -59,6 +60,13 @@ export const competitionRepository = {
   register(request: RegisterEventRequest) {
     return safeApiCallUnit(() =>
       authRequest('/event/orienteering/register', { method: 'POST', body: JSON.stringify(request) }),
+    )
+  },
+
+  /** Подсказки для поля «Команда» при регистрации: свои клубные команды, подписи из протокола, автоподстановка. */
+  getRegistrationTeamOptions(competitionId: string) {
+    return safeApiCall(() =>
+      authRequest<RegistrationTeamOptions>(`/event/orienteering/competitions/${competitionId}/registration-team-options`),
     )
   },
 
