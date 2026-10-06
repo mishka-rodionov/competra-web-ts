@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { liveTrackRepository } from '../api/liveTrackRepository'
+import { resultRepository } from '../api/resultRepository'
 import { LiveTrackMapView, type MapFocus } from '../components/LiveTrackMapView'
 import { Loading } from '../components/Loading'
 import { useDistances } from '../features/competition-detail/hooks'
@@ -10,6 +11,14 @@ import { LiveTrackAccumulator, isActive, mergedByParticipant, isStale, type View
 import { STALE_COLOR, speedColor, trackColor } from '../lib/liveTrackColors'
 import { distanceMapCorners } from '../lib/mapCorners'
 import { SPEED_COLOR_STEPS, speedProfile, type TrackSpeedProfile } from '../lib/trackSpeed'
+import {
+  replayPositionAt,
+  replayRange,
+  replayTimeAt,
+  toReplay,
+  type ReplayTimeMode,
+  type ReplayTrack,
+} from '../lib/trackReplay'
 
 /** Опрос, пока на дистанции есть участники. */
 const LIVE_POLL_MS = 5_000
@@ -19,6 +28,14 @@ const IDLE_POLL_MS = 30_000
 const ERROR_RETRY_MS = 10_000
 /** Медленнее этого (м/с) темп не пишем — участник стоит. */
 const STANDING_SPEED = 0.2
+/** Шаг анимации просмотра. */
+const REPLAY_FRAME_MS = 100
+/** Скорости воспроизведения (во сколько раз быстрее реального времени). */
+const PLAYBACK_SPEEDS = [1, 10, 30, 60]
+/** Скорость воспроизведения по умолчанию: часовая гонка — за две минуты. */
+const DEFAULT_PLAYBACK_SPEED = 30
+/** Перезапрос результатов, если появился финишировавший без результата, — не чаще. */
+const RESULTS_RELOAD_MS = 60_000
 
 interface LiveTracksState {
   loaded: boolean
@@ -29,6 +46,8 @@ interface LiveTracksState {
   connectionLost: boolean
   /** Раскраска по скорости завершённых треков по id сессии. */
   speedProfiles: Map<string, TrackSpeedProfile>
+  /** Завершённые треки, обрезанные по старту и финишу из результатов, по id сессии. */
+  replayTracks: Map<string, ReplayTrack>
 }
 
 /**
@@ -43,6 +62,7 @@ function useLiveTracks(competitionId: string, distanceId: number): LiveTracksSta
     serverTime: 0,
     connectionLost: false,
     speedProfiles: new Map(),
+    replayTracks: new Map(),
   })
 
   useEffect(() => {
@@ -50,6 +70,9 @@ function useLiveTracks(competitionId: string, distanceId: number): LiveTracksSta
     const colors = new Map<string, number>()
     // Раскраска пересчитывается, только если у трека изменились точки: опрос отдаёт новые массивы с теми же точками.
     const speedCache = new Map<string, { key: string; profile: TrackSpeedProfile | null }>()
+    // Старт и финиш из результатов по id участника — для обрезки треков при просмотре.
+    let resultTimes = new Map<string, { start: number | null; finish: number | null }>()
+    let resultsLoadedAt = 0
     let archiveLoaded = false
     let reported = false
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -69,6 +92,21 @@ function useLiveTracks(competitionId: string, distanceId: number): LiveTracksSta
       if (disposed) return
       if (live.kind === 'success') accumulator.applySnapshot(live.data)
       const ok = live.kind === 'success'
+      // Результаты — при первом опросе и когда появился закрытый трек участника без результата.
+      const missing = accumulator.list().some((t) => !isActive(t) && !resultTimes.has(t.participantId))
+      if (resultsLoadedAt === 0 || (missing && Date.now() - resultsLoadedAt >= RESULTS_RELOAD_MS)) {
+        resultsLoadedAt = Date.now()
+        const results = await resultRepository.getResults(competitionId)
+        if (disposed) return
+        if (results.kind === 'success') {
+          resultTimes = new Map(
+            results.data.map((r) => [
+              r.participantId,
+              { start: r.startTime && r.startTime > 0 ? r.startTime : null, finish: r.finishTime && r.finishTime > 0 ? r.finishTime : null },
+            ]),
+          )
+        }
+      }
       // Перезапуски трека одним участником показываем как один трек.
       const tracks = mergedByParticipant(accumulator.list())
       for (const track of [...tracks].sort((a, b) => a.startedAt - b.startedAt)) {
@@ -85,6 +123,13 @@ function useLiveTracks(competitionId: string, distanceId: number): LiveTracksSta
         }
         if (cached.profile) speedProfiles.set(track.sessionId, cached.profile)
       }
+      const replayTracks = new Map<string, ReplayTrack>()
+      for (const track of tracks) {
+        if (isActive(track)) continue
+        const times = resultTimes.get(track.participantId)
+        const replay = toReplay(track, times?.start ?? null, times?.finish ?? null)
+        if (replay) replayTracks.set(track.sessionId, replay)
+      }
       setState({
         loaded: true,
         tracks,
@@ -92,6 +137,7 @@ function useLiveTracks(competitionId: string, distanceId: number): LiveTracksSta
         serverTime: accumulator.serverTime || Date.now(),
         connectionLost: !ok,
         speedProfiles,
+        replayTracks,
       })
       if (ok && !reported) {
         reported = true
@@ -142,6 +188,35 @@ function paceText(speed: number): string {
   return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')} /км`
 }
 
+/** Время суток «ЧЧ:ММ:СС». */
+function clockText(ms: number): string {
+  return new Date(ms).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
+
+/** Длительность «М:СС» или «Ч:ММ:СС». */
+function durationText(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000))
+  const hours = Math.floor(total / 3600)
+  const mm = Math.floor((total % 3600) / 60)
+  const ss = String(total % 60).padStart(2, '0')
+  return hours > 0 ? `${hours}:${String(mm).padStart(2, '0')}:${ss}` : `${mm}:${ss}`
+}
+
+/** Состояние участника в момент просмотра для списка. */
+function replayStatusText(replay: ReplayTrack, position: number, mode: ReplayTimeMode): string {
+  const t = replayTimeAt(replay, position, mode)
+  switch (replayPositionAt(replay, t).state) {
+    case 'notStarted':
+      return `старт ${clockText(replay.startAt)}`
+    case 'finished':
+      return `финиш ${durationText(replay.finishAt - replay.startAt)}`
+    case 'noData':
+      return `${durationText(t - replay.startAt)} • нет данных`
+    case 'running':
+      return durationText(t - replay.startAt)
+  }
+}
+
 /** Шкала скорости поверх карты; темп на концах подписан, только когда раскрашен один трек. */
 function SpeedLegend({ profile, hint }: { profile: TrackSpeedProfile | null; hint: boolean }) {
   const gradient = Array.from({ length: SPEED_COLOR_STEPS }, (_, i) => speedColor(i, SPEED_COLOR_STEPS)).join(', ')
@@ -161,7 +236,9 @@ function SpeedLegend({ profile, hint }: { profile: TrackSpeedProfile | null; hin
  * Карта онлайн-треков дистанции для зрителя: растр карты по трём углам, КП, треки участников,
  * фильтр по группам, «хвост 5 мин» и список участников (клик — центрировать карту). Публичная.
  * Завершённые треки можно раскрасить по скорости участника (красный — медленно, зелёный — быстро):
- * в этом режиме клик по участнику оставляет на карте только его трек.
+ * в этом режиме клик по участнику оставляет на карте только его трек. «Просмотр» — ползунок и ▶:
+ * маркеры движутся по трекам от старта до финиша по общим часам или с общего старта; галочки в
+ * списке оставляют на карте только отмеченных.
  */
 export function LiveTrackMapPage() {
   const { id, distanceId: distanceIdParam } = useParams<{ id: string; distanceId: string }>()
@@ -174,21 +251,54 @@ export function LiveTrackMapPage() {
   const corners = distance ? distanceMapCorners(distance) : null
   const controlPoints = distance?.controlPoints.filter((cp) => cp.latitude != null && cp.longitude != null) ?? []
 
-  const { loaded, tracks, colorIndex, serverTime, connectionLost, speedProfiles } = useLiveTracks(competitionId, distanceId)
+  const { loaded, tracks, colorIndex, serverTime, connectionLost, speedProfiles, replayTracks } = useLiveTracks(competitionId, distanceId)
 
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set())
   const [tailOnly, setTailOnly] = useState(false)
   const [focus, setFocus] = useState<MapFocus | null>(null)
   const [speedMode, setSpeedMode] = useState(false)
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null)
+  const [replay, setReplay] = useState(false)
+  const [replayMode, setReplayMode] = useState<ReplayTimeMode>('mass')
+  const [replayPosition, setReplayPosition] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [playbackSpeed, setPlaybackSpeed] = useState(DEFAULT_PLAYBACK_SPEED)
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
 
   const groups = [...new Set(tracks.map((t) => t.groupName).filter((g): g is string => g != null))].sort()
   const visibleTracks = selectedGroups.size === 0 ? tracks : tracks.filter((t) => t.groupName != null && selectedGroups.has(t.groupName))
   const activeCount = tracks.filter(isActive).length
   const canShowSpeed = visibleTracks.some((t) => speedProfiles.has(t.sessionId))
-  // Выбранный в режиме скорости участник, если он не скрыт фильтром групп.
-  const speedSelection = speedMode ? (visibleTracks.find((t) => t.sessionId === selectedSessionId) ?? null) : null
-  const mapTracks = speedSelection ? [speedSelection] : visibleTracks
+  const canReplay = visibleTracks.some((t) => replayTracks.has(t.sessionId))
+  // Треки просмотра: завершённые показанные, а если кто-то отмечен — только отмеченные. Memo — чтобы
+  // бледные треки на карте не перестраивались на каждом кадре.
+  const replayShown = useMemo(() => {
+    const finished = tracks
+      .filter((t) => selectedGroups.size === 0 || (t.groupName != null && selectedGroups.has(t.groupName)))
+      .flatMap((t) => replayTracks.get(t.sessionId) ?? [])
+    const checked = finished.filter((r) => checkedIds.has(r.track.sessionId))
+    return checked.length > 0 ? checked : finished
+  }, [tracks, replayTracks, selectedGroups, checkedIds])
+  const range = replayRange(replayShown, replayMode)
+  // Диапазон меняется при смене галочек и групп — позиция держится в его пределах.
+  const position = range ? Math.min(Math.max(replayPosition, range[0]), range[1]) : 0
+  const rangeEnd = range?.[1] ?? null
+  // Выбранный в режиме скорости участник, если он не скрыт фильтром групп (при просмотре — не используется).
+  const speedSelection = speedMode && !replay ? (visibleTracks.find((t) => t.sessionId === selectedSessionId) ?? null) : null
+  const mapTracks = replay ? replayShown.map((r) => r.track) : speedSelection ? [speedSelection] : visibleTracks
+  const listTracks = replay ? visibleTracks.filter((t) => replayTracks.has(t.sessionId)) : visibleTracks
+
+  useEffect(() => {
+    if (!isPlaying || rangeEnd == null) return
+    const timer = setInterval(() => {
+      setReplayPosition((prev) => {
+        const next = prev + REPLAY_FRAME_MS * playbackSpeed
+        if (next >= rangeEnd) setIsPlaying(false)
+        return Math.min(next, rangeEnd)
+      })
+    }, REPLAY_FRAME_MS)
+    return () => clearInterval(timer)
+  }, [isPlaying, playbackSpeed, rangeEnd])
   const coloredProfiles = speedMode ? mapTracks.filter((t) => !isActive(t)).flatMap((t) => speedProfiles.get(t.sessionId) ?? []) : []
 
   function toggleGroup(group: string) {
@@ -202,7 +312,11 @@ export function LiveTrackMapPage() {
 
   function focusTrack(track: ViewerTrack) {
     const last = track.points[track.points.length - 1]
-    if (speedMode) {
+    const replayTrack = replay ? replayTracks.get(track.sessionId) : undefined
+    if (replayTrack) {
+      const { point } = replayPositionAt(replayTrack, replayTimeAt(replayTrack, position, replayMode))
+      setFocus((prev) => ({ lat: point.lat, lon: point.lon, bounds: null, seq: (prev?.seq ?? 0) + 1 }))
+    } else if (speedMode) {
       const deselect = selectedSessionId === track.sessionId
       setSelectedSessionId(deselect ? null : track.sessionId)
       if (deselect || !last) return
@@ -216,6 +330,38 @@ export function LiveTrackMapPage() {
   function toggleSpeedMode() {
     setSpeedMode((v) => !v)
     setSelectedSessionId(null)
+  }
+
+  function toggleReplay() {
+    setIsPlaying(false)
+    setReplay((v) => !v)
+    setReplayPosition(range?.[0] ?? 0)
+  }
+
+  function changeReplayMode(mode: ReplayTimeMode) {
+    setIsPlaying(false)
+    setReplayMode(mode)
+    setReplayPosition(replayRange(replayShown, mode)?.[0] ?? 0)
+  }
+
+  function togglePlay() {
+    if (isPlaying) {
+      setIsPlaying(false)
+      return
+    }
+    if (!range) return
+    // С начала, если ползунок в конце.
+    setReplayPosition(position >= range[1] ? range[0] : position)
+    setIsPlaying(true)
+  }
+
+  function toggleChecked(sessionId: string) {
+    setCheckedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(sessionId)) next.delete(sessionId)
+      else next.add(sessionId)
+      return next
+    })
   }
 
   const chipClass = (selected: boolean) =>
@@ -243,9 +389,16 @@ export function LiveTrackMapPage() {
       </header>
 
       <div className="flex gap-2 overflow-x-auto px-4 py-2">
-        <button type="button" onClick={() => setTailOnly((v) => !v)} className={chipClass(tailOnly)}>
-          Хвост 5 мин
-        </button>
+        {!replay && (
+          <button type="button" onClick={() => setTailOnly((v) => !v)} className={chipClass(tailOnly)}>
+            Хвост 5 мин
+          </button>
+        )}
+        {(canReplay || replay) && (
+          <button type="button" onClick={toggleReplay} className={chipClass(replay)}>
+            Просмотр
+          </button>
+        )}
         {(canShowSpeed || speedMode) && (
           <button type="button" onClick={toggleSpeedMode} className={chipClass(speedMode)}>
             Скорость
@@ -269,6 +422,7 @@ export function LiveTrackMapPage() {
             serverTime={serverTime}
             tailOnly={tailOnly}
             speedProfiles={speedMode ? speedProfiles : null}
+            replay={replay ? { tracks: replayShown, position, mode: replayMode } : null}
             focus={focus}
           />
         ) : (
@@ -281,17 +435,63 @@ export function LiveTrackMapPage() {
         )}
       </div>
 
+      {replay && range && (
+        <div className="border-t border-outline-variant px-2 pt-1">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={togglePlay}
+              aria-label={isPlaying ? 'Пауза' : 'Воспроизвести'}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl text-fg"
+            >
+              {isPlaying ? '❚❚' : '▶'}
+            </button>
+            <input
+              type="range"
+              min={range[0]}
+              max={range[1]}
+              value={position}
+              onChange={(e) => setReplayPosition(Number(e.target.value))}
+              aria-label="Момент просмотра"
+              className="min-w-0 flex-1 accent-primary"
+            />
+            <span className="w-20 shrink-0 text-right text-sm tabular-nums">
+              {replayMode === 'real' ? clockText(position) : `+${durationText(position)}`}
+            </span>
+          </div>
+          <div className="flex gap-2 overflow-x-auto px-2 py-2">
+            <button type="button" onClick={() => changeReplayMode('mass')} className={chipClass(replayMode === 'mass')}>
+              Общий старт
+            </button>
+            <button type="button" onClick={() => changeReplayMode('real')} className={chipClass(replayMode === 'real')}>
+              Реальное время
+            </button>
+            {PLAYBACK_SPEEDS.map((speed) => (
+              <button key={speed} type="button" onClick={() => setPlaybackSpeed(speed)} className={chipClass(playbackSpeed === speed)}>
+                ×{speed}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <ul className="max-h-[38vh] overflow-y-auto border-t border-outline-variant">
-        {visibleTracks.map((track) => {
+        {listTracks.map((track) => {
           const stale = isStale(track, serverTime)
           const selected = speedSelection?.sessionId === track.sessionId
+          const replayTrack = replay ? replayTracks.get(track.sessionId) : undefined
           return (
-            <li key={track.sessionId}>
-              <button
-                type="button"
-                onClick={() => focusTrack(track)}
-                className={`flex w-full items-center gap-3 px-4 py-2 text-left ${selected ? 'bg-secondary-container' : ''}`}
-              >
+            <li key={track.sessionId} className={`flex items-center ${selected ? 'bg-secondary-container' : ''}`}>
+              {replayTrack && (
+                <input
+                  type="checkbox"
+                  checked={checkedIds.has(track.sessionId)}
+                  onChange={() => toggleChecked(track.sessionId)}
+                  aria-label={`Сравнивать: ${track.displayName}`}
+                  className="ml-4 h-4 w-4 shrink-0 accent-primary"
+                />
+              )}
+              <button type="button" onClick={() => focusTrack(track)} className="flex min-w-0 flex-1 items-center gap-3 px-4 py-2 text-left">
                 <span
                   className="h-3.5 w-3.5 shrink-0 rounded-full"
                   style={{ background: stale ? STALE_COLOR : trackColor(colorIndex, track.sessionId) }}
@@ -304,7 +504,7 @@ export function LiveTrackMapPage() {
                   {track.groupName && <span className="block text-xs text-on-surface-variant">{track.groupName}</span>}
                 </span>
                 <span className={`shrink-0 text-xs ${isActive(track) && !stale ? 'text-primary' : 'text-on-surface-variant'}`}>
-                  {statusText(track, serverTime)}
+                  {replayTrack ? replayStatusText(replayTrack, position, replayMode) : statusText(track, serverTime)}
                 </span>
               </button>
             </li>

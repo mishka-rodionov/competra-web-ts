@@ -1,10 +1,11 @@
 import L from 'leaflet'
-import { useEffect, useRef } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import { Circle, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import { isActive, isStale, trackSegments, type ViewerTrack } from '../lib/liveTrackAccumulator'
 import { CONTROL_POINT_COLOR, SPEED_CASING_COLOR, STALE_COLOR, TAIL_WINDOW_MS, speedColor, trackColor } from '../lib/liveTrackColors'
 import type { MapCorners } from '../lib/mapCorners'
 import { SPEED_COLOR_STEPS, type TrackSpeedProfile } from '../lib/trackSpeed'
+import { REPLAY_TAIL_MS, replayPositionAt, replayTail, replayTimeAt, type ReplayTimeMode, type ReplayTrack } from '../lib/trackReplay'
 import type { ControlPoint } from '../types/distance'
 import { DistanceMapView } from './DistanceMapView'
 import { MapInvalidateSize } from './MapInvalidateSize'
@@ -23,6 +24,8 @@ interface LiveTrackMapViewProps {
   tailOnly: boolean
   /** Раскраска по скорости завершённых треков по id сессии; `null` — режим скорости выключен. */
   speedProfiles: Map<string, TrackSpeedProfile> | null
+  /** Просмотр ползунком: вместо `tracks` — бледные треки, хвосты и маркеры на момент `position`. */
+  replay: { tracks: ReplayTrack[]; position: number; mode: ReplayTimeMode } | null
   /** Участник, на котором центрировать карту (`bounds` — вписать весь трек); `seq` меняется на каждый запрос. */
   focus: MapFocus | null
   className?: string
@@ -39,7 +42,8 @@ export interface MapFocus {
  * Карта онлайн-треков дистанции: растр карты по её углам поверх OSM (или только OSM, если карта не
  * прикреплена), КП, треки участников (разрывы дольше 30 с не соединяются) и маркер с номером на
  * последней точке — серый, если данных нет больше минуты, полупрозрачный — трек закрыт. В режиме
- * скорости завершённые треки раскрашены от красного (медленно) к зелёному (быстро).
+ * скорости завершённые треки раскрашены от красного (медленно) к зелёному (быстро). При просмотре
+ * ползунком маркеры движутся по бледным трекам с ярким хвостом за последние 2 минуты.
  */
 export function LiveTrackMapView(props: LiveTrackMapViewProps) {
   const layers = <TrackLayers {...props} />
@@ -60,7 +64,7 @@ export function LiveTrackMapView(props: LiveTrackMapViewProps) {
   )
 }
 
-function TrackLayers({ controlPoints, tracks, colorIndex, serverTime, tailOnly, speedProfiles, focus }: LiveTrackMapViewProps) {
+function TrackLayers({ controlPoints, tracks, colorIndex, serverTime, tailOnly, speedProfiles, replay, focus }: LiveTrackMapViewProps) {
   return (
     <>
       {controlPoints.map((cp) =>
@@ -75,7 +79,18 @@ function TrackLayers({ controlPoints, tracks, colorIndex, serverTime, tailOnly, 
             ))
           : null,
       )}
-      {tracks.map((track) => {
+      {replay && <FaintTracks tracks={replay.tracks} colorIndex={colorIndex} speedProfiles={speedProfiles} />}
+      {replay &&
+        replay.tracks.map((r) => (
+          <ReplayRunner
+            key={r.track.sessionId}
+            replay={r}
+            t={replayTimeAt(r, replay.position, replay.mode)}
+            color={trackColor(colorIndex, r.track.sessionId)}
+            speed={speedProfiles?.get(r.track.sessionId) ?? null}
+          />
+        ))}
+      {!replay && tracks.map((track) => {
         const color = trackColor(colorIndex, track.sessionId)
         const since = tailOnly ? (track.lastPointAt ?? serverTime) - TAIL_WINDOW_MS : null
         const last = track.points[track.points.length - 1]
@@ -137,6 +152,90 @@ function TrackLayer({
   )
 }
 
+/**
+ * Полные треки за хвостами при просмотре — бледные (в режиме скорости — бледный градиент). Memo: на
+ * каждом кадре просмотра их пропсы не меняются, и Leaflet не перестраивает тысячи точек.
+ */
+const FaintTracks = memo(function FaintTracks({
+  tracks,
+  colorIndex,
+  speedProfiles,
+}: {
+  tracks: ReplayTrack[]
+  colorIndex: Map<string, number>
+  speedProfiles: Map<string, TrackSpeedProfile> | null
+}) {
+  return (
+    <>
+      {tracks.map((r) => {
+        const speed = speedProfiles?.get(r.track.sessionId)
+        if (speed) {
+          return speed.chunks.map((chunk, i) => {
+            const points = chunk.points.filter((p) => p.t >= r.startAt && p.t <= r.finishAt)
+            if (points.length < 2) return null
+            return (
+              <Polyline
+                key={`${r.track.sessionId}-${i}`}
+                positions={points.map((p) => [p.lat, p.lon])}
+                pathOptions={{ color: speedColor(chunk.level, SPEED_COLOR_STEPS), weight: 3, opacity: 0.4, interactive: false }}
+              />
+            )
+          })
+        }
+        const color = trackColor(colorIndex, r.track.sessionId)
+        return trackSegments(r.track)
+          .filter((segment) => segment.length > 1)
+          .map((segment, i) => (
+            <Polyline
+              key={`${r.track.sessionId}-${i}`}
+              positions={segment.map((p) => [p.lat, p.lon])}
+              pathOptions={{ color, weight: 3, opacity: 0.4, interactive: false }}
+            />
+          ))
+      })}
+    </>
+  )
+})
+
+/** Участник в момент `t` просмотра: яркий хвост и маркер (до старта — ничего). */
+function ReplayRunner({ replay, t, color, speed }: { replay: ReplayTrack; t: number; color: string; speed: TrackSpeedProfile | null }) {
+  const position = replayPositionAt(replay, t)
+  if (position.state === 'notStarted') return null
+  const tail = replayTail(replay, t).filter((segment) => segment.length > 1)
+  const now = Math.min(t, replay.finishAt)
+  const { track } = replay
+  return (
+    <>
+      {speed ? (
+        <SpeedLines
+          segments={tail}
+          speed={{
+            ...speed,
+            chunks: speed.chunks.map((chunk) => ({
+              ...chunk,
+              points: chunk.points.filter((p) => p.t > now - REPLAY_TAIL_MS && p.t <= now && p.t >= replay.startAt),
+            })),
+          }}
+          since={null}
+        />
+      ) : (
+        tail.map((segment, i) => (
+          <Polyline key={i} positions={segment.map((p) => [p.lat, p.lon])} pathOptions={{ color, weight: 4, lineCap: 'round', interactive: false }} />
+        ))
+      )}
+      <Marker
+        position={[position.point.lat, position.point.lon]}
+        icon={markerIcon(position.state === 'noData' ? STALE_COLOR : color, track.startNumber?.toString() ?? track.displayName.slice(0, 1), position.state === 'finished')}
+      >
+        <Tooltip direction="top" offset={[0, -12]}>
+          {track.displayName}
+          {track.groupName ? ` • ${track.groupName}` : ''}
+        </Tooltip>
+      </Marker>
+    </>
+  )
+}
+
 /** Трек по скорости: тёмная подложка по отрезкам трека и поверх неё — куски цвета своей ступени. */
 function SpeedLines({ segments, speed, since }: { segments: ViewerTrack['points'][]; speed: TrackSpeedProfile; since: number | null }) {
   return (
@@ -163,10 +262,16 @@ function SpeedLines({ segments, speed, since }: { segments: ViewerTrack['points'
   )
 }
 
+/** Иконки маркеров кэшируются: при просмотре маркеры обновляются на каждом кадре. */
+const markerIcons = new Map<string, L.DivIcon>()
+
 /** Кружок цвета участника с номером (divIcon — без картинок маркеров Leaflet). */
 function markerIcon(color: string, label: string, faded: boolean): L.DivIcon {
+  const key = `${color}|${label}|${faded}`
+  const cached = markerIcons.get(key)
+  if (cached) return cached
   const safeLabel = label.replace(/[<>&"]/g, '')
-  return L.divIcon({
+  const icon = L.divIcon({
     className: '',
     iconSize: [26, 26],
     iconAnchor: [13, 13],
@@ -175,6 +280,8 @@ function markerIcon(color: string, label: string, faded: boolean): L.DivIcon {
       `border:2px solid #fff;box-sizing:border-box;display:flex;align-items:center;justify-content:center;` +
       `color:#fff;font:700 ${safeLabel.length > 2 ? 10 : 12}px sans-serif">${safeLabel}</div>`,
   })
+  markerIcons.set(key, icon)
+  return icon
 }
 
 /** Без карты дистанции — вписать вид в КП или треки один раз, как только они появятся. */
