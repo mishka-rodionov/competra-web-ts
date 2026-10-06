@@ -2,8 +2,9 @@ import L from 'leaflet'
 import { useEffect, useRef } from 'react'
 import { Circle, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import { isActive, isStale, trackSegments, type ViewerTrack } from '../lib/liveTrackAccumulator'
-import { CONTROL_POINT_COLOR, STALE_COLOR, TAIL_WINDOW_MS, trackColor } from '../lib/liveTrackColors'
+import { CONTROL_POINT_COLOR, SPEED_CASING_COLOR, STALE_COLOR, TAIL_WINDOW_MS, speedColor, trackColor } from '../lib/liveTrackColors'
 import type { MapCorners } from '../lib/mapCorners'
+import { SPEED_COLOR_STEPS, type TrackSpeedProfile } from '../lib/trackSpeed'
 import type { ControlPoint } from '../types/distance'
 import { DistanceMapView } from './DistanceMapView'
 import { MapInvalidateSize } from './MapInvalidateSize'
@@ -20,15 +21,25 @@ interface LiveTrackMapViewProps {
   colorIndex: Map<string, number>
   serverTime: number
   tailOnly: boolean
-  /** Участник, на котором центрировать карту; `seq` меняется на каждый запрос. */
-  focus: { lat: number; lon: number; seq: number } | null
+  /** Раскраска по скорости завершённых треков по id сессии; `null` — режим скорости выключен. */
+  speedProfiles: Map<string, TrackSpeedProfile> | null
+  /** Участник, на котором центрировать карту (`bounds` — вписать весь трек); `seq` меняется на каждый запрос. */
+  focus: MapFocus | null
   className?: string
+}
+
+export interface MapFocus {
+  lat: number
+  lon: number
+  bounds: [number, number][] | null
+  seq: number
 }
 
 /**
  * Карта онлайн-треков дистанции: растр карты по её углам поверх OSM (или только OSM, если карта не
  * прикреплена), КП, треки участников (разрывы дольше 30 с не соединяются) и маркер с номером на
- * последней точке — серый, если данных нет больше минуты, полупрозрачный — трек закрыт.
+ * последней точке — серый, если данных нет больше минуты, полупрозрачный — трек закрыт. В режиме
+ * скорости завершённые треки раскрашены от красного (медленно) к зелёному (быстро).
  */
 export function LiveTrackMapView(props: LiveTrackMapViewProps) {
   const layers = <TrackLayers {...props} />
@@ -49,7 +60,7 @@ export function LiveTrackMapView(props: LiveTrackMapViewProps) {
   )
 }
 
-function TrackLayers({ controlPoints, tracks, colorIndex, serverTime, tailOnly, focus }: LiveTrackMapViewProps) {
+function TrackLayers({ controlPoints, tracks, colorIndex, serverTime, tailOnly, speedProfiles, focus }: LiveTrackMapViewProps) {
   return (
     <>
       {controlPoints.map((cp) =>
@@ -69,7 +80,15 @@ function TrackLayers({ controlPoints, tracks, colorIndex, serverTime, tailOnly, 
         const since = tailOnly ? (track.lastPointAt ?? serverTime) - TAIL_WINDOW_MS : null
         const last = track.points[track.points.length - 1]
         return (
-          <TrackLayer key={track.sessionId} track={track} color={color} since={since} serverTime={serverTime} last={last} />
+          <TrackLayer
+            key={track.sessionId}
+            track={track}
+            color={color}
+            since={since}
+            serverTime={serverTime}
+            last={last}
+            speed={!isActive(track) ? (speedProfiles?.get(track.sessionId) ?? null) : null}
+          />
         )
       })}
       <FlyToFocus focus={focus} />
@@ -83,21 +102,26 @@ function TrackLayer({
   since,
   serverTime,
   last,
+  speed,
 }: {
   track: ViewerTrack
   color: string
   since: number | null
   serverTime: number
   last: { lat: number; lon: number } | undefined
+  speed: TrackSpeedProfile | null
 }) {
   const stale = isStale(track, serverTime)
+  const segments = trackSegments(track, since).filter((segment) => segment.length > 1)
   return (
     <>
-      {trackSegments(track, since)
-        .filter((segment) => segment.length > 1)
-        .map((segment, i) => (
+      {speed ? (
+        <SpeedLines segments={segments} speed={speed} since={since} />
+      ) : (
+        segments.map((segment, i) => (
           <Polyline key={i} positions={segment.map((p) => [p.lat, p.lon])} pathOptions={{ color, weight: 4, lineCap: 'round' }} />
-        ))}
+        ))
+      )}
       {last && (
         <Marker
           position={[last.lat, last.lon]}
@@ -109,6 +133,32 @@ function TrackLayer({
           </Tooltip>
         </Marker>
       )}
+    </>
+  )
+}
+
+/** Трек по скорости: тёмная подложка по отрезкам трека и поверх неё — куски цвета своей ступени. */
+function SpeedLines({ segments, speed, since }: { segments: ViewerTrack['points'][]; speed: TrackSpeedProfile; since: number | null }) {
+  return (
+    <>
+      {segments.map((segment, i) => (
+        <Polyline
+          key={`casing-${i}`}
+          positions={segment.map((p) => [p.lat, p.lon])}
+          pathOptions={{ color: SPEED_CASING_COLOR, weight: 7, lineCap: 'round', interactive: false }}
+        />
+      ))}
+      {speed.chunks.map((chunk, i) => {
+        const points = since == null ? chunk.points : chunk.points.filter((p) => p.t >= since)
+        if (points.length < 2) return null
+        return (
+          <Polyline
+            key={i}
+            positions={points.map((p) => [p.lat, p.lon])}
+            pathOptions={{ color: speedColor(chunk.level, SPEED_COLOR_STEPS), weight: 4, lineCap: 'round', interactive: false }}
+          />
+        )
+      })}
     </>
   )
 }
@@ -145,7 +195,9 @@ function FitOnce({ controlPoints, tracks }: { controlPoints: ControlPoint[]; tra
 function FlyToFocus({ focus }: { focus: LiveTrackMapViewProps['focus'] }) {
   const map = useMap()
   useEffect(() => {
-    if (focus) map.flyTo([focus.lat, focus.lon], Math.max(map.getZoom(), 15))
+    if (!focus) return
+    if (focus.bounds && focus.bounds.length > 1) map.flyToBounds(focus.bounds, BOUNDS_OPTIONS)
+    else map.flyTo([focus.lat, focus.lon], Math.max(map.getZoom(), 15))
   }, [map, focus])
   return null
 }

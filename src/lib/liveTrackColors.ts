@@ -14,3 +14,11 @@ export const TAIL_WINDOW_MS = 5 * 60_000
 export function trackColor(colorIndex: Map<string, number>, sessionId: string): string {
   return TRACK_COLORS[(colorIndex.get(sessionId) ?? 0) % TRACK_COLORS.length]
 }
+
+/** Подложка под линией скорости: жёлтый и светло-зелёный иначе теряются на топокарте. */
+export const SPEED_CASING_COLOR = 'rgba(0, 0, 0, 0.6)'
+
+/** Цвет ступени скорости: от красного (0) через жёлтый к зелёному (`steps` − 1) — как в Android. */
+export function speedColor(level: number, steps: number): string {
+  return `hsl(${Math.round((120 * level) / (steps - 1))}, 82%, 50%)`
+}
