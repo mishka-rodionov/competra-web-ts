@@ -8,7 +8,7 @@ import { GENDER_OPTIONS } from './dictionaries'
 interface AddGroupDialogProps {
   competitionId: string
   distances: Distance[]
-  isByChoice: boolean
+  isScoreO: boolean
   /** КВ соревнования — подсказка о том, что унаследует группа с пустым полем. */
   competitionControlTimeMinutes: number | null
   onDismiss: () => void
@@ -20,7 +20,7 @@ const NO_DISTANCE = 0
 export function AddGroupDialog({
   competitionId,
   distances,
-  isByChoice,
+  isScoreO,
   competitionControlTimeMinutes,
   onDismiss,
   onSaved,
@@ -55,8 +55,8 @@ export function AddGroupDialog({
         distanceId: distanceId !== NO_DISTANCE ? distanceId : null,
         maxParticipants: maxParticipants ? parseInt(maxParticipants, 10) : null,
         timeLimitMinutes: timeLimitMinutes ? parseInt(timeLimitMinutes, 10) : null,
-        scorePenaltyPerMinute: isByChoice && scorePenaltyPerMinute ? parseInt(scorePenaltyPerMinute, 10) : null,
-        maxLatenessMinutes: isByChoice && maxLatenessMinutes ? parseInt(maxLatenessMinutes, 10) : null,
+        scorePenaltyPerMinute: isScoreO && scorePenaltyPerMinute ? parseInt(scorePenaltyPerMinute, 10) : null,
+        maxLatenessMinutes: isScoreO && maxLatenessMinutes ? parseInt(maxLatenessMinutes, 10) : null,
       },
     ])
     if (result.kind === 'success') {
@@ -115,7 +115,7 @@ export function AddGroupDialog({
               : 'Пусто — без КВ для этой группы'}
           </span>
         </label>
-        {isByChoice && (
+        {isScoreO && (
           <>
             <p className="text-sm font-medium text-fg">Параметры «по выбору»</p>
             <input

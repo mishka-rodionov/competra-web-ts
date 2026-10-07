@@ -5,17 +5,22 @@ import { DistanceMapView } from '../../components/DistanceMapView'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Loading } from '../../components/Loading'
+import { importedCoursesWarning, isMinControls, minControlsLabel, requiredControlNumbers } from '../../lib/byChoiceMode'
 import { distanceMapCorners } from '../../lib/mapCorners'
 import type { Distance } from '../../types/distance'
 import { AttachMapDialog } from '../management/AttachMapDialog'
 import { DistanceDialog } from '../management/DistanceDialog'
+import { DistanceRulesDialog } from '../management/DistanceRulesDialog'
 import { useDistances } from './hooks'
 
 interface DistancesTabProps {
   competitionId: string
   /** Организаторский режим: создание вручную + импорт IOF XML (ManageCompetitionPage). */
   showImport?: boolean
-  isByChoice?: boolean
+  /** Направление соревнования — для «по выбору» на карточках показываются правила дистанции. */
+  direction?: string
+  /** SCORE / MIN_CONTROLS — итог формата «по выбору». */
+  byChoiceMode?: string
   /** Режим старта BY_START_STATION — у новой дистанции обязательно стартовое КП. */
   isStartCpRequired?: boolean
 }
@@ -25,12 +30,19 @@ interface DistancesTabProps {
  * (DistanceMapView) — решение по нему отложено до отдельной задачи с картами/треками, как и в
  * вертикали 1.
  */
-export function DistancesTab({ competitionId, showImport = false, isByChoice = false, isStartCpRequired = false }: DistancesTabProps) {
+export function DistancesTab({
+  competitionId,
+  showImport = false,
+  direction = 'FORWARD',
+  byChoiceMode = 'SCORE',
+  isStartCpRequired = false,
+}: DistancesTabProps) {
   const queryClient = useQueryClient()
   const { data: distances, isLoading, isError, error } = useDistances(competitionId)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
+  const [importWarning, setImportWarning] = useState<string | null>(null)
   const [expandedMapDistance, setExpandedMapDistance] = useState<Distance | null>(null)
   const expandedMapCorners = expandedMapDistance ? distanceMapCorners(expandedMapDistance) : null
 
@@ -41,9 +53,11 @@ export function DistancesTab({ competitionId, showImport = false, isByChoice = f
   async function handleImportXml(file: File) {
     setImporting(true)
     setImportError(null)
+    setImportWarning(null)
     const content = await file.text()
     const result = await distanceRepository.importFromXml(competitionId, content)
     if (result.kind === 'success') {
+      setImportWarning(importedCoursesWarning(result.data, direction, byChoiceMode))
       await invalidate()
     } else {
       setImportError(result.message)
@@ -79,6 +93,7 @@ export function DistancesTab({ competitionId, showImport = false, isByChoice = f
             />
           </label>
           {importError && <ErrorMessage message={importError} />}
+          {importWarning && <p className="text-sm text-error">{importWarning}</p>}
         </div>
       )}
 
@@ -90,6 +105,8 @@ export function DistancesTab({ competitionId, showImport = false, isByChoice = f
             key={distance.id}
             distance={distance}
             canEditMap={showImport}
+            direction={direction}
+            byChoiceMode={byChoiceMode}
             onExpandMap={setExpandedMapDistance}
             onMapUpdated={invalidate}
           />
@@ -112,7 +129,8 @@ export function DistancesTab({ competitionId, showImport = false, isByChoice = f
 
       {showCreateDialog && (
         <DistanceDialog
-          isByChoice={isByChoice}
+          direction={direction}
+          byChoiceMode={byChoiceMode}
           isStartCpRequired={isStartCpRequired}
           onDismiss={() => setShowCreateDialog(false)}
           onSave={async (pending) => {
@@ -129,6 +147,7 @@ export function DistancesTab({ competitionId, showImport = false, isByChoice = f
                 controlPoints: pending.controlPoints,
                 finishControlPoint: pending.finishControlPoint,
                 startControlPoint: pending.startControlPoint,
+                minControlsCount: pending.minControlsCount ?? 0,
               },
             ])
             await invalidate()
@@ -151,13 +170,19 @@ function Stat({ label, value }: { label: string; value: string }) {
 interface DistanceCardProps {
   distance: Distance
   canEditMap: boolean
+  direction: string
+  byChoiceMode: string
   onExpandMap: (distance: Distance) => void
   onMapUpdated: () => void
 }
 
-function DistanceCard({ distance, canEditMap, onExpandMap, onMapUpdated }: DistanceCardProps) {
+function DistanceCard({ distance, canEditMap, direction, byChoiceMode, onExpandMap, onMapUpdated }: DistanceCardProps) {
   const [showAttachDialog, setShowAttachDialog] = useState(false)
+  const [showRulesDialog, setShowRulesDialog] = useState(false)
   const hasMap = distanceMapCorners(distance) != null
+  const isByChoice = direction === 'BY_CHOICE'
+  const hasMinControls = isMinControls(direction, byChoiceMode)
+  const required = requiredControlNumbers(distance)
 
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-outline-variant bg-surface p-4">
@@ -167,6 +192,12 @@ function DistanceCard({ distance, canEditMap, onExpandMap, onMapUpdated }: Dista
         {distance.climbMeters > 0 && <Stat label="Набор" value={`${distance.climbMeters} м`} />}
         <Stat label="КП" value={`${distance.controlsCount}`} />
       </div>
+      {hasMinControls && (
+        <span className="text-sm text-fg">{minControlsLabel(distance.minControlsCount, distance.controlPoints.length)}</span>
+      )}
+      {isByChoice && required.length > 0 && (
+        <span className="text-sm text-fg">Обязательные КП: {required.join(', ')}</span>
+      )}
       {hasMap && (
         <button
           type="button"
@@ -176,12 +207,28 @@ function DistanceCard({ distance, canEditMap, onExpandMap, onMapUpdated }: Dista
           Открыть карту дистанции
         </button>
       )}
+      {canEditMap && isByChoice && (
+        <button type="button" onClick={() => setShowRulesDialog(true)} className="rounded-md border border-outline px-3 py-1.5 text-sm text-fg">
+          {hasMinControls ? 'Минимум и обязательные КП' : 'Обязательные КП'}
+        </button>
+      )}
       {canEditMap && (
         <button type="button" onClick={() => setShowAttachDialog(true)} className="rounded-md border border-outline px-3 py-1.5 text-sm text-fg">
           {distance.mapUrl != null ? 'Заменить карту' : 'Прикрепить карту'}
         </button>
       )}
 
+      {showRulesDialog && (
+        <DistanceRulesDialog
+          distance={distance}
+          hasMinControls={hasMinControls}
+          onDismiss={() => setShowRulesDialog(false)}
+          onSaved={() => {
+            setShowRulesDialog(false)
+            onMapUpdated()
+          }}
+        />
+      )}
       {showAttachDialog && (
         <AttachMapDialog
           distance={distance}

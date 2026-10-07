@@ -24,6 +24,7 @@ import { useUserProfile } from '../features/profile/hooks'
 import { analytics } from '../lib/analytics/analytics'
 import { competitionYear } from '../lib/groupEligibility'
 import { AnalyticsEvents, type RegistrationTeamSource } from '../lib/analytics/events'
+import { isMinControls } from '../lib/byChoiceMode'
 import type { RegisterEventRequest } from '../types/competition'
 
 const TABS = [
@@ -135,6 +136,7 @@ export function CompetitionDetailPage() {
                 competitionYear={competitionYear(detail.startDate, detail.timeZoneId)}
                 profile={isLoggedIn ? (profile ?? null) : null}
                 overtimePolicy={detail.overtimePolicy}
+                isMinControls={isMinControls(detail.direction, detail.byChoiceMode)}
                 registrationOpen={detail.status === 'REGISTRATION_OPEN'}
                 registeredGroupId={registeredGroupId}
                 registrationStatusLoading={registrationStatusLoading}
@@ -143,7 +145,9 @@ export function CompetitionDetailPage() {
                 onCancelRegistration={handleCancelRegistration}
               />
             )}
-            {tab === 'distances' && <DistancesTab competitionId={detail.id} />}
+            {tab === 'distances' && (
+              <DistancesTab competitionId={detail.id} direction={detail.direction} byChoiceMode={detail.byChoiceMode} />
+            )}
             {tab === LIVE_TRACKS_TAB.key && <LiveTracksTab competitionId={detail.id} />}
             {tab === 'start' && (
               <StartProtocolTab competitionId={detail.id} groups={detail.participantGroups} timeZoneId={detail.timeZoneId} />
@@ -155,6 +159,7 @@ export function CompetitionDetailPage() {
                 competitionStatus={detail.status}
                 resultsStatus={detail.resultsStatus}
                 direction={detail.direction}
+                byChoiceMode={detail.byChoiceMode}
               />
             )}
           </div>

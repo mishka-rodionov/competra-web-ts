@@ -48,6 +48,8 @@ export interface OrienteeringCompetition {
   controlTimeMinutes: number | null
   /** IGNORE / DISQUALIFY / SCORE_PENALTY — что делать с превысившими КВ. */
   overtimePolicy: string
+  /** SCORE / MIN_CONTROLS — итог формата «по выбору» (см. ranksByScore). Нет у старых ответов сервера. */
+  byChoiceMode?: string
 }
 
 export interface ParticipantGroupDetail {
@@ -62,6 +64,8 @@ export interface ParticipantGroupDetail {
   distanceClimbMeters: number | null
   distanceControlsCount: number | null
   distanceDescription: string | null
+  /** Минимум КП дистанции группы («по выбору» с минимумом КП); null — все КП. Только в деталке соревнования. */
+  distanceMinControlsCount?: number | null
   maxParticipants: number | null
   registeredCount: number
   /** Своё КВ группы в минутах (null — наследуется от соревнования). */
@@ -143,6 +147,8 @@ export interface CreateCompetitionRequest {
   startIntervalSeconds: number | null
   controlTimeMinutes: number | null
   overtimePolicy: string
+  /** SCORE / MIN_CONTROLS — итог формата «по выбору»; для остальных направлений не используется. */
+  byChoiceMode: string
   countdownTimer?: number | null
 }
 
@@ -184,4 +190,6 @@ export interface CompetitionDetail {
   direction: string
   controlTimeMinutes: number | null
   overtimePolicy: string
+  /** SCORE / MIN_CONTROLS — итог формата «по выбору». Нет у старых ответов сервера. */
+  byChoiceMode?: string
 }

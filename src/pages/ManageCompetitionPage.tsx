@@ -11,6 +11,7 @@ import { ManageGroupsTab } from '../features/management/ManageGroupsTab'
 import { ManageResultsTab } from '../features/management/ManageResultsTab'
 import { ParticipantsManageTab } from '../features/management/ParticipantsManageTab'
 import { usePendingLinkCounts } from '../features/participant-links/hooks'
+import { ranksByScore } from '../lib/byChoiceMode'
 
 const TABS = [
   { key: 'edit', label: 'Общее' },
@@ -52,7 +53,7 @@ export function ManageCompetitionPage() {
             {tab === 'groups' && (
               <ManageGroupsTab
                 competitionId={competition.competitionId}
-                isByChoice={competition.direction === 'BY_CHOICE'}
+                isScoreO={ranksByScore(competition.direction, competition.byChoiceMode)}
                 competitionControlTimeMinutes={competition.controlTimeMinutes}
               />
             )}
@@ -61,7 +62,8 @@ export function ManageCompetitionPage() {
               <DistancesTab
                 competitionId={competition.competitionId}
                 showImport
-                isByChoice={competition.direction === 'BY_CHOICE'}
+                direction={competition.direction}
+                byChoiceMode={competition.byChoiceMode}
                 isStartCpRequired={competition.startTimeMode === 'BY_START_STATION'}
               />
             )}

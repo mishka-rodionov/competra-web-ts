@@ -6,7 +6,7 @@ import type { PendingGroup } from './types'
 
 interface GroupDialogProps {
   distanceOptions: [number, string][]
-  isByChoice: boolean
+  isScoreO: boolean
   /** КВ соревнования — подсказка о том, что унаследует группа с пустым полем. */
   competitionControlTimeMinutes: number | null
   onDismiss: () => void
@@ -15,7 +15,7 @@ interface GroupDialogProps {
 
 export function GroupDialog({
   distanceOptions,
-  isByChoice,
+  isScoreO,
   competitionControlTimeMinutes,
   onDismiss,
   onSave,
@@ -44,8 +44,8 @@ export function GroupDialog({
       maxParticipants: maxParticipants ? parseInt(maxParticipants, 10) : null,
       distanceIndex,
       timeLimitMinutes: timeLimitMinutes ? parseInt(timeLimitMinutes, 10) : null,
-      scorePenaltyPerMinute: isByChoice && scorePenaltyPerMinute ? parseInt(scorePenaltyPerMinute, 10) : null,
-      maxLatenessMinutes: isByChoice && maxLatenessMinutes ? parseInt(maxLatenessMinutes, 10) : null,
+      scorePenaltyPerMinute: isScoreO && scorePenaltyPerMinute ? parseInt(scorePenaltyPerMinute, 10) : null,
+      maxLatenessMinutes: isScoreO && maxLatenessMinutes ? parseInt(maxLatenessMinutes, 10) : null,
     })
   }
 
@@ -97,7 +97,7 @@ export function GroupDialog({
               : 'Пусто — без КВ для этой группы'}
           </span>
         </label>
-        {isByChoice && (
+        {isScoreO && (
           <>
             <p className="text-sm font-medium text-fg">Параметры «по выбору»</p>
             <input

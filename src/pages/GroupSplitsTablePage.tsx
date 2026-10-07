@@ -4,6 +4,7 @@ import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
 import { useCompetitionDetail, useDistances, useParticipants, useResults } from '../features/competition-detail/hooks'
 import { resultPlaceLabel } from '../features/competitions/labels'
+import { ranksByScore } from '../lib/byChoiceMode'
 import { formatTime } from '../lib/dateUtils'
 import { buildSplitsTable, sortedForResults } from '../lib/splitsTable'
 import type { SplitsTableRow } from '../types/splits'
@@ -42,6 +43,8 @@ export function GroupSplitsTablePage() {
 
   const group = detail?.participantGroups.find((g) => g.groupId === numericGroupId)
   const isByChoice = detail?.direction === 'BY_CHOICE'
+  // Под именем — баллы в score-О или время в «по выбору» с минимумом КП (колонки по позиции у обоих).
+  const showsScore = ranksByScore(detail?.direction ?? '', detail?.byChoiceMode)
   const isLoading = detailLoading || participantsLoading || resultsLoading
 
   const table = useMemo(() => {
@@ -88,7 +91,11 @@ export function GroupSplitsTablePage() {
                 <tr key={row.participant.id} className={index % 2 === 0 ? 'bg-surface' : 'bg-surface-variant'}>
                   <td className="sticky left-0 w-36 bg-inherit px-1 py-1.5 align-top">
                     <div className="font-medium text-fg">{`${row.participant.lastName} ${row.participant.firstName}`.trim()}</div>
-                    {isByChoice && <div className="text-xs text-on-surface-variant">{scoreLabel(row)}</div>}
+                    {isByChoice && (
+                      <div className="text-xs text-on-surface-variant">
+                        {showsScore ? scoreLabel(row) : row.result?.totalTime != null ? formatTime(row.result.totalTime) : ''}
+                      </div>
+                    )}
                     {row.result && resultPlaceLabel(row.result) !== '—' && (
                       <div className="text-xs text-on-surface-variant">Место {resultPlaceLabel(row.result)}</div>
                     )}

@@ -76,9 +76,10 @@ export const AnalyticsEvents = {
     name: 'create_competition_step_completed',
     params: { step },
   }),
-  createCompetitionFinished: (competitionId: string, kindOfSport: string): AnalyticsEvent => ({
+  /** [format] — forward / marking / by_choice_score / by_choice_min_controls. */
+  createCompetitionFinished: (competitionId: string, kindOfSport: string, format: string): AnalyticsEvent => ({
     name: 'create_competition_finished',
-    params: { competition_id: competitionId, kind_of_sport: kindOfSport },
+    params: { competition_id: competitionId, kind_of_sport: kindOfSport, format },
   }),
   competitionDeleted: (competitionId: string): AnalyticsEvent => ({
     name: 'competition_deleted',

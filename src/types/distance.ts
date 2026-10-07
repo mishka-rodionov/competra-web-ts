@@ -26,6 +26,8 @@ export interface Distance {
   startLongitude?: number | null
   finishLatitude?: number | null
   finishLongitude?: number | null
+  /** Минимум КП («по выбору» с минимумом КП); null — все КП дистанции. */
+  minControlsCount?: number | null
   mapUrl: string | null
   mapTopLeftLat: number | null
   mapTopLeftLng: number | null
@@ -56,6 +58,8 @@ export interface SaveDistanceRequest {
   startLongitude?: number | null
   finishLatitude?: number | null
   finishLongitude?: number | null
+  /** Минимум КП: N > 0 — минимум, 0 — все КП, не передано — сервер значение не меняет. */
+  minControlsCount?: number | null
   mapUrl?: string | null
   mapTopLeftLat?: number | null
   mapTopLeftLng?: number | null

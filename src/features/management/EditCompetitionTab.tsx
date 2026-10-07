@@ -10,7 +10,6 @@ import { TimeZoneSelect } from '../../components/TimeZoneSelect'
 import { DEFAULT_TIME_ZONE, utcMillisToZonedDate, utcMillisToZonedTime, zonedDateTimeToUtcMillis } from '../../lib/dateUtils'
 import type { OrienteeringCompetition } from '../../types/competition'
 import {
-  DIRECTION_OPTIONS,
   formatIntervalSeconds,
   punchingSystemOptionsFor,
   START_INTERVAL_OPTIONS,
@@ -18,6 +17,7 @@ import {
   startTimeModePatch,
   STATUS_OPTIONS,
 } from './dictionaries'
+import { CompetitionFormatFields } from './CompetitionFormatFields'
 import { ControlTimeFields } from './ControlTimeFields'
 import { LimitAndFeeFields } from './LimitAndFeeFields'
 
@@ -33,6 +33,7 @@ interface EditFormState {
   description: string
   status: string
   direction: string
+  byChoiceMode: string
   punchingSystem: string
   startTimeMode: string
   startInterval: number
@@ -67,6 +68,7 @@ function toForm(competition: OrienteeringCompetition): EditFormState {
     description: c.description ?? '',
     status: c.status,
     direction: competition.direction || 'FORWARD',
+    byChoiceMode: competition.byChoiceMode || 'SCORE',
     punchingSystem: competition.punchingSystem || 'SPORTIDENT',
     startTimeMode: competition.startTimeMode || 'USER_SET',
     startInterval: competition.startIntervalSeconds ?? 60,
@@ -147,6 +149,7 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
       startIntervalSeconds: form.startInterval,
       controlTimeMinutes: form.controlTimeMinutes ? parseInt(form.controlTimeMinutes, 10) : null,
       overtimePolicy: form.overtimePolicy,
+      byChoiceMode: form.byChoiceMode,
     })
 
     if (result.kind === 'success') {
@@ -205,7 +208,12 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
       <LabeledSelect label="Статус" value={form.status} options={STATUS_OPTIONS} onChange={(status) => patch({ status })} />
 
       <h2 className="mt-2 text-base font-medium text-fg">Параметры ориентирования</h2>
-      <LabeledSelect label="Направление" value={form.direction} options={DIRECTION_OPTIONS} onChange={(direction) => patch({ direction })} />
+      <CompetitionFormatFields
+        direction={form.direction}
+        byChoiceMode={form.byChoiceMode}
+        overtimePolicy={form.overtimePolicy}
+        onChange={patch}
+      />
       <LabeledSelect
         label="Система отметки"
         value={form.punchingSystem}
@@ -229,6 +237,7 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
       )}
       <ControlTimeFields
         direction={form.direction}
+        byChoiceMode={form.byChoiceMode}
         controlTimeMinutes={form.controlTimeMinutes}
         overtimePolicy={form.overtimePolicy}
         onChange={(patchValues) => patch(patchValues)}

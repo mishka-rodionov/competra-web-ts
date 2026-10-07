@@ -12,12 +12,12 @@ import { useGroups } from './hooks'
 
 interface ManageGroupsTabProps {
   competitionId: string
-  isByChoice: boolean
+  isScoreO: boolean
   /** КВ соревнования — умолчание для групп без своего значения. */
   competitionControlTimeMinutes: number | null
 }
 
-export function ManageGroupsTab({ competitionId, isByChoice, competitionControlTimeMinutes }: ManageGroupsTabProps) {
+export function ManageGroupsTab({ competitionId, isScoreO, competitionControlTimeMinutes }: ManageGroupsTabProps) {
   const queryClient = useQueryClient()
   const { data: groups, isLoading, isError, error } = useGroups(competitionId)
   const { data: distances } = useDistances(competitionId)
@@ -69,7 +69,7 @@ export function ManageGroupsTab({ competitionId, isByChoice, competitionControlT
         <AddGroupDialog
           competitionId={competitionId}
           distances={distances ?? []}
-          isByChoice={isByChoice}
+          isScoreO={isScoreO}
           competitionControlTimeMinutes={competitionControlTimeMinutes}
           onDismiss={() => setShowAddDialog(false)}
           onSaved={async () => {

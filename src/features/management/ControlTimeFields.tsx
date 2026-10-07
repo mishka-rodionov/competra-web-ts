@@ -3,6 +3,7 @@ import { overtimePolicyHint, overtimePolicyOptionsFor } from './dictionaries'
 
 interface ControlTimeFieldsProps {
   direction: string
+  byChoiceMode: string
   controlTimeMinutes: string
   overtimePolicy: string
   onChange: (patch: { controlTimeMinutes?: string; overtimePolicy?: string }) => void
@@ -15,7 +16,7 @@ interface ControlTimeFieldsProps {
  * КВ здесь — умолчание для всех групп; группа может задать своё (см. GroupDialog/AddGroupDialog).
  * Селектор политики показывается только когда КВ задано: без КВ выбирать нечего.
  */
-export function ControlTimeFields({ direction, controlTimeMinutes, overtimePolicy, onChange }: ControlTimeFieldsProps) {
+export function ControlTimeFields({ direction, byChoiceMode, controlTimeMinutes, overtimePolicy, onChange }: ControlTimeFieldsProps) {
   return (
     <>
       <label className="flex flex-col gap-1">
@@ -35,7 +36,7 @@ export function ControlTimeFields({ direction, controlTimeMinutes, overtimePolic
           <LabeledSelect
             label="При превышении КВ"
             value={overtimePolicy}
-            options={overtimePolicyOptionsFor(direction)}
+            options={overtimePolicyOptionsFor(direction, byChoiceMode)}
             onChange={(value) => onChange({ overtimePolicy: value })}
           />
           <span className="text-xs text-on-surface-variant">{overtimePolicyHint(overtimePolicy)}</span>

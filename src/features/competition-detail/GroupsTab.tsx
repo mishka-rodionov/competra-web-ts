@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { useIsLoggedIn } from '../../auth/useIsLoggedIn'
+import { minControlsLabel } from '../../lib/byChoiceMode'
 import type { RegistrationTeamSource } from '../../lib/analytics/events'
 import { birthYearsRange, checkGroupEligibility, type GroupEligibility } from '../../lib/groupEligibility'
 import type { ParticipantGroupDetail, RegisterEventRequest } from '../../types/competition'
@@ -19,6 +20,8 @@ interface GroupsTabProps {
   profile: UserProfile | null
   /** IGNORE / DISQUALIFY / SCORE_PENALTY — влияет только на подпись к КВ. */
   overtimePolicy: string
+  /** «По выбору» с минимумом КП — у группы показывается правило её дистанции («Взять 18 из 20 КП»). */
+  isMinControls?: boolean
   registrationOpen: boolean
   registeredGroupId: number | null
   /** Профиль или список участников ещё грузятся — неизвестно, зарегистрирован ли пользователь. */
@@ -34,6 +37,7 @@ export function GroupsTab({
   competitionYear,
   profile,
   overtimePolicy,
+  isMinControls = false,
   registrationOpen,
   registeredGroupId,
   registrationStatusLoading,
@@ -74,6 +78,7 @@ export function GroupsTab({
             key={group.groupId}
             group={group}
             overtimePolicy={overtimePolicy}
+            isMinControls={isMinControls}
             competitionYear={competitionYear}
             eligibility={profile ? checkGroupEligibility(group, profile, competitionYear) : { eligible: true }}
             canRegister={isLoggedIn && !registrationStatusLoading}
@@ -103,6 +108,7 @@ export function GroupsTab({
 interface GroupCardProps {
   group: ParticipantGroupDetail
   overtimePolicy: string
+  isMinControls: boolean
   competitionYear: number
   eligibility: GroupEligibility
   canRegister: boolean
@@ -115,6 +121,7 @@ interface GroupCardProps {
 function GroupCard({
   group,
   overtimePolicy,
+  isMinControls,
   competitionYear,
   eligibility,
   canRegister,
@@ -176,6 +183,9 @@ function GroupCard({
       )}
       {ageRange && <span className="text-sm text-on-surface-variant">{ageRange}</span>}
       {distInfo && <span className="text-sm text-fg">{distInfo}</span>}
+      {isMinControls && group.distanceControlsCount != null && (
+        <span className="text-sm text-fg">{minControlsLabel(group.distanceMinControlsCount, group.distanceControlsCount)}</span>
+      )}
       {controlTime && <span className="text-sm text-on-surface-variant">{controlTime}</span>}
       {group.distanceDescription?.trim() && (
         <span className="text-sm text-on-surface-variant">{group.distanceDescription}</span>

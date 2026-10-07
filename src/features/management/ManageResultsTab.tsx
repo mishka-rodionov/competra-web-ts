@@ -45,6 +45,7 @@ export function ManageResultsTab({ competition }: { competition: OrienteeringCom
       // пробросить как есть, иначе сохранение обнулило бы их.
       controlTimeMinutes: competition.controlTimeMinutes,
       overtimePolicy: competition.overtimePolicy,
+      byChoiceMode: competition.byChoiceMode ?? 'SCORE',
     })
     if (result.kind === 'success') {
       await queryClient.invalidateQueries({ queryKey: ['managed-competition', competitionId] })

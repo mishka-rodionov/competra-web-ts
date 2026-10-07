@@ -3,7 +3,6 @@ import { LabeledSelect } from '../../components/LabeledSelect'
 import { TextInput } from '../../components/TextInput'
 import { TimeZoneSelect } from '../../components/TimeZoneSelect'
 import {
-  DIRECTION_OPTIONS,
   formatIntervalSeconds,
   punchingSystemOptionsFor,
   REG_END_MODE_OPTIONS,
@@ -11,6 +10,9 @@ import {
   START_TIME_MODE_OPTIONS,
   startTimeModePatch,
 } from './dictionaries'
+import { minControlsLabel } from '../../lib/byChoiceMode'
+import { isRequiredControl } from '../../lib/controlPoints'
+import { CompetitionFormatFields } from './CompetitionFormatFields'
 import { ControlTimeFields } from './ControlTimeFields'
 import { LimitAndFeeFields } from './LimitAndFeeFields'
 import type { CreateCompetitionFormState, PendingDistance, PendingGroup, XmlCoursePreview } from './types'
@@ -55,11 +57,11 @@ export function BasicStep({ form, onPatch }: StepProps) {
       <TextInput label="Описание" multiline value={form.description} onChange={(description) => onPatch({ description })} />
 
       <h2 className="mt-2 text-base font-medium text-fg">Параметры ориентирования</h2>
-      <LabeledSelect
-        label="Направление"
-        value={form.direction}
-        options={DIRECTION_OPTIONS}
-        onChange={(direction) => onPatch({ direction })}
+      <CompetitionFormatFields
+        direction={form.direction}
+        byChoiceMode={form.byChoiceMode}
+        overtimePolicy={form.overtimePolicy}
+        onChange={onPatch}
       />
       <LabeledSelect
         label="Система отметки"
@@ -84,6 +86,7 @@ export function BasicStep({ form, onPatch }: StepProps) {
       )}
       <ControlTimeFields
         direction={form.direction}
+        byChoiceMode={form.byChoiceMode}
         controlTimeMinutes={form.controlTimeMinutes}
         overtimePolicy={form.overtimePolicy}
         onChange={onPatch}
@@ -154,6 +157,16 @@ export function OrganizerStep({ form, onPatch }: StepProps) {
       <TextInput label="Сайт соревнования" value={form.website} onChange={(website) => onPatch({ website })} />
     </div>
   )
+}
+
+/** «Взять 2 из 3 КП • обязательные: 31» — правила дистанции «по выбору», если они заданы. */
+function pendingRulesLabel(distance: PendingDistance): string | null {
+  const required = distance.controlPoints.filter(isRequiredControl).map((cp) => cp.number)
+  const parts = [
+    distance.minControlsCount != null ? minControlsLabel(distance.minControlsCount, distance.controlPoints.length) : null,
+    required.length > 0 ? `обязательные: ${required.join(', ')}` : null,
+  ].filter(Boolean)
+  return parts.length > 0 ? parts.join(' • ') : null
 }
 
 interface DistancesStepProps {
@@ -237,6 +250,7 @@ export function DistancesStep({
               <span className="text-sm text-on-surface-variant">
                 Длина: {d.lengthMeters} м • Набор: {d.climbMeters} м • КП: {d.controlPoints.length}
               </span>
+              {pendingRulesLabel(d) && <span className="text-sm text-on-surface-variant">{pendingRulesLabel(d)}</span>}
             </div>
             <button type="button" onClick={() => onRemove(index)} className="text-sm text-error">
               Удалить

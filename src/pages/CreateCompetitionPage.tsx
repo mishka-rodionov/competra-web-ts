@@ -16,6 +16,7 @@ import {
   RegistrationStep,
 } from '../features/management/CreateCompetitionSteps'
 import { parseXmlCoursePreviews } from '../features/management/types'
+import { competitionFormat, ranksByScore } from '../lib/byChoiceMode'
 import type { CreateCompetitionFormState, PendingDistance, PendingGroup, XmlCoursePreview } from '../features/management/types'
 import { useUserProfile } from '../features/profile/hooks'
 import { analytics } from '../lib/analytics/analytics'
@@ -37,6 +38,7 @@ const INITIAL_FORM: CreateCompetitionFormState = {
   longitude: null,
   description: '',
   direction: 'FORWARD',
+  byChoiceMode: 'SCORE',
   punchingSystem: 'SPORTIDENT',
   startTimeMode: 'USER_SET',
   startInterval: 60,
@@ -215,6 +217,7 @@ export function CreateCompetitionPage() {
       startIntervalSeconds: form.startInterval,
       controlTimeMinutes: form.controlTimeMinutes ? parseInt(form.controlTimeMinutes, 10) : null,
       overtimePolicy: form.overtimePolicy,
+      byChoiceMode: form.byChoiceMode,
     })
     if (createResult.kind === 'error') {
       setError(createResult.message)
@@ -242,6 +245,7 @@ export function CreateCompetitionPage() {
         controlPoints: d.controlPoints,
         finishControlPoint: d.finishControlPoint,
         startControlPoint: d.startControlPoint,
+        minControlsCount: d.minControlsCount ?? 0,
       }))
       const dr = await distanceRepository.saveDistances(distRequests)
       if (dr.kind === 'error') {
@@ -288,7 +292,9 @@ export function CreateCompetitionPage() {
       }
     }
 
-    analytics.trackEvent(AnalyticsEvents.createCompetitionFinished(competitionId, KIND_OF_SPORT))
+    analytics.trackEvent(
+      AnalyticsEvents.createCompetitionFinished(competitionId, KIND_OF_SPORT, competitionFormat(form.direction, form.byChoiceMode)),
+    )
     await queryClient.invalidateQueries({ queryKey: ['my-competitions'] })
     navigate(`/management/${competitionId}`)
   }
@@ -366,7 +372,8 @@ export function CreateCompetitionPage() {
 
       {showDistanceDialog && (
         <DistanceDialog
-          isByChoice={form.direction === 'BY_CHOICE'}
+          direction={form.direction}
+          byChoiceMode={form.byChoiceMode}
           isStartCpRequired={form.startTimeMode === 'BY_START_STATION'}
           onDismiss={() => setShowDistanceDialog(false)}
           onSave={(distance) => {
@@ -378,7 +385,7 @@ export function CreateCompetitionPage() {
       {showGroupDialog && (
         <GroupDialog
           distanceOptions={distanceOptions}
-          isByChoice={form.direction === 'BY_CHOICE'}
+          isScoreO={ranksByScore(form.direction, form.byChoiceMode)}
           competitionControlTimeMinutes={form.controlTimeMinutes ? parseInt(form.controlTimeMinutes, 10) : null}
           onDismiss={() => setShowGroupDialog(false)}
           onSave={(group) => {

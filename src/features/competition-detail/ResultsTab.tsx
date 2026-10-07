@@ -4,6 +4,7 @@ import { ErrorMessage } from '../../components/ErrorMessage'
 import { Loading } from '../../components/Loading'
 import { analytics } from '../../lib/analytics/analytics'
 import { AnalyticsEvents } from '../../lib/analytics/events'
+import { ranksByScore } from '../../lib/byChoiceMode'
 import { formatTime } from '../../lib/dateUtils'
 import type { ParticipantGroupDetail } from '../../types/competition'
 import type { OrienteeringParticipant, OrienteeringResult } from '../../types/participant'
@@ -19,10 +20,15 @@ interface ResultsTabProps {
   competitionStatus: string
   resultsStatus: string
   direction: string
+  /** SCORE / MIN_CONTROLS — итог формата «по выбору». */
+  byChoiceMode?: string
 }
 
-export function ResultsTab({ competitionId, groups, competitionStatus, resultsStatus, direction }: ResultsTabProps) {
-  const isByChoice = direction === 'BY_CHOICE'
+export function ResultsTab({ competitionId, groups, competitionStatus, resultsStatus, direction, byChoiceMode }: ResultsTabProps) {
+  // Колонка очков и график набора очков — только в score-О; в «по выбору» с минимумом КП нет ни
+  // баллов, ни общего порядка КП, поэтому нет и графика.
+  const isByChoice = ranksByScore(direction, byChoiceMode)
+  const hasGraph = direction !== 'BY_CHOICE' || isByChoice
   const { data: results, isLoading, isError, error } = useResults(competitionId, competitionStatus)
   const { data: participants } = useParticipants(competitionId)
 
@@ -77,6 +83,7 @@ export function ResultsTab({ competitionId, groups, competitionStatus, resultsSt
             groupTitle={groupNamesById.get(groupId) ?? `Группа ${groupId}`}
             groupResults={groupResults}
             isByChoice={isByChoice}
+            hasGraph={hasGraph}
             participantsById={participantsById}
           />
         )
@@ -91,10 +98,11 @@ interface GroupResultsCardProps {
   groupTitle: string
   groupResults: OrienteeringResult[]
   isByChoice: boolean
+  hasGraph: boolean
   participantsById: Map<string, OrienteeringParticipant>
 }
 
-function GroupResultsCard({ competitionId, groupId, groupTitle, groupResults, isByChoice, participantsById }: GroupResultsCardProps) {
+function GroupResultsCard({ competitionId, groupId, groupTitle, groupResults, isByChoice, hasGraph, participantsById }: GroupResultsCardProps) {
   const navigate = useNavigate()
   const hasSplits = groupResults.some((r) => r.splits && r.splits.length > 0)
 
@@ -118,6 +126,7 @@ function GroupResultsCard({ competitionId, groupId, groupTitle, groupResults, is
             >
               Сплиты
             </button>
+            {hasGraph && (
             <button
               type="button"
               onClick={() => {
@@ -129,6 +138,7 @@ function GroupResultsCard({ competitionId, groupId, groupTitle, groupResults, is
             >
               График
             </button>
+            )}
           </div>
         )}
       </div>

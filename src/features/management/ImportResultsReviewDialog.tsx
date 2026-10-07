@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { resultRepository } from '../../api/resultRepository'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { formatTime } from '../../lib/dateUtils'
+import { ranksByScore } from '../../lib/byChoiceMode'
 import type { ImportResultRow, ImportResultsDiff } from '../../lib/resultsHtmlParser'
 import { resultPlaceLabel, resultStatusColorClass, resultStatusLabel } from '../competitions/labels'
 import type { OrienteeringCompetition } from '../../types/competition'
@@ -79,7 +80,8 @@ interface ImportResultsReviewDialogProps {
 }
 
 export function ImportResultsReviewDialog({ competition, participants, currentResults, diff, onDismiss, onImported }: ImportResultsReviewDialogProps) {
-  const isByChoice = competition.direction === 'BY_CHOICE'
+  // Колонка очков — только в score-О; в «по выбору» с минимумом КП баллов нет.
+  const isByChoice = ranksByScore(competition.direction, competition.byChoiceMode)
   const resultsStatus = competition.competition.resultsStatus
 
   const [checkedById, setCheckedById] = useState<Map<string, boolean>>(new Map(diff.changed.map((c) => [c.request.id, true])))

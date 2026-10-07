@@ -42,6 +42,8 @@ export interface PendingDistance {
   finishControlPoint: number | null
   startControlPoint: number | null
   description: string | null
+  /** Минимум КП («по выбору» с минимумом КП); null — все КП. */
+  minControlsCount: number | null
 }
 
 /** Локальная группа — ссылается на дистанцию по индексу в списке шага «Дистанции». */
@@ -69,6 +71,8 @@ export interface CreateCompetitionFormState {
   longitude: number | null
   description: string
   direction: string
+  /** SCORE / MIN_CONTROLS — итог формата «по выбору». */
+  byChoiceMode: string
   punchingSystem: string
   startTimeMode: string
   startInterval: number

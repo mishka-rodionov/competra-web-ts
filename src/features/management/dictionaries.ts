@@ -1,3 +1,5 @@
+import { ranksByScore } from '../../lib/byChoiceMode'
+
 /** Словари значений соревнования — ключи совпадают с enum'ами Android/бэкенда. */
 
 export const DIRECTION_OPTIONS: [string, string][] = [
@@ -14,6 +16,18 @@ export const PUNCHING_SYSTEM_OPTIONS: [string, string][] = [
   ['SPORTIDENT', 'SportIdent'],
 ]
 
+/** Итог формата «по выбору» — ключи совпадают с ByChoiceMode в Android/eSport. */
+export const BY_CHOICE_MODE_OPTIONS: [string, string][] = [
+  ['SCORE', 'По баллам'],
+  ['MIN_CONTROLS', 'По количеству КП'],
+]
+
+export function byChoiceModeHint(mode: string): string {
+  return mode === 'MIN_CONTROLS'
+    ? 'Нужно взять не меньше заданного числа КП, места — по времени. Минимум и обязательные КП задаются у дистанции'
+    : 'У каждого КП своя стоимость, места — по сумме баллов'
+}
+
 export const OVERTIME_POLICY_OPTIONS: [string, string][] = [
   ['IGNORE', 'Не учитывать'],
   ['DISQUALIFY', 'Дисквалифицировать'],
@@ -21,12 +35,27 @@ export const OVERTIME_POLICY_OPTIONS: [string, string][] = [
 ]
 
 /**
- * Штраф очками осмыслен только в score-О («по выбору») — в остальных форматах очков нет.
+ * Штраф очками осмыслен только в score-О («по выбору» по баллам) — в остальных форматах, в т.ч.
+ * «по выбору» с минимумом КП, очков нет.
  */
-export function overtimePolicyOptionsFor(direction: string): [string, string][] {
-  return direction === 'BY_CHOICE'
+export function overtimePolicyOptionsFor(direction: string, byChoiceMode: string): [string, string][] {
+  return ranksByScore(direction, byChoiceMode)
     ? OVERTIME_POLICY_OPTIONS
     : OVERTIME_POLICY_OPTIONS.filter(([key]) => key !== 'SCORE_PENALTY')
+}
+
+/**
+ * Патч формы при смене направления или режима «по выбору»: выбранный штраф очками сбрасывается,
+ * если в новом формате очков нет (как withValidOvertimePolicy в Android) — иначе он остался бы
+ * невидимым в селекторе.
+ */
+export function formatPatch(
+  direction: string,
+  byChoiceMode: string,
+  overtimePolicy: string,
+): { direction: string; byChoiceMode: string; overtimePolicy: string } {
+  const resetPolicy = overtimePolicy === 'SCORE_PENALTY' && !ranksByScore(direction, byChoiceMode)
+  return { direction, byChoiceMode, overtimePolicy: resetPolicy ? 'IGNORE' : overtimePolicy }
 }
 
 /** Пояснение под селектором: что именно произойдёт с превысившими КВ. */

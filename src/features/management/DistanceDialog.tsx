@@ -1,16 +1,22 @@
 import { useState } from 'react'
 import { parseControlPoints } from '../../lib/controlPoints'
+import { isMinControls, ranksByScore } from '../../lib/byChoiceMode'
 import type { PendingDistance } from './types'
 
 interface DistanceDialogProps {
-  isByChoice: boolean
+  direction: string
+  /** SCORE / MIN_CONTROLS — в score-О у КП баллы, в «по выбору» с минимумом КП — минимум КП. */
+  byChoiceMode: string
   /** Старт по стартовой станции: реальное время старта берётся из отметки на этом КП. */
   isStartCpRequired: boolean
   onDismiss: () => void
   onSave: (distance: PendingDistance) => void
 }
 
-export function DistanceDialog({ isByChoice, isStartCpRequired, onDismiss, onSave }: DistanceDialogProps) {
+export function DistanceDialog({ direction, byChoiceMode, isStartCpRequired, onDismiss, onSave }: DistanceDialogProps) {
+  const isByChoice = direction === 'BY_CHOICE'
+  const hasScores = ranksByScore(direction, byChoiceMode)
+  const hasMinControls = isMinControls(direction, byChoiceMode)
   const [name, setName] = useState('')
   const [lengthMeters, setLengthMeters] = useState('')
   const [climbMeters, setClimbMeters] = useState('')
@@ -19,13 +25,21 @@ export function DistanceDialog({ isByChoice, isStartCpRequired, onDismiss, onSav
   const [startCp, setStartCp] = useState('')
   const [showStartCpError, setShowStartCpError] = useState(false)
   const [description, setDescription] = useState('')
+  const [minControls, setMinControls] = useState('')
+  const [minControlsError, setMinControlsError] = useState<string | null>(null)
 
   function handleSave() {
     if (isStartCpRequired && !startCp) {
       setShowStartCpError(true)
       return
     }
-    const controlPoints = parseControlPoints(controlPointsInput, isByChoice)
+    const controlPoints = parseControlPoints(controlPointsInput, isByChoice, hasScores)
+    // Пусто и 0 — «все КП».
+    const minControlsCount = hasMinControls ? parseInt(minControls, 10) || null : null
+    if (minControlsCount != null && minControlsCount > controlPoints.length) {
+      setMinControlsError(`На дистанции всего ${controlPoints.length} КП — минимум не может быть больше`)
+      return
+    }
     onSave({
       name: name.trim() || null,
       lengthMeters: parseInt(lengthMeters, 10) || 0,
@@ -34,6 +48,7 @@ export function DistanceDialog({ isByChoice, isStartCpRequired, onDismiss, onSav
       finishControlPoint: finishCp ? parseInt(finishCp, 10) : null,
       startControlPoint: isStartCpRequired && startCp ? parseInt(startCp, 10) : null,
       description: description.trim() || null,
+      minControlsCount,
     })
   }
 
@@ -66,13 +81,33 @@ export function DistanceDialog({ isByChoice, isStartCpRequired, onDismiss, onSav
         <input
           value={controlPointsInput}
           onChange={(e) => setControlPointsInput(e.target.value)}
-          placeholder={isByChoice ? '31:2 32:5 33:3 34' : '31 32 33 34 (КП через пробел)'}
+          placeholder={hasScores ? '31:2 32:5 33:3 34' : hasMinControls ? '31* 32 33 34 (КП через пробел)' : '31 32 33 34 (КП через пробел)'}
           className="rounded-md border border-outline bg-bg px-3 py-2 text-fg"
         />
-        {isByChoice && (
+        {hasScores && (
           <p className="text-sm text-on-surface-variant">
-            Формат «по выбору»: номер:баллы (например 32:5). Без баллов — по умолчанию 2.
+            Формат «по выбору»: номер:баллы (например 32:5). Без баллов — по умолчанию 2. Звёздочка — обязательный КП (32:5*).
           </p>
+        )}
+        {hasMinControls && (
+          <>
+            <p className="text-sm text-on-surface-variant">Звёздочка после номера — обязательный КП (31*).</p>
+            <div className="flex flex-col gap-1">
+              <input
+                value={minControls}
+                onChange={(e) => {
+                  setMinControls(e.target.value.replace(/\D/g, ''))
+                  setMinControlsError(null)
+                }}
+                placeholder="Минимум КП"
+                inputMode="numeric"
+                className={`rounded-md border bg-bg px-3 py-2 text-fg ${minControlsError ? 'border-error' : 'border-outline'}`}
+              />
+              <p className={`text-sm ${minControlsError ? 'text-error' : 'text-on-surface-variant'}`}>
+                {minControlsError ?? 'Сколько КП нужно взять. Пусто — все КП дистанции. Обязательные КП входят в это число'}
+              </p>
+            </div>
+          </>
         )}
         <input
           value={finishCp}
