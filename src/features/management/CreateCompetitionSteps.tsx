@@ -11,11 +11,12 @@ import {
   startTimeModeOptionsFor,
   startTimeModePatch,
 } from './dictionaries'
-import { minControlsLabel } from '../../lib/byChoiceMode'
+import { minControlsLabel, ranksByScore } from '../../lib/byChoiceMode'
 import { isRequiredControl } from '../../lib/controlPoints'
 import { CompetitionFormatFields } from './CompetitionFormatFields'
 import { ControlTimeFields } from './ControlTimeFields'
 import { LimitAndFeeFields } from './LimitAndFeeFields'
+import { TeamScoringFields } from './TeamScoringFields'
 import type { CreateCompetitionFormState, PendingDistance, PendingGroup, XmlCoursePreview } from './types'
 
 interface StepProps {
@@ -92,6 +93,11 @@ export function BasicStep({ form, onPatch }: StepProps) {
         controlTimeMinutes={form.controlTimeMinutes}
         overtimePolicy={form.overtimePolicy}
         onChange={onPatch}
+      />
+      <TeamScoringFields
+        value={form.teamScoring}
+        isScoreO={ranksByScore(form.direction, form.byChoiceMode)}
+        onChange={(teamScoring) => onPatch({ teamScoring })}
       />
     </div>
   )

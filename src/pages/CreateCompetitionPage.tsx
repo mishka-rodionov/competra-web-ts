@@ -17,6 +17,7 @@ import {
 } from '../features/management/CreateCompetitionSteps'
 import { parseXmlCoursePreviews } from '../features/management/types'
 import { competitionFormat, ranksByScore } from '../lib/byChoiceMode'
+import { teamScoringAnalyticsValue, teamScoringRequest } from '../lib/teamScoring'
 import type { CreateCompetitionFormState, PendingDistance, PendingGroup, XmlCoursePreview } from '../features/management/types'
 import { useUserProfile } from '../features/profile/hooks'
 import { analytics } from '../lib/analytics/analytics'
@@ -39,6 +40,7 @@ const INITIAL_FORM: CreateCompetitionFormState = {
   description: '',
   direction: 'FORWARD',
   byChoiceMode: 'SCORE',
+  teamScoring: null,
   punchingSystem: 'SPORTIDUINO',
   startTimeMode: 'USER_SET',
   startInterval: 60,
@@ -218,6 +220,7 @@ export function CreateCompetitionPage() {
       controlTimeMinutes: form.controlTimeMinutes ? parseInt(form.controlTimeMinutes, 10) : null,
       overtimePolicy: form.overtimePolicy,
       byChoiceMode: form.byChoiceMode,
+      teamScoring: teamScoringRequest(form.teamScoring, ranksByScore(form.direction, form.byChoiceMode)),
     })
     if (createResult.kind === 'error') {
       setError(createResult.message)
@@ -293,7 +296,12 @@ export function CreateCompetitionPage() {
     }
 
     analytics.trackEvent(
-      AnalyticsEvents.createCompetitionFinished(competitionId, KIND_OF_SPORT, competitionFormat(form.direction, form.byChoiceMode)),
+      AnalyticsEvents.createCompetitionFinished(
+        competitionId,
+        KIND_OF_SPORT,
+        competitionFormat(form.direction, form.byChoiceMode),
+        teamScoringAnalyticsValue(form.teamScoring),
+      ),
     )
     await queryClient.invalidateQueries({ queryKey: ['my-competitions'] })
     navigate(`/management/${competitionId}`)

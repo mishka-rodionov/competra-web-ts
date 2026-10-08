@@ -18,7 +18,11 @@ import {
   startTimeModePatch,
   STATUS_OPTIONS,
 } from './dictionaries'
+import { ranksByScore } from '../../lib/byChoiceMode'
+import { teamScoringRequest } from '../../lib/teamScoring'
+import type { TeamScoring } from '../../types/teamStandings'
 import { CompetitionFormatFields } from './CompetitionFormatFields'
+import { TeamScoringFields } from './TeamScoringFields'
 import { ControlTimeFields } from './ControlTimeFields'
 import { LimitAndFeeFields } from './LimitAndFeeFields'
 
@@ -35,6 +39,7 @@ interface EditFormState {
   status: string
   direction: string
   byChoiceMode: string
+  teamScoring: TeamScoring | null
   punchingSystem: string
   startTimeMode: string
   startInterval: number
@@ -70,6 +75,7 @@ function toForm(competition: OrienteeringCompetition): EditFormState {
     status: c.status,
     direction: competition.direction || 'FORWARD',
     byChoiceMode: competition.byChoiceMode || 'SCORE',
+    teamScoring: competition.teamScoring ?? null,
     punchingSystem: competition.punchingSystem || 'SPORTIDUINO',
     startTimeMode: competition.startTimeMode || 'USER_SET',
     startInterval: competition.startIntervalSeconds ?? 60,
@@ -151,6 +157,7 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
       controlTimeMinutes: form.controlTimeMinutes ? parseInt(form.controlTimeMinutes, 10) : null,
       overtimePolicy: form.overtimePolicy,
       byChoiceMode: form.byChoiceMode,
+      teamScoring: teamScoringRequest(form.teamScoring, ranksByScore(form.direction, form.byChoiceMode)),
     })
 
     if (result.kind === 'success') {
@@ -243,6 +250,11 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
         controlTimeMinutes={form.controlTimeMinutes}
         overtimePolicy={form.overtimePolicy}
         onChange={(patchValues) => patch(patchValues)}
+      />
+      <TeamScoringFields
+        value={form.teamScoring}
+        isScoreO={ranksByScore(form.direction, form.byChoiceMode)}
+        onChange={(teamScoring) => patch({ teamScoring })}
       />
 
       <h2 className="mt-2 text-base font-medium text-fg">Регистрация</h2>

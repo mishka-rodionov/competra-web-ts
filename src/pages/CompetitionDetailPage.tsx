@@ -160,6 +160,7 @@ export function CompetitionDetailPage() {
                 resultsStatus={detail.resultsStatus}
                 direction={detail.direction}
                 byChoiceMode={detail.byChoiceMode}
+                hasTeamScoring={detail.teamScoring != null}
               />
             )}
           </div>

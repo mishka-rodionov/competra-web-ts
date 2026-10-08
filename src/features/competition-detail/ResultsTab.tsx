@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
@@ -11,6 +12,7 @@ import type { OrienteeringParticipant, OrienteeringResult } from '../../types/pa
 import { resultPlaceLabel, resultStatusColorClass, resultStatusLabel } from '../competitions/labels'
 import { LinkSuggestionBanner } from '../participant-links/LinkSuggestionBanner'
 import { useParticipants, useResults } from './hooks'
+import { TeamStandingsView } from './TeamStandingsView'
 
 const LIVE_STATUSES = new Set(['IN_PROGRESS', 'STARTED'])
 
@@ -22,9 +24,20 @@ interface ResultsTabProps {
   direction: string
   /** SCORE / MIN_CONTROLS — итог формата «по выбору». */
   byChoiceMode?: string
+  /** В соревновании включён командный зачёт — показывается переключатель «Личный / Командный». */
+  hasTeamScoring?: boolean
 }
 
-export function ResultsTab({ competitionId, groups, competitionStatus, resultsStatus, direction, byChoiceMode }: ResultsTabProps) {
+export function ResultsTab({
+  competitionId,
+  groups,
+  competitionStatus,
+  resultsStatus,
+  direction,
+  byChoiceMode,
+  hasTeamScoring = false,
+}: ResultsTabProps) {
+  const [showTeam, setShowTeam] = useState(false)
   // Колонка очков и график набора очков — только в score-О; в «по выбору» с минимумом КП нет ни
   // баллов, ни общего порядка КП, поэтому нет и графика.
   const isByChoice = ranksByScore(direction, byChoiceMode)
@@ -51,6 +64,11 @@ export function ResultsTab({ competitionId, groups, competitionStatus, resultsSt
   const groupNamesById = new Map(groups.map((g) => [g.groupId, g.title]))
   const isLive = LIVE_STATUSES.has(competitionStatus)
 
+  function switchMode(team: boolean) {
+    if (team && !showTeam) analytics.trackEvent(AnalyticsEvents.teamStandingsOpened(competitionId))
+    setShowTeam(team)
+  }
+
   return (
     <div className="flex flex-col gap-3 p-4">
       <LinkSuggestionBanner competitionId={competitionId} />
@@ -68,7 +86,24 @@ export function ResultsTab({ competitionId, groups, competitionStatus, resultsSt
           )}
         </div>
       )}
-      {sortedGroupIds.map((groupId) => {
+      {hasTeamScoring && (
+        <div className="flex gap-2">
+          {[false, true].map((team) => (
+            <button
+              key={String(team)}
+              type="button"
+              onClick={() => switchMode(team)}
+              className={`rounded-full border px-3 py-1 text-sm ${
+                team === showTeam ? 'border-primary bg-primary text-on-primary' : 'border-outline text-fg'
+              }`}
+            >
+              {team ? 'Командный' : 'Личный'}
+            </button>
+          ))}
+        </div>
+      )}
+      {showTeam && <TeamStandingsView competitionId={competitionId} competitionStatus={competitionStatus} />}
+      {!showTeam && sortedGroupIds.map((groupId) => {
         const groupResults = [...(resultsByGroup.get(groupId) ?? [])].sort((a, b) => {
           // Место есть только у FINISHED: OVERTIME и снятые уходят в конец.
           const rankA = a.status === 'FINISHED' ? (a.rank ?? Infinity) : Infinity

@@ -1,3 +1,4 @@
+import type { TeamScoring } from '../../types/teamStandings'
 import { DEFAULT_TIME_ZONE } from '../../lib/dateUtils'
 import type { Competition, CompetitionFields } from '../../types/competition'
 import type { ControlPoint } from '../../types/distance'
@@ -73,6 +74,8 @@ export interface CreateCompetitionFormState {
   direction: string
   /** SCORE / MIN_CONTROLS — итог формата «по выбору». */
   byChoiceMode: string
+  /** Командный зачёт; null — зачёта нет. */
+  teamScoring: TeamScoring | null
   punchingSystem: string
   startTimeMode: string
   startInterval: number

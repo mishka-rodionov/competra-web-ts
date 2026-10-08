@@ -1,3 +1,5 @@
+import type { TeamScoring, TeamScoringRequest } from './teamStandings'
+
 export interface Coordinates {
   latitude: number
   longitude: number
@@ -50,6 +52,8 @@ export interface OrienteeringCompetition {
   overtimePolicy: string
   /** SCORE / MIN_CONTROLS — итог формата «по выбору» (см. ranksByScore). Нет у старых ответов сервера. */
   byChoiceMode?: string
+  /** Настройки командного зачёта; нет — зачёта нет. */
+  teamScoring?: TeamScoring | null
 }
 
 export interface ParticipantGroupDetail {
@@ -149,6 +153,8 @@ export interface CreateCompetitionRequest {
   overtimePolicy: string
   /** SCORE / MIN_CONTROLS — итог формата «по выбору»; для остальных направлений не используется. */
   byChoiceMode: string
+  /** Командный зачёт: не передан — не менять, enabled = false — выключить. */
+  teamScoring?: TeamScoringRequest
   countdownTimer?: number | null
 }
 
@@ -192,4 +198,6 @@ export interface CompetitionDetail {
   overtimePolicy: string
   /** SCORE / MIN_CONTROLS — итог формата «по выбору». Нет у старых ответов сервера. */
   byChoiceMode?: string
+  /** Настройки командного зачёта; нет — зачёта нет. */
+  teamScoring?: TeamScoring | null
 }

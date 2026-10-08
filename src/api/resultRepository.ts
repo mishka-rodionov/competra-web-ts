@@ -1,8 +1,16 @@
 import { authRequest, publicRequest } from './client'
 import { safeApiCall, safeApiCallUnit } from './safeApiCall'
 import type { OrienteeringParticipant, OrienteeringResult, SaveParticipantRequest, SaveResultRequest } from '../types/participant'
+import type { TeamStandings } from '../types/teamStandings'
 
 export const resultRepository = {
+  /** Командный зачёт — вычисляется сервером из результатов; запрашивать, только если он включён (иначе result = null). */
+  getTeamStandings(competitionId: string) {
+    return safeApiCall(() =>
+      publicRequest<TeamStandings>(`/event/orienteering/competitions/${encodeURIComponent(competitionId)}/team-standings`),
+    )
+  },
+
   getResults(competitionId: string) {
     return safeApiCall(() =>
       publicRequest<OrienteeringResult[]>(

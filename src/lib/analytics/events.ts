@@ -76,10 +76,15 @@ export const AnalyticsEvents = {
     name: 'create_competition_step_completed',
     params: { step },
   }),
-  /** [format] — forward / marking / by_choice_score / by_choice_min_controls. */
-  createCompetitionFinished: (competitionId: string, kindOfSport: string, format: string): AnalyticsEvent => ({
+  /** [format] — forward / marking / by_choice_score / by_choice_min_controls; [teamScoring] — none / groups / both. */
+  createCompetitionFinished: (competitionId: string, kindOfSport: string, format: string, teamScoring: string): AnalyticsEvent => ({
     name: 'create_competition_finished',
-    params: { competition_id: competitionId, kind_of_sport: kindOfSport, format },
+    params: { competition_id: competitionId, kind_of_sport: kindOfSport, format, team_scoring: teamScoring },
+  }),
+  /** Открыт командный зачёт в результатах. */
+  teamStandingsOpened: (competitionId: string): AnalyticsEvent => ({
+    name: 'team_standings_opened',
+    params: { competition_id: competitionId },
   }),
   competitionDeleted: (competitionId: string): AnalyticsEvent => ({
     name: 'competition_deleted',

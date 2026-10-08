@@ -83,6 +83,20 @@ export function useResults(competitionId: string, competitionStatus: string) {
   })
 }
 
+/** Командный зачёт; enabled — зачёт включён в соревновании. Обновляется вместе с результатами во время старта. */
+export function useTeamStandings(competitionId: string, competitionStatus: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['team-standings', competitionId],
+    queryFn: async () => {
+      const result = await resultRepository.getTeamStandings(competitionId)
+      if (result.kind === 'error') throw new Error(result.message)
+      return result.data
+    },
+    enabled,
+    refetchInterval: LIVE_STATUSES.has(competitionStatus) ? LIVE_POLL_INTERVAL_MS : false,
+  })
+}
+
 /**
  * Подсказки для поля «Команда» в диалоге регистрации. Ошибка не бросается наружу: без подсказок
  * поле остаётся обычным текстовым.
