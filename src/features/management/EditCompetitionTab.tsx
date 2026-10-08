@@ -13,7 +13,8 @@ import {
   formatIntervalSeconds,
   punchingSystemOptionsFor,
   START_INTERVAL_OPTIONS,
-  START_TIME_MODE_OPTIONS,
+  START_TIME_MODE_HINT,
+  startTimeModeOptionsFor,
   startTimeModePatch,
   STATUS_OPTIONS,
 } from './dictionaries'
@@ -69,7 +70,7 @@ function toForm(competition: OrienteeringCompetition): EditFormState {
     status: c.status,
     direction: competition.direction || 'FORWARD',
     byChoiceMode: competition.byChoiceMode || 'SCORE',
-    punchingSystem: competition.punchingSystem || 'SPORTIDENT',
+    punchingSystem: competition.punchingSystem || 'SPORTIDUINO',
     startTimeMode: competition.startTimeMode || 'USER_SET',
     startInterval: competition.startIntervalSeconds ?? 60,
     controlTimeMinutes: competition.controlTimeMinutes?.toString() ?? '',
@@ -217,15 +218,16 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
       <LabeledSelect
         label="Система отметки"
         value={form.punchingSystem}
-        options={punchingSystemOptionsFor(form.startTimeMode)}
+        options={punchingSystemOptionsFor(form.startTimeMode, form.punchingSystem)}
         onChange={(punchingSystem) => patch({ punchingSystem })}
       />
       <LabeledSelect
-        label="Режим старта"
+        label="Способ старта"
         value={form.startTimeMode}
-        options={START_TIME_MODE_OPTIONS}
+        options={startTimeModeOptionsFor(form.startTimeMode)}
         onChange={(startTimeMode) => patch(startTimeModePatch(startTimeMode, form.punchingSystem))}
       />
+      <span className="-mt-2 text-xs text-on-surface-variant">{START_TIME_MODE_HINT}</span>
       {/* При старте по стартовой станции реальное время старта берётся из чипа — интервал не нужен. */}
       {form.startTimeMode !== 'BY_START_STATION' && (
         <LabeledSelect

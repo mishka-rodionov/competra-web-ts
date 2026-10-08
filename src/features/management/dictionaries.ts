@@ -77,11 +77,22 @@ export function isElectronicPunchingSystem(punchingSystem: string): boolean {
   return ELECTRONIC_PUNCHING_SYSTEMS.has(punchingSystem)
 }
 
-/** При старте по стартовой станции механическая/бумажная отметка (PENCIL/PUNCH) теряет смысл. */
-export function punchingSystemOptionsFor(startTimeMode: string): [string, string][] {
-  return startTimeMode === 'BY_START_STATION'
-    ? PUNCHING_SYSTEM_OPTIONS.filter(([key]) => isElectronicPunchingSystem(key))
-    : PUNCHING_SYSTEM_OPTIONS
+/**
+ * Системы отметки, доступные организатору при создании/редактировании. Остальные (карандаш,
+ * компостер, SFR, SportIdent) пока не поддержаны в сценарии проведения, поэтому скрыты
+ * (как SUPPORTED_PUNCHING_SYSTEMS в Android).
+ */
+const SUPPORTED_PUNCHING_SYSTEMS = new Set(['SPORTIDUINO'])
+
+/**
+ * Опции селектора системы отметки. Неподдерживаемая система уже сохранённого соревнования
+ * ([current]) остаётся в списке, чтобы отображалась. При старте по стартовой станции
+ * механическая/бумажная отметка (PENCIL/PUNCH) теряет смысл.
+ */
+export function punchingSystemOptionsFor(startTimeMode: string, current: string): [string, string][] {
+  return PUNCHING_SYSTEM_OPTIONS.filter(([key]) => SUPPORTED_PUNCHING_SYSTEMS.has(key) || key === current).filter(
+    ([key]) => startTimeMode !== 'BY_START_STATION' || isElectronicPunchingSystem(key),
+  )
 }
 
 /**
@@ -99,9 +110,22 @@ export function startTimeModePatch(
 
 export const START_TIME_MODE_OPTIONS: [string, string][] = [
   ['STRICT', 'Строгое время старта'],
-  ['USER_SET', 'Задаётся перед стартом'],
-  ['BY_START_STATION', 'По отметке на старте'],
+  ['USER_SET', 'По стартовому протоколу'],
+  ['BY_START_STATION', 'По стартовой станции'],
 ]
+
+/** Режимы старта, доступные организатору: STRICT пока не отработан в сценарии проведения. */
+const SUPPORTED_START_TIME_MODES = new Set(['USER_SET', 'BY_START_STATION'])
+
+/** Опции селектора способа старта; неподдерживаемый режим сохранённого соревнования остаётся в списке. */
+export function startTimeModeOptionsFor(current: string): [string, string][] {
+  return START_TIME_MODE_OPTIONS.filter(([key]) => SUPPORTED_START_TIME_MODES.has(key) || key === current)
+}
+
+/** Пояснение под селектором способа старта. */
+export const START_TIME_MODE_HINT =
+  'По протоколу — судья запускает отсчёт, участники уходят по жеребьёвке через интервал. ' +
+  'По стартовой станции — время старта каждого фиксирует отметка на стартовой станции'
 
 /** Интервал между стартами: 20..180 с шагом 20. */
 export const START_INTERVAL_OPTIONS: number[] = Array.from({ length: 9 }, (_, i) => (i + 1) * 20)
