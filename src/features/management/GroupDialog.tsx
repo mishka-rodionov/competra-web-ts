@@ -9,6 +9,8 @@ interface GroupDialogProps {
   isScoreO: boolean
   /** КВ соревнования — подсказка о том, что унаследует группа с пустым полем. */
   competitionControlTimeMinutes: number | null
+  /** N командного зачёта соревнования; null — зачёт не включён, поле группы скрыто. */
+  competitionTeamCounted?: number | null
   onDismiss: () => void
   onSave: (group: PendingGroup) => void
 }
@@ -17,6 +19,7 @@ export function GroupDialog({
   distanceOptions,
   isScoreO,
   competitionControlTimeMinutes,
+  competitionTeamCounted = null,
   onDismiss,
   onSave,
 }: GroupDialogProps) {
@@ -29,6 +32,7 @@ export function GroupDialog({
   const [timeLimitMinutes, setTimeLimitMinutes] = useState('')
   const [scorePenaltyPerMinute, setScorePenaltyPerMinute] = useState('1')
   const [maxLatenessMinutes, setMaxLatenessMinutes] = useState('30')
+  const [teamCountedResults, setTeamCountedResults] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   function handleSave() {
@@ -46,6 +50,7 @@ export function GroupDialog({
       timeLimitMinutes: timeLimitMinutes ? parseInt(timeLimitMinutes, 10) : null,
       scorePenaltyPerMinute: isScoreO && scorePenaltyPerMinute ? parseInt(scorePenaltyPerMinute, 10) : null,
       maxLatenessMinutes: isScoreO && maxLatenessMinutes ? parseInt(maxLatenessMinutes, 10) : null,
+      teamCountedResults: parseInt(teamCountedResults, 10) || null,
     })
   }
 
@@ -97,6 +102,18 @@ export function GroupDialog({
               : 'Пусто — без КВ для этой группы'}
           </span>
         </label>
+        {competitionTeamCounted != null && (
+          <label className="flex flex-col gap-1">
+            <input
+              value={teamCountedResults}
+              onChange={(e) => setTeamCountedResults(e.target.value.replace(/\D/g, ''))}
+              placeholder="Участников в командный зачёт"
+              inputMode="numeric"
+              className="rounded-md border border-outline bg-bg px-3 py-2 text-fg"
+            />
+            <span className="text-xs text-on-surface-variant">Пусто — как у соревнования: {competitionTeamCounted}</span>
+          </label>
+        )}
         {isScoreO && (
           <>
             <p className="text-sm font-medium text-fg">Параметры «по выбору»</p>

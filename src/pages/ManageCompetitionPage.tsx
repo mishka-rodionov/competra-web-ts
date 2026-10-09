@@ -55,6 +55,7 @@ export function ManageCompetitionPage() {
                 competitionId={competition.competitionId}
                 isScoreO={ranksByScore(competition.direction, competition.byChoiceMode)}
                 competitionControlTimeMinutes={competition.controlTimeMinutes}
+                competitionTeamCounted={competition.teamScoring?.groupCountedResults ?? null}
               />
             )}
             {tab === 'participants' && <ParticipantsManageTab competition={competition} />}

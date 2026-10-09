@@ -286,6 +286,7 @@ export function CreateCompetitionPage() {
         timeLimitMinutes: g.timeLimitMinutes,
         scorePenaltyPerMinute: g.scorePenaltyPerMinute,
         maxLatenessMinutes: g.maxLatenessMinutes,
+        teamCountedResults: g.teamCountedResults ?? 0,
       }))
       const gr = await groupRepository.saveGroups(groupRequests)
       if (gr.kind === 'error') {
@@ -395,6 +396,7 @@ export function CreateCompetitionPage() {
           distanceOptions={distanceOptions}
           isScoreO={ranksByScore(form.direction, form.byChoiceMode)}
           competitionControlTimeMinutes={form.controlTimeMinutes ? parseInt(form.controlTimeMinutes, 10) : null}
+          competitionTeamCounted={form.teamScoring?.groupCountedResults ?? null}
           onDismiss={() => setShowGroupDialog(false)}
           onSave={(group) => {
             setGroups([...groups, group])

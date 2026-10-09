@@ -83,6 +83,8 @@ export interface ParticipantGroupDetail {
   controlTimeInherited?: boolean
   scorePenaltyPerMinute: number | null
   maxLatenessMinutes: number | null
+  /** Своё N командного зачёта; null — как у соревнования. */
+  teamCountedResults?: number | null
 }
 
 export interface RegisterEventRequest {

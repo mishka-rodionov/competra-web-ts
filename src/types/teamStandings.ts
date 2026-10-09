@@ -27,6 +27,8 @@ export interface TeamStandings {
 export interface GroupTeamStanding {
   groupId: number
   groupTitle: string
+  /** N этой группы — своё или соревнования (нет у ответов сервера до 09.10.2026). */
+  countedResults?: number
   teams: GroupTeam[]
 }
 

@@ -57,7 +57,12 @@ export function TeamStandingsView({ competitionId, competitionStatus }: TeamStan
       {current === GROUPS_TAB ? (
         standings.groupStandings.map((group) => (
           <div key={group.groupId} className="rounded-lg border border-outline-variant bg-surface p-4">
-            <h3 className="mb-2 text-sm font-semibold text-fg">{group.groupTitle}</h3>
+            <h3 className="mb-2 text-sm font-semibold text-fg">
+              {group.groupTitle}
+              {group.countedResults != null && (
+                <span className="font-normal text-on-surface-variant"> · в зачёт {group.countedResults}</span>
+              )}
+            </h3>
             {group.teams.map((team) => (
               <GroupTeamRow key={team.teamName} team={team} />
             ))}

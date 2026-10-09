@@ -15,4 +15,6 @@ export interface CreateGroupRequest {
   timeLimitMinutes: number | null
   scorePenaltyPerMinute: number | null
   maxLatenessMinutes: number | null
+  /** Своё N командного зачёта: N > 0 — задать, 0 — как у соревнования; не передано — не менять. */
+  teamCountedResults?: number
 }

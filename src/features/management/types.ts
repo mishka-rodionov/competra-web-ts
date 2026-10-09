@@ -60,6 +60,8 @@ export interface PendingGroup {
   timeLimitMinutes: number | null
   scorePenaltyPerMinute: number | null
   maxLatenessMinutes: number | null
+  /** Своё N командного зачёта; null — как у соревнования. */
+  teamCountedResults: number | null
 }
 
 export interface CreateCompetitionFormState {

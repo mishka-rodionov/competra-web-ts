@@ -13,11 +13,18 @@ import { useGroups } from './hooks'
 interface ManageGroupsTabProps {
   competitionId: string
   isScoreO: boolean
+  /** N командного зачёта соревнования; null — зачёт не включён. */
+  competitionTeamCounted?: number | null
   /** КВ соревнования — умолчание для групп без своего значения. */
   competitionControlTimeMinutes: number | null
 }
 
-export function ManageGroupsTab({ competitionId, isScoreO, competitionControlTimeMinutes }: ManageGroupsTabProps) {
+export function ManageGroupsTab({
+  competitionId,
+  isScoreO,
+  competitionControlTimeMinutes,
+  competitionTeamCounted = null,
+}: ManageGroupsTabProps) {
   const queryClient = useQueryClient()
   const { data: groups, isLoading, isError, error } = useGroups(competitionId)
   const { data: distances } = useDistances(competitionId)
@@ -71,6 +78,7 @@ export function ManageGroupsTab({ competitionId, isScoreO, competitionControlTim
           distances={distances ?? []}
           isScoreO={isScoreO}
           competitionControlTimeMinutes={competitionControlTimeMinutes}
+          competitionTeamCounted={competitionTeamCounted}
           onDismiss={() => setShowAddDialog(false)}
           onSaved={async () => {
             await queryClient.invalidateQueries({ queryKey: ['groups', competitionId] })
