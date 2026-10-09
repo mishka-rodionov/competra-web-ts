@@ -134,7 +134,7 @@ function TrackLayer({
         <SpeedLines segments={segments} speed={speed} since={since} />
       ) : (
         segments.map((segment, i) => (
-          <Polyline key={i} positions={segment.map((p) => [p.lat, p.lon])} pathOptions={{ color, weight: 4, lineCap: 'round' }} />
+          <Polyline key={i} positions={segment.map((p) => [p.lat, p.lon] as [number, number])} pathOptions={{ color, weight: 4, lineCap: 'round' }} />
         ))
       )}
       {last && (
@@ -176,7 +176,7 @@ const FaintTracks = memo(function FaintTracks({
             return (
               <Polyline
                 key={`${r.track.sessionId}-${i}`}
-                positions={points.map((p) => [p.lat, p.lon])}
+                positions={points.map((p) => [p.lat, p.lon] as [number, number])}
                 pathOptions={{ color: speedColor(chunk.level, SPEED_COLOR_STEPS), weight: 3, opacity: 0.4, interactive: false }}
               />
             )
@@ -188,7 +188,7 @@ const FaintTracks = memo(function FaintTracks({
           .map((segment, i) => (
             <Polyline
               key={`${r.track.sessionId}-${i}`}
-              positions={segment.map((p) => [p.lat, p.lon])}
+              positions={segment.map((p) => [p.lat, p.lon] as [number, number])}
               pathOptions={{ color, weight: 3, opacity: 0.4, interactive: false }}
             />
           ))
@@ -220,7 +220,7 @@ function ReplayRunner({ replay, t, color, speed }: { replay: ReplayTrack; t: num
         />
       ) : (
         tail.map((segment, i) => (
-          <Polyline key={i} positions={segment.map((p) => [p.lat, p.lon])} pathOptions={{ color, weight: 4, lineCap: 'round', interactive: false }} />
+          <Polyline key={i} positions={segment.map((p) => [p.lat, p.lon] as [number, number])} pathOptions={{ color, weight: 4, lineCap: 'round', interactive: false }} />
         ))
       )}
       <Marker
@@ -243,7 +243,7 @@ function SpeedLines({ segments, speed, since }: { segments: ViewerTrack['points'
       {segments.map((segment, i) => (
         <Polyline
           key={`casing-${i}`}
-          positions={segment.map((p) => [p.lat, p.lon])}
+          positions={segment.map((p) => [p.lat, p.lon] as [number, number])}
           pathOptions={{ color: SPEED_CASING_COLOR, weight: 7, lineCap: 'round', interactive: false }}
         />
       ))}
@@ -253,7 +253,7 @@ function SpeedLines({ segments, speed, since }: { segments: ViewerTrack['points'
         return (
           <Polyline
             key={i}
-            positions={points.map((p) => [p.lat, p.lon])}
+            positions={points.map((p) => [p.lat, p.lon] as [number, number])}
             pathOptions={{ color: speedColor(chunk.level, SPEED_COLOR_STEPS), weight: 4, lineCap: 'round', interactive: false }}
           />
         )

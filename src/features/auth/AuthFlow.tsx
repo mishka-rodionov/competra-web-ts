@@ -86,7 +86,7 @@ export function AuthFlow({ onLoginSuccess }: AuthFlowProps) {
   const trimmedEmail = email.trim()
   const isEmailValid = EMAIL_PATTERN.test(trimmedEmail)
   const emailError = trimmedEmail !== '' && !isEmailValid ? 'Некорректный адрес почты' : null
-  const today = new Date().toISOString().slice(0, 10)
+  const [today] = useState(() => new Date().toISOString().slice(0, 10))
 
   const canRegister =
     firstName.trim() !== '' &&
