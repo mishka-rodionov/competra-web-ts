@@ -87,6 +87,33 @@ body {
   color: var(--color-fg);
 }
 
+/*
+ * Карта онлайн-треков (LiveTrackMapPage). Вертикально всё друг под другом: шапка, фильтры, карта,
+ * просмотр, список. На широком горизонтальном экране (телефон боком, ноутбук) слева панель — шапка,
+ * фильтры, настройки просмотра, список; справа на всю высоту карта, под ней ползунок просмотра.
+ */
+@custom-variant landscape-wide (@media (orientation: landscape) and (min-width: 600px));
+
+.live-track-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
+  grid-template-areas: 'header' 'filters' 'map' 'controls' 'options' 'list';
+}
+
+@media (orientation: landscape) and (min-width: 600px) {
+  .live-track-layout {
+    grid-template-columns: clamp(280px, 40vw, 400px) minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'header map'
+      'filters map'
+      'options map'
+      'list map'
+      'list controls';
+  }
+}
+
 /* Карта выбора точки (MapPickerField): прицел вместо «руки», чтобы было понятно, что клик ставит точку.
    Во время перетаскивания Leaflet сам переключает курсор через .leaflet-dragging. */
 .map-picker.leaflet-grab {

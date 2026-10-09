@@ -368,8 +368,8 @@ export function LiveTrackMapPage() {
     `shrink-0 rounded-full border px-3 py-1 text-sm ${selected ? 'border-primary bg-primary text-on-primary' : 'border-outline text-fg'}`
 
   return (
-    <div className="flex h-screen flex-col bg-bg text-fg">
-      <header className="flex items-center gap-2 border-b border-outline-variant px-2 py-3">
+    <div className="live-track-layout h-dvh bg-bg text-fg">
+      <header className="flex items-center gap-2 border-b border-outline-variant px-2 py-3 [grid-area:header]">
         <button type="button" onClick={() => navigate(-1)} aria-label="Назад" className="px-2 text-xl">
           ←
         </button>
@@ -388,7 +388,7 @@ export function LiveTrackMapPage() {
         </div>
       </header>
 
-      <div className="flex gap-2 overflow-x-auto px-4 py-2">
+      <div className="flex gap-2 overflow-x-auto px-4 py-2 [grid-area:filters]">
         {!replay && (
           <button type="button" onClick={() => setTailOnly((v) => !v)} className={chipClass(tailOnly)}>
             Хвост 5 мин
@@ -411,7 +411,7 @@ export function LiveTrackMapPage() {
         ))}
       </div>
 
-      <div className="relative flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 [grid-area:map] landscape-wide:border-l landscape-wide:border-outline-variant">
         {distances ? (
           <LiveTrackMapView
             mapUrl={distance?.mapUrl ?? null}
@@ -436,46 +436,47 @@ export function LiveTrackMapPage() {
       </div>
 
       {replay && range && (
-        <div className="border-t border-outline-variant px-2 pt-1">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={togglePlay}
-              aria-label={isPlaying ? 'Пауза' : 'Воспроизвести'}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl text-fg"
-            >
-              {isPlaying ? '❚❚' : '▶'}
-            </button>
-            <input
-              type="range"
-              min={range[0]}
-              max={range[1]}
-              value={position}
-              onChange={(e) => setReplayPosition(Number(e.target.value))}
-              aria-label="Момент просмотра"
-              className="min-w-0 flex-1 accent-primary"
-            />
-            <span className="w-20 shrink-0 text-right text-sm tabular-nums">
-              {replayMode === 'real' ? clockText(position) : `+${durationText(position)}`}
-            </span>
-          </div>
-          <div className="flex gap-2 overflow-x-auto px-2 py-2">
-            <button type="button" onClick={() => changeReplayMode('mass')} className={chipClass(replayMode === 'mass')}>
-              Общий старт
-            </button>
-            <button type="button" onClick={() => changeReplayMode('real')} className={chipClass(replayMode === 'real')}>
-              Реальное время
-            </button>
-            {PLAYBACK_SPEEDS.map((speed) => (
-              <button key={speed} type="button" onClick={() => setPlaybackSpeed(speed)} className={chipClass(playbackSpeed === speed)}>
-                ×{speed}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center gap-2 border-t border-outline-variant px-2 pt-1 [grid-area:controls] landscape-wide:border-l landscape-wide:py-1">
+          <button
+            type="button"
+            onClick={togglePlay}
+            aria-label={isPlaying ? 'Пауза' : 'Воспроизвести'}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl text-fg"
+          >
+            {isPlaying ? '❚❚' : '▶'}
+          </button>
+          <input
+            type="range"
+            min={range[0]}
+            max={range[1]}
+            value={position}
+            onChange={(e) => setReplayPosition(Number(e.target.value))}
+            aria-label="Момент просмотра"
+            className="min-w-0 flex-1 accent-primary"
+          />
+          <span className="w-20 shrink-0 text-right text-sm tabular-nums">
+            {replayMode === 'real' ? clockText(position) : `+${durationText(position)}`}
+          </span>
         </div>
       )}
 
-      <ul className="max-h-[38vh] overflow-y-auto border-t border-outline-variant">
+      {replay && range && (
+        <div className="flex gap-2 overflow-x-auto px-4 py-2 [grid-area:options]">
+          <button type="button" onClick={() => changeReplayMode('mass')} className={chipClass(replayMode === 'mass')}>
+            Общий старт
+          </button>
+          <button type="button" onClick={() => changeReplayMode('real')} className={chipClass(replayMode === 'real')}>
+            Реальное время
+          </button>
+          {PLAYBACK_SPEEDS.map((speed) => (
+            <button key={speed} type="button" onClick={() => setPlaybackSpeed(speed)} className={chipClass(playbackSpeed === speed)}>
+              ×{speed}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <ul className="max-h-[38vh] min-h-0 overflow-y-auto border-t border-outline-variant [grid-area:list] landscape-wide:max-h-none">
         {listTracks.map((track) => {
           const stale = isStale(track, serverTime)
           const selected = speedSelection?.sessionId === track.sessionId
