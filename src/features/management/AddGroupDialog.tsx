@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { groupRepository } from '../../api/groupRepository'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { LabeledSelect } from '../../components/LabeledSelect'
+import type { ParticipantGroupDetail } from '../../types/competition'
 import type { Distance } from '../../types/distance'
 import { GENDER_OPTIONS } from './dictionaries'
 
@@ -13,11 +14,22 @@ interface AddGroupDialogProps {
   competitionControlTimeMinutes: number | null
   /** N командного зачёта соревнования; null — зачёт не включён, поле группы скрыто. */
   competitionTeamCounted?: number | null
+  /** Группа для редактирования; нет — создаётся новая. */
+  editingGroup?: ParticipantGroupDetail | null
   onDismiss: () => void
   onSaved: () => void
 }
 
 const NO_DISTANCE = 0
+
+/** Пол группы для селектора: Android пишет MALE/FEMALE/MIXED, сайт — M/F/пусто. */
+function genderOption(gender: string | null | undefined): string {
+  if (gender === 'M' || gender === 'MALE') return 'M'
+  if (gender === 'F' || gender === 'FEMALE') return 'F'
+  return ''
+}
+
+const numberText = (value: number | null | undefined): string => (value != null ? String(value) : '')
 
 export function AddGroupDialog({
   competitionId,
@@ -25,19 +37,22 @@ export function AddGroupDialog({
   isScoreO,
   competitionControlTimeMinutes,
   competitionTeamCounted = null,
+  editingGroup = null,
   onDismiss,
   onSaved,
 }: AddGroupDialogProps) {
-  const [title, setTitle] = useState('')
-  const [gender, setGender] = useState('')
-  const [minAge, setMinAge] = useState('')
-  const [maxAge, setMaxAge] = useState('')
-  const [maxParticipants, setMaxParticipants] = useState('')
-  const [distanceId, setDistanceId] = useState<number>(NO_DISTANCE)
-  const [timeLimitMinutes, setTimeLimitMinutes] = useState('')
-  const [scorePenaltyPerMinute, setScorePenaltyPerMinute] = useState('1')
-  const [maxLatenessMinutes, setMaxLatenessMinutes] = useState('30')
-  const [teamCountedResults, setTeamCountedResults] = useState('')
+  const [title, setTitle] = useState(editingGroup?.title ?? '')
+  const [gender, setGender] = useState(genderOption(editingGroup?.gender))
+  const [minAge, setMinAge] = useState(numberText(editingGroup?.minAge))
+  const [maxAge, setMaxAge] = useState(numberText(editingGroup?.maxAge))
+  const [maxParticipants, setMaxParticipants] = useState(numberText(editingGroup?.maxParticipants))
+  const [distanceId, setDistanceId] = useState<number>(editingGroup?.distanceId ?? NO_DISTANCE)
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState(numberText(editingGroup?.timeLimitMinutes))
+  const [scorePenaltyPerMinute, setScorePenaltyPerMinute] = useState(
+    editingGroup ? numberText(editingGroup.scorePenaltyPerMinute) : '1',
+  )
+  const [maxLatenessMinutes, setMaxLatenessMinutes] = useState(editingGroup ? numberText(editingGroup.maxLatenessMinutes) : '30')
+  const [teamCountedResults, setTeamCountedResults] = useState(numberText(editingGroup?.teamCountedResults))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -50,7 +65,8 @@ export function AddGroupDialog({
     setError(null)
     const result = await groupRepository.saveGroups([
       {
-        groupId: null,
+        // Существующий groupId — апдейт этой группы на сервере.
+        groupId: editingGroup?.groupId ?? null,
         competitionId,
         title: title.trim(),
         gender: gender || null,
@@ -61,7 +77,8 @@ export function AddGroupDialog({
         timeLimitMinutes: timeLimitMinutes ? parseInt(timeLimitMinutes, 10) : null,
         scorePenaltyPerMinute: isScoreO && scorePenaltyPerMinute ? parseInt(scorePenaltyPerMinute, 10) : null,
         maxLatenessMinutes: isScoreO && maxLatenessMinutes ? parseInt(maxLatenessMinutes, 10) : null,
-        teamCountedResults: parseInt(teamCountedResults, 10) || 0,
+        // Без командного зачёта поле скрыто — не передаём, сервер сохранит прежнее значение.
+        teamCountedResults: competitionTeamCounted != null ? parseInt(teamCountedResults, 10) || 0 : undefined,
       },
     ])
     if (result.kind === 'success') {
@@ -75,7 +92,7 @@ export function AddGroupDialog({
   return (
     <div className="fixed inset-0 z-20 flex items-center justify-center bg-fg/40 p-4" onClick={onDismiss}>
       <div className="flex w-full max-w-sm flex-col gap-3 rounded-lg bg-surface p-4" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-medium text-fg">Добавить группу</h3>
+        <h3 className="text-lg font-medium text-fg">{editingGroup ? 'Изменить группу' : 'Добавить группу'}</h3>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}

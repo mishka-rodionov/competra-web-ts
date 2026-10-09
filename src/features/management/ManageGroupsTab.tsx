@@ -29,6 +29,7 @@ export function ManageGroupsTab({
   const { data: groups, isLoading, isError, error } = useGroups(competitionId)
   const { data: distances } = useDistances(competitionId)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [editingGroup, setEditingGroup] = useState<ParticipantGroupDetail | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   async function handleDelete(groupId: number) {
@@ -67,22 +68,30 @@ export function ManageGroupsTab({
             key={group.groupId}
             group={group}
             competitionControlTimeMinutes={competitionControlTimeMinutes}
+            onEdit={() => setEditingGroup(group)}
             onDelete={() => handleDelete(group.groupId)}
           />
         ))
       )}
 
-      {showAddDialog && (
+      {(showAddDialog || editingGroup != null) && (
         <AddGroupDialog
+          // Новый ключ при смене группы — поля диалога заново инициализируются из неё.
+          key={editingGroup?.groupId ?? 'new'}
+          editingGroup={editingGroup}
           competitionId={competitionId}
           distances={distances ?? []}
           isScoreO={isScoreO}
           competitionControlTimeMinutes={competitionControlTimeMinutes}
           competitionTeamCounted={competitionTeamCounted}
-          onDismiss={() => setShowAddDialog(false)}
+          onDismiss={() => {
+            setShowAddDialog(false)
+            setEditingGroup(null)
+          }}
           onSaved={async () => {
             await queryClient.invalidateQueries({ queryKey: ['groups', competitionId] })
             setShowAddDialog(false)
+            setEditingGroup(null)
           }}
         />
       )}
@@ -103,10 +112,12 @@ function controlTimeLabel(group: ParticipantGroupDetail, competitionControlTimeM
 function GroupRow({
   group,
   competitionControlTimeMinutes,
+  onEdit,
   onDelete,
 }: {
   group: ParticipantGroupDetail
   competitionControlTimeMinutes: number | null
+  onEdit: () => void
   onDelete: () => void
 }) {
   const details = [
@@ -116,6 +127,7 @@ function GroupRow({
     group.maxParticipants != null ? `Мест: ${group.registeredCount}/${group.maxParticipants}` : null,
     controlTimeLabel(group, competitionControlTimeMinutes),
     group.scorePenaltyPerMinute != null ? `Штраф: ${group.scorePenaltyPerMinute} очк/мин` : null,
+    group.teamCountedResults != null ? `В командный зачёт: ${group.teamCountedResults}` : null,
   ].filter((v): v is string => !!v)
 
   return (
@@ -124,9 +136,14 @@ function GroupRow({
         <span className="font-semibold text-fg">{group.title}</span>
         {details.length > 0 && <span className="text-sm text-on-surface-variant">{details.join('  •  ')}</span>}
       </div>
-      <button type="button" onClick={onDelete} className="text-sm text-error">
-        Удалить
-      </button>
+      <div className="flex gap-3">
+        <button type="button" onClick={onEdit} className="text-sm text-primary">
+          Изменить
+        </button>
+        <button type="button" onClick={onDelete} className="text-sm text-error">
+          Удалить
+        </button>
+      </div>
     </div>
   )
 }
