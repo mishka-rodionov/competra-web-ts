@@ -160,6 +160,7 @@ export function ParticipantsManageTab({ competition }: { competition: Orienteeri
         <ParticipantEditorDialog
           competition={competition}
           groups={groups}
+          participants={participants ?? []}
           defaultGroupId={effectiveTab !== ALL_TAB ? Number(effectiveTab) : groups[0]?.groupId}
           editingParticipant={editingParticipant}
           onDismiss={() => setEditingParticipant(undefined)}

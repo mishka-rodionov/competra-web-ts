@@ -54,6 +54,12 @@ export interface OrienteeringCompetition {
   byChoiceMode?: string
   /** Настройки командного зачёта; нет — зачёта нет. */
   teamScoring?: TeamScoring | null
+  /** Режим проведённой жеребьёвки (GENERAL / GROUP / DISTANCE); null — не проводилась. Нет у старых ответов сервера. */
+  drawMode?: string | null
+  /** Коридоры жеребьёвки по дистанциям. */
+  drawCorridors?: number | null
+  /** Зазор жеребьёвки по дистанциям, в стартовых интервалах. */
+  drawGap?: number | null
 }
 
 export interface ParticipantGroupDetail {
