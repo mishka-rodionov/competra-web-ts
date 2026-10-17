@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **competra-web-ts** — веб-приложение для управления соревнованиями по спортивному ориентированию. React 19 + TypeScript + Vite, Tailwind v4, TanStack Query, React Router (hash-based). Деплоится на GitHub Pages по адресу `competra.ru`.
 
-Это переезд с чистого листа с прежнего Kotlin Multiplatform + Compose Wasm веб-клиента (`/Users/rodionov/web_projects/competra-web`, теперь архивный) — тот же дух и дизайн («Лес»: хвойный зелёный + терракота), но код написан заново, без механического портирования 1:1 везде, где веб-специфика подсказывала более простое решение (например, нативные `<input type="date">`/`<input type="file">` вместо кастомных пикеров).
+Это переезд с чистого листа с прежнего Kotlin Multiplatform + Compose Wasm веб-клиента (`../archive/competra-web`, теперь архивный) — тот же дух и дизайн («Лес»: хвойный зелёный + терракота), но код написан заново, без механического портирования 1:1 везде, где веб-специфика подсказывала более простое решение (например, нативные `<input type="date">`/`<input type="file">` вместо кастомных пикеров).
 
 Пакетный менеджер — pnpm. Тестов в проекте нет — `pnpm build` (включает `tsc -b`) и `npx oxlint` служат основной страховкой; проверяй новый функционал вручную в браузере (Browser pane / dev-сервер) на реальных данных бэкенда, не на моках.
 
@@ -75,27 +75,15 @@ if (entity && entity.id !== loadedId) {
 
 ## Межпроектные связи
 
-Этот проект — веб-клиент экосистемы из четырёх репозиториев:
+Этот репозиторий — часть рабочего пространства `~/projects/competra/` вместе с Android-приложением (`../competra-android`), бэкендом eSport (`../competra-server/eSport`) и редактором карт (`../mapper`). Прежний веб-клиент (`../archive/competra-web`, Kotlin/Wasm) архивный — не деплоится, домен `competra.ru` переключён сюда. Состав экосистемы, контракт API (`BASE_URL = https://api.competra.ru/api`), цепочка IOF XML и общие правила («спроси про Android», «спроси про бэкенд») — в `../CLAUDE.md`, он подгружается автоматически.
 
-| Проект | Путь | Роль |
-|---|---|---|
-| **eSport** (backend) | `/Users/rodionov/backend_projects/eSport` | Ktor-сервер, источник всего API |
-| **competra-android** | `/Users/rodionov/android_projects/competra-android` | Android-приложение с той же доменной областью |
-| **mapper** | `/Users/rodionov/android_projects/mapper` | Qt/C++ редактор карт, создаёт дистанции в формате IOF XML |
+### Web-специфичное
 
-Прежний веб-клиент, `/Users/rodionov/web_projects/competra-web` (Kotlin/Wasm), теперь архивный — не деплоится, домен `competra.ru` переключён сюда.
-
-### Правила для Claude
-
-**При изменении функционала** (новый экран, новый API-вызов, новая бизнес-логика) — **спроси пользователя**: нужно ли то же самое сделать в `competra-android`? Обе платформы покрывают одну доменную область, и фичи часто должны быть на обеих.
-
-**При изменении модели данных или API-вызова** — **спроси**: не сломает ли это бэкенд (eSport)? Контракт: `CommonModel<T>` с `status == 1`, `BASE_URL = https://api.competra.ru/api`.
-
-**NFC-фичи** (чтение чипов участников) — специфичны для Android, в Web аналога нет.
+**Фичевая документация** — общая для экосистемы, лежит в `../competra-android/docs/features/` (подробности — в `../CLAUDE.md`). Веб-сценарий описывается отдельным подразделом «Web» в «Как пользоваться», ключевые файлы `competra-web-ts` — в «Как устроено».
 
 **При изменении функционала, уже описанного в инструкциях для организатора** — поправь соответствующий раздел инструкции в том же изменении, а не отдельным напоминанием пользователю. Инструкций две, обе открываются кнопками в профиле (`ProfilePage.tsx`):
 - `public/guides/first-competition-guide.html` (`ORGANIZER_GUIDE_URL`) — проведение соревнования в Competra;
-- `public/guides/mapper-course-planning-guide.html` (`MAPPER_GUIDE_URL`) — подготовка дистанций в Mapper и их перенос в Competra. Шаги 06 и 08 описывают этот веб-клиент: импорт IOF XML на вкладке «Дистанции» (`DistancesTab.tsx`, `CreateCompetitionSteps.tsx`) и прикрепление карты с координатами из PNG (`AttachMapDialog.tsx`, `src/lib/pngText.ts`). Остальные шаги описывают Mapper (`/Users/rodionov/android_projects/mapper`) — в его `CLAUDE.md` есть такое же правило.
+- `public/guides/mapper-course-planning-guide.html` (`MAPPER_GUIDE_URL`) — подготовка дистанций в Mapper и их перенос в Competra. Шаги 06 и 08 описывают этот веб-клиент: импорт IOF XML на вкладке «Дистанции» (`DistancesTab.tsx`, `CreateCompetitionSteps.tsx`) и прикрепление карты с координатами из PNG (`AttachMapDialog.tsx`, `src/lib/pngText.ts`). Остальные шаги описывают Mapper (`../mapper`) — в его `CLAUDE.md` есть такое же правило.
 
 ### Цепочка IOF XML
 Mapper экспортирует дистанции → пользователь загружает файл через `POST /event/orienteering/import/courses` (`src/api/distanceRepository.ts` → `importFromXml`) → eSport парсит через `IOFXmlParser.kt`. Если меняется логика загрузки, уточни, не нужно ли обновить парсер в eSport.
