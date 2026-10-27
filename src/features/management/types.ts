@@ -54,9 +54,12 @@ export interface PendingDistance {
   minControlsCount: number | null
 }
 
+/** [PendingGroup.distanceKey] группы, которой дистанция ещё не назначена. */
+export const NO_DISTANCE_KEY = ''
+
 /**
  * Локальная группа — ссылается на дистанцию по ключу: [PendingDistance.key] у добавленной вручную,
- * [xmlCourseKey] у дистанции из IOF XML.
+ * [xmlCourseKey] у дистанции из IOF XML, [NO_DISTANCE_KEY] — дистанция ещё не назначена.
  */
 export interface PendingGroup {
   title: string

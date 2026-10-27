@@ -20,6 +20,7 @@ import { CoverPickerField } from './CoverPickerField'
 import { competitionStartMillis, isRegistrationStartAfterCompetition } from './createCompetitionValidation'
 import { ControlTimeFields } from './ControlTimeFields'
 import { LimitAndFeeFields } from './LimitAndFeeFields'
+import { GroupsWithoutDistanceBanner, NoDistanceBadge } from './NoDistanceNotice'
 import { TeamScoringFields } from './TeamScoringFields'
 import type { CreateCompetitionFormState, PendingDistance, PendingGroup, XmlCoursePreview } from './types'
 
@@ -243,7 +244,7 @@ export function DistancesStep({
       <p className="text-sm text-on-surface-variant">
         {isPastEvent
           ? 'Можно пропустить, если детали дистанций неизвестны.'
-          : 'Добавьте хотя бы одну дистанцию — её можно будет выбрать для групп на следующем шаге.'}
+          : 'Добавьте дистанции — их можно будет выбрать для групп на следующем шаге. Если дистанции ещё не спланированы, шаг можно пропустить: регистрация в группы откроется и без них, а назначить дистанции можно позже.'}
       </p>
 
       <div className="flex flex-col gap-2 rounded-lg border border-outline-variant bg-surface p-3">
@@ -341,7 +342,7 @@ export function GroupsStep({ groups, distanceOptions, isPastEvent, onAdd, onAddS
         <p className="text-sm text-on-surface-variant">Пока нет групп</p>
       ) : (
         groups.map((g, index) => {
-          const distName = distanceOptions.find(([key]) => key === g.distanceKey)?.[1] ?? '—'
+          const distName = distanceOptions.find(([key]) => key === g.distanceKey)?.[1] ?? null
           const ageStr =
             g.minAge != null && g.maxAge != null
               ? `${g.minAge}–${g.maxAge} лет  •  `
@@ -358,8 +359,10 @@ export function GroupsStep({ groups, distanceOptions, isPastEvent, onAdd, onAddS
               <div className="flex flex-col">
                 <span className="font-semibold text-fg">{g.title}</span>
                 <span className="text-sm text-on-surface-variant">
-                  {ageStr}Дистанция: {distName}
+                  {ageStr}
+                  {distName != null && `Дистанция: ${distName}`}
                 </span>
+                {distName == null && !isPastEvent && <NoDistanceBadge />}
               </div>
               <div className="flex shrink-0 gap-3">
                 <button type="button" onClick={() => onEdit(index)} className="text-sm text-primary">
@@ -373,12 +376,12 @@ export function GroupsStep({ groups, distanceOptions, isPastEvent, onAdd, onAddS
           )
         })
       )}
-      <button
-        type="button"
-        onClick={onAddStandard}
-        disabled={distanceOptions.length === 0}
-        className="rounded-md border border-outline px-4 py-2 text-sm text-fg disabled:opacity-50"
-      >
+      {!isPastEvent && (
+        <GroupsWithoutDistanceBanner
+          titles={groups.filter((g) => !distanceOptions.some(([key]) => key === g.distanceKey)).map((g) => g.title)}
+        />
+      )}
+      <button type="button" onClick={onAddStandard} className="rounded-md border border-outline px-4 py-2 text-sm text-fg">
         + Стандартные группы
       </button>
       <button type="button" onClick={onAdd} className="rounded-md border border-outline px-4 py-2 text-sm text-fg">

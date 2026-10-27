@@ -3,7 +3,7 @@ import { ErrorMessage } from '../../components/ErrorMessage'
 import { LabeledSelect } from '../../components/LabeledSelect'
 import { parseGroupTitle, type GroupTitleInfo } from '../../lib/standardGroups'
 import { GENDER_OPTIONS } from './dictionaries'
-import type { PendingGroup } from './types'
+import { NO_DISTANCE_KEY, type PendingGroup } from './types'
 
 interface GroupDialogProps {
   /** Пары [ключ дистанции, название]. */
@@ -37,7 +37,7 @@ export function GroupDialog({
   const [minAge, setMinAge] = useState(numStr(initial?.minAge))
   const [maxAge, setMaxAge] = useState(numStr(initial?.maxAge))
   const [maxParticipants, setMaxParticipants] = useState(numStr(initial?.maxParticipants))
-  const [distanceKey, setDistanceKey] = useState(initial?.distanceKey ?? distanceOptions[0]?.[0] ?? '')
+  const [distanceKey, setDistanceKey] = useState(initial?.distanceKey ?? distanceOptions[0]?.[0] ?? NO_DISTANCE_KEY)
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(numStr(initial?.timeLimitMinutes))
   const [scorePenaltyPerMinute, setScorePenaltyPerMinute] = useState(initial ? numStr(initial.scorePenaltyPerMinute) : '1')
   const [maxLatenessMinutes, setMaxLatenessMinutes] = useState(initial ? numStr(initial.maxLatenessMinutes) : '30')
@@ -155,9 +155,16 @@ export function GroupDialog({
           </>
         )}
         {distanceOptions.length === 0 ? (
-          <p className="text-sm text-error">Сначала добавьте дистанцию</p>
+          <p className="text-sm text-on-surface-variant">
+            Дистанций пока нет — группа будет без дистанции. Назначьте её позже на вкладке «Группы» соревнования.
+          </p>
         ) : (
-          <LabeledSelect label="Дистанция *" value={distanceKey} options={distanceOptions} onChange={setDistanceKey} />
+          <LabeledSelect
+            label="Дистанция"
+            value={distanceKey}
+            options={[[NO_DISTANCE_KEY, 'Не назначена'], ...distanceOptions]}
+            onChange={setDistanceKey}
+          />
         )}
         {error && <ErrorMessage message={error} />}
         <div className="mt-2 flex gap-2">
@@ -167,7 +174,6 @@ export function GroupDialog({
           <button
             type="button"
             onClick={handleSave}
-            disabled={distanceOptions.length === 0}
             className="flex-1 rounded-md bg-primary px-4 py-2 text-sm text-on-primary disabled:opacity-50"
           >
             {initial ? 'Сохранить' : 'Добавить'}

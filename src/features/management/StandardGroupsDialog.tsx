@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { LabeledSelect } from '../../components/LabeledSelect'
 import { STANDARD_GROUP_TITLES } from '../../lib/standardGroups'
+import { NO_DISTANCE_KEY } from './types'
 
 interface StandardGroupsDialogProps {
   /** Пары [ключ дистанции, название]; непустой список. */
@@ -20,7 +21,7 @@ export function StandardGroupsDialog({ distanceOptions, existingTitles, onDismis
   const existing = new Set(existingTitles.map((t) => t.trim().toLowerCase()))
   const available = STANDARD_GROUP_TITLES.filter((t) => !existing.has(t.toLowerCase()))
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [defaultDistanceKey, setDefaultDistanceKey] = useState(distanceOptions[0]?.[0] ?? '')
+  const [defaultDistanceKey, setDefaultDistanceKey] = useState(distanceOptions[0]?.[0] ?? NO_DISTANCE_KEY)
 
   function toggle(title: string) {
     setSelected((prev) => {
@@ -63,15 +64,21 @@ export function StandardGroupsDialog({ distanceOptions, existingTitles, onDismis
         <p className="text-xs text-on-surface-variant">
           Пол и возраст заполнятся по названию: Ж14 — до 14 лет, М35 — 35 лет и старше, М21 — без ограничения.
         </p>
-        <LabeledSelect
-          label="Дистанция по умолчанию"
-          value={defaultDistanceKey}
-          options={distanceOptions}
-          onChange={setDefaultDistanceKey}
-        />
-        <p className="text-xs text-on-surface-variant">
-          Если дистанция называется так же, как группа (например, «М21»), группа получит её.
-        </p>
+        {distanceOptions.length > 0 ? (
+          <>
+            <LabeledSelect
+              label="Дистанция по умолчанию"
+              value={defaultDistanceKey}
+              options={[[NO_DISTANCE_KEY, 'Не назначена'], ...distanceOptions]}
+              onChange={setDefaultDistanceKey}
+            />
+            <p className="text-xs text-on-surface-variant">
+              Если дистанция называется так же, как группа (например, «М21»), группа получит её.
+            </p>
+          </>
+        ) : (
+          <p className="text-xs text-on-surface-variant">Дистанций пока нет — группы будут без дистанции.</p>
+        )}
         <div className="mt-2 flex gap-2">
           <button type="button" onClick={onDismiss} className="flex-1 rounded-md border border-outline px-4 py-2 text-sm text-fg">
             Отмена

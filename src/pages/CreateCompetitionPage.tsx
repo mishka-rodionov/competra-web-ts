@@ -180,7 +180,7 @@ export function CreateCompetitionPage() {
         : step === 2
           ? isOrganizerStepValid(form) || isPastEvent
           : step === 3
-            ? (distances.length > 0 || importXmlContent != null || isPastEvent) && distancesWithoutStartCp.length === 0
+            ? distancesWithoutStartCp.length === 0
             : groups.length > 0 || isPastEvent
 
   async function handlePickXml(file: File) {
