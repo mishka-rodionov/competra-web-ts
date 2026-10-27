@@ -31,3 +31,13 @@ export function parseControlPoints(input: string, isByChoice: boolean, withScore
     })
     .filter((cp): cp is ControlPoint => cp != null)
 }
+
+/**
+ * Обратное к [parseControlPoints]: список КП в строку поля ввода — для правки уже добавленной
+ * дистанции. Баллы пишутся только при [withScores], звёздочка — у обязательных КП в «по выбору».
+ */
+export function formatControlPoints(controlPoints: ControlPoint[], isByChoice: boolean, withScores: boolean = isByChoice): string {
+  return controlPoints
+    .map((cp) => `${cp.number}${withScores ? `:${cp.score}` : ''}${isByChoice && isRequiredControl(cp) ? '*' : ''}`)
+    .join(' ')
+}

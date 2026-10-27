@@ -9,6 +9,10 @@ interface AvatarCropDialogProps {
   error: string | null
   onConfirm: (blob: Blob) => void
   onCancel: () => void
+  /** Соотношение сторон рамки; по умолчанию 1 (аватар). Обложка соревнования — 16/9. */
+  aspect?: number
+  /** Ширина итоговой картинки в пикселях. */
+  outputSize?: number
 }
 
 /**
@@ -16,14 +20,22 @@ interface AvatarCropDialogProps {
  * (например, 401) диалог не узнаёт об исходе и зависает на "Загрузка…" навсегда, а сообщение
  * об ошибке, отрисованное родителем под этим fullscreen-оверлеем, никогда не становится видимым.
  */
-export function AvatarCropDialog({ imageSrc, uploading, error, onConfirm, onCancel }: AvatarCropDialogProps) {
+export function AvatarCropDialog({
+  imageSrc,
+  uploading,
+  error,
+  onConfirm,
+  onCancel,
+  aspect = 1,
+  outputSize = 512,
+}: AvatarCropDialogProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
 
   async function handleConfirm() {
     if (!croppedAreaPixels) return
-    const blob = await cropImageToBlob(imageSrc, croppedAreaPixels)
+    const blob = await cropImageToBlob(imageSrc, croppedAreaPixels, outputSize, aspect)
     onConfirm(blob)
   }
 
@@ -34,8 +46,8 @@ export function AvatarCropDialog({ imageSrc, uploading, error, onConfirm, onCanc
           image={imageSrc}
           crop={crop}
           zoom={zoom}
-          aspect={1}
-          cropShape="round"
+          aspect={aspect}
+          cropShape={aspect === 1 ? 'round' : 'rect'}
           showGrid={false}
           onCropChange={setCrop}
           onZoomChange={setZoom}

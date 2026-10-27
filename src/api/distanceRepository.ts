@@ -1,5 +1,5 @@
 import { authRequest } from './client'
-import { safeApiCall } from './safeApiCall'
+import { safeApiCall, safeApiCallUnit } from './safeApiCall'
 import type { Distance, SaveDistanceRequest } from '../types/distance'
 
 interface UploadResponse {
@@ -26,6 +26,11 @@ export const distanceRepository = {
         body: JSON.stringify(requests),
       }),
     )
+  },
+
+  /** Удаляет дистанцию на сервере (DELETE /event/orienteering/distances/{id}). */
+  deleteDistance(distanceId: number) {
+    return safeApiCallUnit(() => authRequest(`/event/orienteering/distances/${distanceId}`, { method: 'DELETE' }))
   },
 
   /** Импорт дистанций из IOF XML (Mapper) — сервер сам парсит файл и возвращает реальные id. */

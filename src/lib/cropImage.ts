@@ -14,12 +14,20 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   })
 }
 
-/** Вырезает область croppedAreaPixels (react-easy-crop onCropComplete) в квадратный JPEG-blob заданного размера. */
-export async function cropImageToBlob(imageSrc: string, croppedAreaPixels: PixelCrop, outputSize = 512): Promise<Blob> {
+/**
+ * Вырезает область croppedAreaPixels (react-easy-crop onCropComplete) в JPEG-blob шириной [outputSize]
+ * и высотой outputSize / aspect (по умолчанию квадрат, как у аватара).
+ */
+export async function cropImageToBlob(
+  imageSrc: string,
+  croppedAreaPixels: PixelCrop,
+  outputSize = 512,
+  aspect = 1,
+): Promise<Blob> {
   const image = await loadImage(imageSrc)
   const canvas = document.createElement('canvas')
   canvas.width = outputSize
-  canvas.height = outputSize
+  canvas.height = Math.round(outputSize / aspect)
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas 2D context unavailable')
 
@@ -31,8 +39,8 @@ export async function cropImageToBlob(imageSrc: string, croppedAreaPixels: Pixel
     croppedAreaPixels.height,
     0,
     0,
-    outputSize,
-    outputSize,
+    canvas.width,
+    canvas.height,
   )
 
   return new Promise((resolve, reject) => {

@@ -156,3 +156,12 @@ export const GENDER_OPTIONS: [string, string][] = [
   ['M', 'Мужчины'],
   ['F', 'Женщины'],
 ]
+
+/** Валюты взноса — тот же список, что в Android (`FEE_CURRENCIES` в RegistrationCompetitionFieldScreen.kt). */
+export const FEE_CURRENCY_OPTIONS: [string, string][] = [
+  ['RUB', '₽ RUB'],
+  ['BYN', 'Br BYN'],
+  ['KZT', '₸ KZT'],
+  ['USD', '$ USD'],
+  ['EUR', '€ EUR'],
+]

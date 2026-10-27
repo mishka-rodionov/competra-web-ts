@@ -33,6 +33,13 @@ export interface Competition {
   mapUrl: string | null
   resultsStatus: string
   isTest: boolean
+  /** Клуб-организатор; приходит с авторизованных эндпоинтов. */
+  organizingClubId?: string | null
+  /** Рамка кропа обложки (доли 0..1), задаётся в Android; веб её только сохраняет. */
+  coverCropX?: number | null
+  coverCropY?: number | null
+  coverCropWidth?: number | null
+  coverCropHeight?: number | null
 }
 
 /** Авторизованные эндпоинты возвращают это — competitionId + вложенный Competition. */
@@ -145,6 +152,15 @@ export interface CompetitionFields {
   regulationUrl: string | null
   mapUrl: string | null
   imageUrl?: string | null
+  /**
+   * Сервер перезаписывает эти поля при каждом upsert — при правке существующего соревнования
+   * их нужно передавать как есть, иначе клуб-организатор и рамка обложки сотрутся.
+   */
+  organizingClubId?: string | null
+  coverCropX?: number | null
+  coverCropY?: number | null
+  coverCropWidth?: number | null
+  coverCropHeight?: number | null
   resultsStatus: string
   timeZoneId: string
   isTest: boolean

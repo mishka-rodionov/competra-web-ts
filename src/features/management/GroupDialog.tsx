@@ -1,18 +1,26 @@
 import { useState } from 'react'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { LabeledSelect } from '../../components/LabeledSelect'
+import { parseGroupTitle, type GroupTitleInfo } from '../../lib/standardGroups'
 import { GENDER_OPTIONS } from './dictionaries'
 import type { PendingGroup } from './types'
 
 interface GroupDialogProps {
-  distanceOptions: [number, string][]
+  /** Пары [ключ дистанции, название]. */
+  distanceOptions: [string, string][]
   isScoreO: boolean
   /** КВ соревнования — подсказка о том, что унаследует группа с пустым полем. */
   competitionControlTimeMinutes: number | null
   /** N командного зачёта соревнования; null — зачёт не включён, поле группы скрыто. */
   competitionTeamCounted?: number | null
+  /** Группа для правки; не задана — создаётся новая. */
+  initial?: PendingGroup
   onDismiss: () => void
   onSave: (group: PendingGroup) => void
+}
+
+function numStr(value: number | null | undefined): string {
+  return value != null ? String(value) : ''
 }
 
 export function GroupDialog({
@@ -20,20 +28,33 @@ export function GroupDialog({
   isScoreO,
   competitionControlTimeMinutes,
   competitionTeamCounted = null,
+  initial,
   onDismiss,
   onSave,
 }: GroupDialogProps) {
-  const [title, setTitle] = useState('')
-  const [gender, setGender] = useState('')
-  const [minAge, setMinAge] = useState('')
-  const [maxAge, setMaxAge] = useState('')
-  const [maxParticipants, setMaxParticipants] = useState('')
-  const [distanceIndex, setDistanceIndex] = useState(distanceOptions[0]?.[0] ?? 0)
-  const [timeLimitMinutes, setTimeLimitMinutes] = useState('')
-  const [scorePenaltyPerMinute, setScorePenaltyPerMinute] = useState('1')
-  const [maxLatenessMinutes, setMaxLatenessMinutes] = useState('30')
-  const [teamCountedResults, setTeamCountedResults] = useState('')
+  const [title, setTitle] = useState(initial?.title ?? '')
+  const [gender, setGender] = useState(initial?.gender ?? '')
+  const [minAge, setMinAge] = useState(numStr(initial?.minAge))
+  const [maxAge, setMaxAge] = useState(numStr(initial?.maxAge))
+  const [maxParticipants, setMaxParticipants] = useState(numStr(initial?.maxParticipants))
+  const [distanceKey, setDistanceKey] = useState(initial?.distanceKey ?? distanceOptions[0]?.[0] ?? '')
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState(numStr(initial?.timeLimitMinutes))
+  const [scorePenaltyPerMinute, setScorePenaltyPerMinute] = useState(initial ? numStr(initial.scorePenaltyPerMinute) : '1')
+  const [maxLatenessMinutes, setMaxLatenessMinutes] = useState(initial ? numStr(initial.maxLatenessMinutes) : '30')
+  const [teamCountedResults, setTeamCountedResults] = useState(numStr(initial?.teamCountedResults))
   const [error, setError] = useState<string | null>(null)
+  // Последние пол/возраст, подставленные по названию: поле, которое организатор поменял сам, не перетираем.
+  const [autoFilled, setAutoFilled] = useState<GroupTitleInfo | null>(null)
+
+  function handleTitleChange(value: string) {
+    setTitle(value)
+    if (initial) return
+    const info = parseGroupTitle(value)
+    if (minAge === numStr(autoFilled?.minAge)) setMinAge(numStr(info?.minAge))
+    if (maxAge === numStr(autoFilled?.maxAge)) setMaxAge(numStr(info?.maxAge))
+    if (gender === (autoFilled?.gender ?? '')) setGender(info?.gender ?? '')
+    setAutoFilled(info)
+  }
 
   function handleSave() {
     if (!title.trim()) {
@@ -46,7 +67,7 @@ export function GroupDialog({
       minAge: minAge ? parseInt(minAge, 10) : null,
       maxAge: maxAge ? parseInt(maxAge, 10) : null,
       maxParticipants: maxParticipants ? parseInt(maxParticipants, 10) : null,
-      distanceIndex,
+      distanceKey,
       timeLimitMinutes: timeLimitMinutes ? parseInt(timeLimitMinutes, 10) : null,
       scorePenaltyPerMinute: isScoreO && scorePenaltyPerMinute ? parseInt(scorePenaltyPerMinute, 10) : null,
       maxLatenessMinutes: isScoreO && maxLatenessMinutes ? parseInt(maxLatenessMinutes, 10) : null,
@@ -57,10 +78,10 @@ export function GroupDialog({
   return (
     <div className="fixed inset-0 z-20 flex items-center justify-center bg-fg/40 p-4" onClick={onDismiss}>
       <div className="flex w-full max-w-sm flex-col gap-3 rounded-lg bg-surface p-4" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-medium text-fg">Новая группа</h3>
+        <h3 className="text-lg font-medium text-fg">{initial ? 'Изменить группу' : 'Новая группа'}</h3>
         <input
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => handleTitleChange(e.target.value)}
           placeholder="Название * (М21, Ж18, Open)"
           className="rounded-md border border-outline bg-bg px-3 py-2 text-fg"
         />
@@ -136,7 +157,7 @@ export function GroupDialog({
         {distanceOptions.length === 0 ? (
           <p className="text-sm text-error">Сначала добавьте дистанцию</p>
         ) : (
-          <LabeledSelect label="Дистанция *" value={distanceIndex} options={distanceOptions} onChange={setDistanceIndex} />
+          <LabeledSelect label="Дистанция *" value={distanceKey} options={distanceOptions} onChange={setDistanceKey} />
         )}
         {error && <ErrorMessage message={error} />}
         <div className="mt-2 flex gap-2">
@@ -149,7 +170,7 @@ export function GroupDialog({
             disabled={distanceOptions.length === 0}
             className="flex-1 rounded-md bg-primary px-4 py-2 text-sm text-on-primary disabled:opacity-50"
           >
-            Добавить
+            {initial ? 'Сохранить' : 'Добавить'}
           </button>
         </div>
       </div>

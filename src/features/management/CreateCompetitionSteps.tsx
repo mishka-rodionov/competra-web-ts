@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { CoordinatesPickerField } from '../../components/CoordinatesPickerField'
+import type { Club } from '../../types/club'
 import { LabeledSelect } from '../../components/LabeledSelect'
 import { TextInput } from '../../components/TextInput'
 import { TimeZoneSelect } from '../../components/TimeZoneSelect'
@@ -14,6 +16,8 @@ import {
 import { minControlsLabel, ranksByScore } from '../../lib/byChoiceMode'
 import { isRequiredControl } from '../../lib/controlPoints'
 import { CompetitionFormatFields } from './CompetitionFormatFields'
+import { CoverPickerField } from './CoverPickerField'
+import { competitionStartMillis, isRegistrationStartAfterCompetition } from './createCompetitionValidation'
 import { ControlTimeFields } from './ControlTimeFields'
 import { LimitAndFeeFields } from './LimitAndFeeFields'
 import { TeamScoringFields } from './TeamScoringFields'
@@ -24,11 +28,15 @@ interface StepProps {
   onPatch: (patch: Partial<CreateCompetitionFormState>) => void
 }
 
-export function BasicStep({ form, onPatch }: StepProps) {
+export function BasicStep({ form, onPatch, isPastEvent }: StepProps & { isPastEvent: boolean }) {
+  const start = competitionStartMillis(form)
+  // Момент открытия шага: Date.now() в рендере линтер считает нечистым.
+  const [now] = useState(() => Date.now())
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-base font-medium text-fg">Основная информация</h2>
       <TextInput label="Название" required value={form.title} onChange={(title) => onPatch({ title })} />
+      <CoverPickerField imageUrl={form.imageUrl} onChange={(imageUrl) => onPatch({ imageUrl })} />
       <div className="flex gap-2">
         <label className="flex flex-1 flex-col gap-1">
           <span className="text-sm text-on-surface-variant">Дата старта *</span>
@@ -49,8 +57,14 @@ export function BasicStep({ form, onPatch }: StepProps) {
           />
         </label>
       </div>
+      {!isPastEvent && start != null && start < now && (
+        <p className="-mt-1 text-sm text-error">
+          Время старта уже прошло — регистрация будет сразу закрыта. Для прошедшего соревнования используйте «Добавить
+          прошедшее».
+        </p>
+      )}
       <TimeZoneSelect zoneId={form.zoneId} onSelect={(zoneId) => onPatch({ zoneId })} />
-      <TextInput label="Место проведения" value={form.address} onChange={(address) => onPatch({ address })} />
+      <TextInput label="Место проведения" required value={form.address} onChange={(address) => onPatch({ address })} />
       <CoordinatesPickerField
         latitude={form.latitude}
         longitude={form.longitude}
@@ -119,6 +133,7 @@ export function RegistrationStep({ form, onPatch }: StepProps) {
         />
       </label>
       {!form.registrationOpenImmediately && (
+        <>
         <div className="flex gap-2">
           <label className="flex flex-1 flex-col gap-1">
             <span className="text-sm text-on-surface-variant">Начало регистрации</span>
@@ -139,6 +154,10 @@ export function RegistrationStep({ form, onPatch }: StepProps) {
             />
           </label>
         </div>
+        {isRegistrationStartAfterCompetition(form) && (
+          <p className="-mt-1 text-sm text-error">Регистрация должна открыться не позже старта соревнования</p>
+        )}
+        </>
       )}
       <LabeledSelect
         label="Окончание регистрации"
@@ -146,12 +165,17 @@ export function RegistrationStep({ form, onPatch }: StepProps) {
         options={REG_END_MODE_OPTIONS}
         onChange={(registrationEndMode) => onPatch({ registrationEndMode })}
       />
-      <LimitAndFeeFields maxParticipants={form.maxParticipants} feeAmount={form.feeAmount} onChange={onPatch} />
+      <LimitAndFeeFields
+        maxParticipants={form.maxParticipants}
+        feeAmount={form.feeAmount}
+        feeCurrency={form.feeCurrency}
+        onChange={onPatch}
+      />
     </div>
   )
 }
 
-export function OrganizerStep({ form, onPatch }: StepProps) {
+export function OrganizerStep({ form, onPatch, myClubs }: StepProps & { myClubs: Club[] }) {
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-base font-medium text-fg">Контакты организатора</h2>
@@ -161,8 +185,21 @@ export function OrganizerStep({ form, onPatch }: StepProps) {
       </p>
       <TextInput label="Телефон" required type="tel" value={form.contactPhone} onChange={(contactPhone) => onPatch({ contactPhone })} />
       <TextInput label="Email" type="email" value={form.contactEmail} onChange={(contactEmail) => onPatch({ contactEmail })} />
+      {myClubs.length > 0 && (
+        <>
+          <LabeledSelect
+            label="Клуб-организатор"
+            value={form.organizingClubId ?? ''}
+            options={[['', 'Без клуба'], ...myClubs.map((c): [string, string] => [c.id, c.name])]}
+            onChange={(id) => onPatch({ organizingClubId: id || null })}
+          />
+          <span className="-mt-2 text-xs text-on-surface-variant">Клубы, где вы основатель или администратор</span>
+        </>
+      )}
       <h2 className="mt-2 text-base font-medium text-fg">Ссылки</h2>
       <TextInput label="Сайт соревнования" value={form.website} onChange={(website) => onPatch({ website })} />
+      <TextInput label="Ссылка на положение" value={form.regulationUrl} onChange={(regulationUrl) => onPatch({ regulationUrl })} />
+      <TextInput label="Ссылка на карту" value={form.mapUrl} onChange={(mapUrl) => onPatch({ mapUrl })} />
     </div>
   )
 }
@@ -183,6 +220,7 @@ interface DistancesStepProps {
   importedPreviews: XmlCoursePreview[]
   isPastEvent: boolean
   onAdd: () => void
+  onEdit: (index: number) => void
   onRemove: (index: number) => void
   onPickXml: (file: File) => void
   onClearXml: () => void
@@ -194,6 +232,7 @@ export function DistancesStep({
   importedPreviews,
   isPastEvent,
   onAdd,
+  onEdit,
   onRemove,
   onPickXml,
   onClearXml,
@@ -260,9 +299,14 @@ export function DistancesStep({
               </span>
               {pendingRulesLabel(d) && <span className="text-sm text-on-surface-variant">{pendingRulesLabel(d)}</span>}
             </div>
-            <button type="button" onClick={() => onRemove(index)} className="text-sm text-error">
-              Удалить
-            </button>
+            <div className="flex shrink-0 gap-3">
+              <button type="button" onClick={() => onEdit(index)} className="text-sm text-primary">
+                Изменить
+              </button>
+              <button type="button" onClick={() => onRemove(index)} className="text-sm text-error">
+                Удалить
+              </button>
+            </div>
           </div>
         ))
       )}
@@ -275,13 +319,15 @@ export function DistancesStep({
 
 interface GroupsStepProps {
   groups: PendingGroup[]
-  distanceOptions: [number, string][]
+  distanceOptions: [string, string][]
   isPastEvent: boolean
   onAdd: () => void
+  onAddStandard: () => void
+  onEdit: (index: number) => void
   onRemove: (index: number) => void
 }
 
-export function GroupsStep({ groups, distanceOptions, isPastEvent, onAdd, onRemove }: GroupsStepProps) {
+export function GroupsStep({ groups, distanceOptions, isPastEvent, onAdd, onAddStandard, onEdit, onRemove }: GroupsStepProps) {
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-base font-medium text-fg">Группы участников</h2>
@@ -295,8 +341,15 @@ export function GroupsStep({ groups, distanceOptions, isPastEvent, onAdd, onRemo
         <p className="text-sm text-on-surface-variant">Пока нет групп</p>
       ) : (
         groups.map((g, index) => {
-          const distName = distanceOptions.find(([key]) => key === g.distanceIndex)?.[1] ?? '—'
-          const ageStr = g.minAge != null || g.maxAge != null ? `${g.minAge ?? ''}–${g.maxAge ?? ''} лет  •  ` : ''
+          const distName = distanceOptions.find(([key]) => key === g.distanceKey)?.[1] ?? '—'
+          const ageStr =
+            g.minAge != null && g.maxAge != null
+              ? `${g.minAge}–${g.maxAge} лет  •  `
+              : g.maxAge != null
+                ? `до ${g.maxAge} лет  •  `
+                : g.minAge != null
+                  ? `${g.minAge} лет и старше  •  `
+                  : ''
           return (
             <div
               key={index}
@@ -308,13 +361,26 @@ export function GroupsStep({ groups, distanceOptions, isPastEvent, onAdd, onRemo
                   {ageStr}Дистанция: {distName}
                 </span>
               </div>
-              <button type="button" onClick={() => onRemove(index)} className="text-sm text-error">
-                Удалить
-              </button>
+              <div className="flex shrink-0 gap-3">
+                <button type="button" onClick={() => onEdit(index)} className="text-sm text-primary">
+                  Изменить
+                </button>
+                <button type="button" onClick={() => onRemove(index)} className="text-sm text-error">
+                  Удалить
+                </button>
+              </div>
             </div>
           )
         })
       )}
+      <button
+        type="button"
+        onClick={onAddStandard}
+        disabled={distanceOptions.length === 0}
+        className="rounded-md border border-outline px-4 py-2 text-sm text-fg disabled:opacity-50"
+      >
+        + Стандартные группы
+      </button>
       <button type="button" onClick={onAdd} className="rounded-md border border-outline px-4 py-2 text-sm text-fg">
         + Добавить группу
       </button>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { parseControlPoints } from '../../lib/controlPoints'
+import { formatControlPoints, parseControlPoints } from '../../lib/controlPoints'
 import { isMinControls, ranksByScore } from '../../lib/byChoiceMode'
 import type { PendingDistance } from './types'
 
@@ -9,23 +9,27 @@ interface DistanceDialogProps {
   byChoiceMode: string
   /** Старт по стартовой станции: реальное время старта берётся из отметки на этом КП. */
   isStartCpRequired: boolean
+  /** Дистанция для правки; не задана — создаётся новая. */
+  initial?: PendingDistance
   onDismiss: () => void
   onSave: (distance: PendingDistance) => void
 }
 
-export function DistanceDialog({ direction, byChoiceMode, isStartCpRequired, onDismiss, onSave }: DistanceDialogProps) {
+export function DistanceDialog({ direction, byChoiceMode, isStartCpRequired, initial, onDismiss, onSave }: DistanceDialogProps) {
   const isByChoice = direction === 'BY_CHOICE'
   const hasScores = ranksByScore(direction, byChoiceMode)
   const hasMinControls = isMinControls(direction, byChoiceMode)
-  const [name, setName] = useState('')
-  const [lengthMeters, setLengthMeters] = useState('')
-  const [climbMeters, setClimbMeters] = useState('')
-  const [controlPointsInput, setControlPointsInput] = useState('')
-  const [finishCp, setFinishCp] = useState('')
-  const [startCp, setStartCp] = useState('')
+  const [name, setName] = useState(initial?.name ?? '')
+  const [lengthMeters, setLengthMeters] = useState(initial?.lengthMeters ? String(initial.lengthMeters) : '')
+  const [climbMeters, setClimbMeters] = useState(initial?.climbMeters ? String(initial.climbMeters) : '')
+  const [controlPointsInput, setControlPointsInput] = useState(
+    initial ? formatControlPoints(initial.controlPoints, isByChoice, hasScores) : '',
+  )
+  const [finishCp, setFinishCp] = useState(initial?.finishControlPoint?.toString() ?? '')
+  const [startCp, setStartCp] = useState(initial?.startControlPoint?.toString() ?? '')
   const [showStartCpError, setShowStartCpError] = useState(false)
-  const [description, setDescription] = useState('')
-  const [minControls, setMinControls] = useState('')
+  const [description, setDescription] = useState(initial?.description ?? '')
+  const [minControls, setMinControls] = useState(initial?.minControlsCount ? String(initial.minControlsCount) : '')
   const [minControlsError, setMinControlsError] = useState<string | null>(null)
 
   function handleSave() {
@@ -41,6 +45,7 @@ export function DistanceDialog({ direction, byChoiceMode, isStartCpRequired, onD
       return
     }
     onSave({
+      key: initial?.key ?? crypto.randomUUID(),
       name: name.trim() || null,
       lengthMeters: parseInt(lengthMeters, 10) || 0,
       climbMeters: parseInt(climbMeters, 10) || 0,
@@ -55,7 +60,7 @@ export function DistanceDialog({ direction, byChoiceMode, isStartCpRequired, onD
   return (
     <div className="fixed inset-0 z-20 flex items-center justify-center bg-fg/40 p-4" onClick={onDismiss}>
       <div className="flex w-full max-w-sm flex-col gap-3 rounded-lg bg-surface p-4" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-medium text-fg">Новая дистанция</h3>
+        <h3 className="text-lg font-medium text-fg">{initial ? 'Изменить дистанцию' : 'Новая дистанция'}</h3>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -150,7 +155,7 @@ export function DistanceDialog({ direction, byChoiceMode, isStartCpRequired, onD
             onClick={handleSave}
             className="flex-1 rounded-md bg-primary px-4 py-2 text-sm text-on-primary"
           >
-            Добавить
+            {initial ? 'Сохранить' : 'Добавить'}
           </button>
         </div>
       </div>

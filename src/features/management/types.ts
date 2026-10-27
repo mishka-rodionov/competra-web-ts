@@ -27,6 +27,11 @@ export function competitionToFields(c: Competition, overrides: Partial<Competiti
     regulationUrl: c.regulationUrl,
     mapUrl: c.mapUrl,
     imageUrl: c.imageUrl,
+    organizingClubId: c.organizingClubId ?? null,
+    coverCropX: c.coverCropX ?? null,
+    coverCropY: c.coverCropY ?? null,
+    coverCropWidth: c.coverCropWidth ?? null,
+    coverCropHeight: c.coverCropHeight ?? null,
     resultsStatus: c.resultsStatus,
     timeZoneId: c.timeZoneId || DEFAULT_TIME_ZONE,
     isTest: c.isTest,
@@ -36,6 +41,8 @@ export function competitionToFields(c: Competition, overrides: Partial<Competiti
 
 /** Локальная дистанция, накопленная в мастере до публикации. */
 export interface PendingDistance {
+  /** Стабильный ключ в мастере: группы ссылаются на дистанцию по нему, а не по позиции в списке. */
+  key: string
   name: string | null
   lengthMeters: number
   climbMeters: number
@@ -47,7 +54,10 @@ export interface PendingDistance {
   minControlsCount: number | null
 }
 
-/** Локальная группа — ссылается на дистанцию по индексу в списке шага «Дистанции». */
+/**
+ * Локальная группа — ссылается на дистанцию по ключу: [PendingDistance.key] у добавленной вручную,
+ * [xmlCourseKey] у дистанции из IOF XML.
+ */
 export interface PendingGroup {
   title: string
   /** "M" / "F"; null — без ограничения по полу. */
@@ -55,7 +65,7 @@ export interface PendingGroup {
   minAge: number | null
   maxAge: number | null
   maxParticipants: number | null
-  distanceIndex: number
+  distanceKey: string
   /** Своё КВ группы; null — наследовать КВ соревнования. */
   timeLimitMinutes: number | null
   scorePenaltyPerMinute: number | null
@@ -90,6 +100,11 @@ export interface CreateCompetitionFormState {
   registrationEndMode: string
   maxParticipants: string
   feeAmount: string
+  feeCurrency: string
+  /** Обложка (уже загруженная, обрезанная до 16:9). */
+  imageUrl: string | null
+  /** Клуб-организатор; null — от своего имени. */
+  organizingClubId: string | null
   organizerName: string
   contactPhone: string
   contactEmail: string
@@ -115,6 +130,11 @@ const COURSE_REGEX = /<Course>([\s\S]*?)<\/Course>/g
 const NAME_REGEX = /<Name>([\s\S]*?)<\/Name>/
 const LENGTH_REGEX = /<Length>([\s\S]*?)<\/Length>/
 const COURSE_CONTROL_REGEX = /<CourseControl\b/g
+
+/** Ключ дистанции из IOF XML для [PendingGroup.distanceKey] — по порядку Course в файле. */
+export function xmlCourseKey(index: number): string {
+  return `xml:${index}`
+}
 
 export function parseXmlCoursePreviews(xmlContent: string): XmlCoursePreview[] {
   const previews: XmlCoursePreview[] = []

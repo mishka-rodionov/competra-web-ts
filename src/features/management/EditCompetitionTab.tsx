@@ -51,6 +51,7 @@ interface EditFormState {
   regEndTime: string
   maxParticipants: string
   feeAmount: string
+  feeCurrency: string
   organizerName: string
   contactEmail: string
   contactPhone: string
@@ -87,6 +88,7 @@ function toForm(competition: OrienteeringCompetition): EditFormState {
     regEndTime: c.registrationEnd != null ? utcMillisToZonedTime(c.registrationEnd, zoneId) : '23:59',
     maxParticipants: c.maxParticipants?.toString() ?? '',
     feeAmount: c.feeAmount && c.feeAmount > 0 ? String(Math.trunc(c.feeAmount)) : '',
+    feeCurrency: c.feeCurrency || 'RUB',
     organizerName: c.organizerName ?? '',
     contactEmail: c.contactEmail ?? '',
     contactPhone: c.contactPhone ?? '',
@@ -137,7 +139,7 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
         registrationEnd: form.regEndDateStr ? zonedDateTimeToUtcMillis(form.regEndDateStr, form.regEndTime, form.zoneId) : null,
         maxParticipants: form.maxParticipants ? parseInt(form.maxParticipants, 10) : null,
         feeAmount: form.feeAmount ? parseFloat(form.feeAmount) : null,
-        feeCurrency: form.feeAmount ? 'RUB' : c.feeCurrency,
+        feeCurrency: form.feeAmount ? form.feeCurrency : c.feeCurrency,
         mainOrganizerId: c.mainOrganizerId,
         organizerName: form.organizerName.trim() || null,
         contactEmail: form.contactEmail.trim() || null,
@@ -146,6 +148,12 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
         regulationUrl: form.regulationUrl.trim() || null,
         mapUrl: form.mapUrl.trim() || null,
         imageUrl: c.imageUrl,
+        // Сервер перезаписывает их при каждом upsert — передаём как есть, чтобы правка на сайте не стирала.
+        organizingClubId: c.organizingClubId ?? null,
+        coverCropX: c.coverCropX ?? null,
+        coverCropY: c.coverCropY ?? null,
+        coverCropWidth: c.coverCropWidth ?? null,
+        coverCropHeight: c.coverCropHeight ?? null,
         resultsStatus: c.resultsStatus,
         timeZoneId: form.zoneId,
         isTest: c.isTest,
@@ -298,7 +306,12 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
           />
         </label>
       </div>
-      <LimitAndFeeFields maxParticipants={form.maxParticipants} feeAmount={form.feeAmount} onChange={patch} />
+      <LimitAndFeeFields
+        maxParticipants={form.maxParticipants}
+        feeAmount={form.feeAmount}
+        feeCurrency={form.feeCurrency}
+        onChange={patch}
+      />
 
       <h2 className="mt-2 text-base font-medium text-fg">Контакты</h2>
       <TextInput label="Организатор (ФИО)" value={form.organizerName} onChange={(organizerName) => patch({ organizerName })} />

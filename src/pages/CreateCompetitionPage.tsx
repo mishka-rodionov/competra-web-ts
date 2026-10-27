@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { clubRepository } from '../api/clubRepository'
 import { competitionRepository } from '../api/competitionRepository'
 import { distanceRepository } from '../api/distanceRepository'
 import { groupRepository } from '../api/groupRepository'
@@ -8,6 +9,7 @@ import { ErrorMessage } from '../components/ErrorMessage'
 import { Loading } from '../components/Loading'
 import { DistanceDialog } from '../features/management/DistanceDialog'
 import { GroupDialog } from '../features/management/GroupDialog'
+import { StandardGroupsDialog } from '../features/management/StandardGroupsDialog'
 import {
   BasicStep,
   DistancesStep,
@@ -15,8 +17,14 @@ import {
   OrganizerStep,
   RegistrationStep,
 } from '../features/management/CreateCompetitionSteps'
-import { parseXmlCoursePreviews } from '../features/management/types'
+import {
+  competitionStartMillis,
+  isOrganizerStepValid,
+  isRegistrationStartAfterCompetition,
+} from '../features/management/createCompetitionValidation'
+import { parseXmlCoursePreviews, xmlCourseKey } from '../features/management/types'
 import { competitionFormat, ranksByScore } from '../lib/byChoiceMode'
+import { matchDistanceKey, parseGroupTitle } from '../lib/standardGroups'
 import { teamScoringAnalyticsValue, teamScoringRequest } from '../lib/teamScoring'
 import type { CreateCompetitionFormState, PendingDistance, PendingGroup, XmlCoursePreview } from '../features/management/types'
 import { useUserProfile } from '../features/profile/hooks'
@@ -24,6 +32,7 @@ import { analytics } from '../lib/analytics/analytics'
 import { AnalyticsEvents, type CreateCompetitionStep } from '../lib/analytics/events'
 import { DEFAULT_TIME_ZONE, zonedDateTimeToUtcMillis } from '../lib/dateUtils'
 import { isDebugEnvironment } from '../lib/debugEnv'
+import type { Club } from '../types/club'
 import type { CreateGroupRequest } from '../types/group'
 import type { Distance, SaveDistanceRequest } from '../types/distance'
 
@@ -52,6 +61,9 @@ const INITIAL_FORM: CreateCompetitionFormState = {
   registrationEndMode: 'AT_COMPETITION_START',
   maxParticipants: '',
   feeAmount: '',
+  feeCurrency: 'RUB',
+  imageUrl: null,
+  organizingClubId: null,
   organizerName: '',
   contactPhone: '',
   contactEmail: '',
@@ -66,6 +78,22 @@ const STEP_TITLES = ['Основное', 'Регистрация', 'Органи
 const STEP_NAMES: CreateCompetitionStep[] = ['common', 'registration', 'organizator', 'distance', 'groups']
 const KIND_OF_SPORT = 'Orienteering'
 
+/** Открытый диалог дистанции или группы: index — правка элемента списка, null — новый. */
+interface EditTarget {
+  index: number | null
+}
+
+/**
+ * Что уже сохранено на сервере при прошлых попытках «Завершить». Соревнование сохраняется upsert'ом
+ * по тому же competitionId, а дистанции — с их серверными id, поэтому повтор после ошибки ничего не дублирует.
+ */
+interface PublishProgress {
+  /** Ключ дистанции мастера → её id на сервере. */
+  savedDistanceIds: Map<string, number>
+  /** Импортированный XML: содержимое файла и созданные из него дистанции. */
+  imported: { content: string; distances: Distance[] } | null
+}
+
 export function CreateCompetitionPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -73,34 +101,65 @@ export function CreateCompetitionPage() {
   const isPastEvent = searchParams.get('past') === '1'
   const { data: profile } = useUserProfile()
 
+  // Один id на весь мастер: повторное «Завершить» обновляет то же соревнование, а не создаёт новое.
+  const [competitionId] = useState(() => crypto.randomUUID())
+  const progress = useRef<PublishProgress>({ savedDistanceIds: new Map(), imported: null })
+
   const [step, setStep] = useState(0)
   const [form, setForm] = useState<CreateCompetitionFormState>(INITIAL_FORM)
   const [distances, setDistances] = useState<PendingDistance[]>([])
   const [groups, setGroups] = useState<PendingGroup[]>([])
-  const [showDistanceDialog, setShowDistanceDialog] = useState(false)
-  const [showGroupDialog, setShowGroupDialog] = useState(false)
+  const [distanceDialog, setDistanceDialog] = useState<EditTarget | null>(null)
+  const [groupDialog, setGroupDialog] = useState<EditTarget | null>(null)
+  const [showStandardGroups, setShowStandardGroups] = useState(false)
   const [importXmlName, setImportXmlName] = useState<string | null>(null)
   const [importXmlContent, setImportXmlContent] = useState<string | null>(null)
   const [importedPreviews, setImportedPreviews] = useState<XmlCoursePreview[]>([])
+  const [myClubs, setMyClubs] = useState<Club[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [prefilledProfileId, setPrefilledProfileId] = useState<string | null>(null)
 
-  // Организатор по умолчанию — текущий пользователь; не перетираем, если поле уже заполнено.
+  // Организатор и контакты по умолчанию — из профиля; не перетираем, если поле уже заполнено.
   if (profile && profile.id !== prefilledProfileId) {
     setPrefilledProfileId(profile.id)
     const fullName = [profile.lastName, profile.firstName, profile.middleName].filter(Boolean).join(' ')
-    if (fullName && !form.organizerName) setForm((prev) => ({ ...prev, organizerName: fullName }))
+    setForm((prev) => ({
+      ...prev,
+      organizerName: prev.organizerName || fullName,
+      contactPhone: prev.contactPhone || (profile.phoneNumber ?? ''),
+      contactEmail: prev.contactEmail || (profile.email ?? ''),
+    }))
   }
+
+  useEffect(() => {
+    clubRepository.getMyClubs().then((result) => {
+      if (result.kind === 'success') setMyClubs(result.data)
+    })
+  }, [])
 
   function patchForm(patch: Partial<CreateCompetitionFormState>) {
     setForm((prev) => ({ ...prev, ...patch }))
   }
 
-  const distanceOptions: [number, string][] = [
-    ...distances.map((d, i): [number, string] => [i, d.name ?? `Дистанция ${i + 1}`]),
-    ...importedPreviews.map((p, i): [number, string] => [distances.length + i, p.name]),
+  const distanceOptions: [string, string][] = [
+    ...distances.map((d, i): [string, string] => [d.key, d.name ?? `Дистанция ${i + 1}`]),
+    ...importedPreviews.map((p, i): [string, string] => [xmlCourseKey(i), p.name]),
   ]
+
+  function groupsUsingDistance(key: string): string[] {
+    return groups.filter((g) => g.distanceKey === key).map((g) => g.title)
+  }
+
+  function removeDistance(index: number) {
+    const used = groupsUsingDistance(distances[index].key)
+    if (used.length > 0) {
+      setError(`Дистанция используется в группах ${used.join(', ')} — сначала смените им дистанцию или удалите их`)
+      return
+    }
+    setError(null)
+    setDistances(distances.filter((_, i) => i !== index))
+  }
 
   function goBack() {
     setError(null)
@@ -115,24 +174,60 @@ export function CreateCompetitionPage() {
 
   const nextEnabled =
     step === 0
-      ? form.title.trim() !== '' && form.startDateStr !== '' && form.zoneId !== ''
-      : step === 3
-        ? (distances.length > 0 || importXmlContent != null || isPastEvent) && distancesWithoutStartCp.length === 0
-        : step === 4
-          ? groups.length > 0 || isPastEvent
-          : true
+      ? form.title.trim() !== '' && form.startDateStr !== '' && form.zoneId !== '' && (form.address.trim() !== '' || isPastEvent)
+      : step === 1
+        ? (form.registrationOpenImmediately || form.regStartDateStr !== '') && !isRegistrationStartAfterCompetition(form)
+        : step === 2
+          ? isOrganizerStepValid(form) || isPastEvent
+          : step === 3
+            ? (distances.length > 0 || importXmlContent != null || isPastEvent) && distancesWithoutStartCp.length === 0
+            : groups.length > 0 || isPastEvent
 
   async function handlePickXml(file: File) {
     const content = await file.text()
+    const previews = parseXmlCoursePreviews(content)
     setImportXmlName(file.name)
     setImportXmlContent(content)
-    setImportedPreviews(parseXmlCoursePreviews(content))
+    setImportedPreviews(previews)
+    if (previews.length > 0) analytics.trackEvent(AnalyticsEvents.createCompetitionCoursesImported(previews.length))
   }
 
   function clearXml() {
+    const used = groups.filter((g) => g.distanceKey.startsWith('xml:')).map((g) => g.title)
+    if (used.length > 0) {
+      setError(`Дистанции из файла используются в группах ${used.join(', ')} — сначала смените им дистанцию или удалите их`)
+      return
+    }
+    setError(null)
     setImportXmlName(null)
     setImportXmlContent(null)
     setImportedPreviews([])
+  }
+
+  function addStandardGroups(titles: string[], defaultDistanceKey: string) {
+    const isScoreO = ranksByScore(form.direction, form.byChoiceMode)
+    const existing = new Set(groups.map((g) => g.title.trim().toLowerCase()))
+    const added = titles
+      .filter((title) => !existing.has(title.toLowerCase()))
+      .map((title): PendingGroup => {
+        const info = parseGroupTitle(title)
+        return {
+          title,
+          gender: info?.gender ?? null,
+          minAge: info?.minAge ?? null,
+          maxAge: info?.maxAge ?? null,
+          maxParticipants: null,
+          distanceKey: matchDistanceKey(title, distanceOptions) ?? defaultDistanceKey,
+          timeLimitMinutes: null,
+          scorePenaltyPerMinute: isScoreO ? 1 : null,
+          maxLatenessMinutes: isScoreO ? 30 : null,
+          teamCountedResults: null,
+        }
+      })
+    setShowStandardGroups(false)
+    if (added.length === 0) return
+    setGroups([...groups, ...added])
+    analytics.trackEvent(AnalyticsEvents.createCompetitionStandardGroupsAdded(added.length))
   }
 
   function fillTestData() {
@@ -152,6 +247,7 @@ export function CreateCompetitionPage() {
       registrationEndMode: 'AT_COMPETITION_START',
       maxParticipants: '100',
       feeAmount: '500',
+      feeCurrency: 'RUB',
       contactPhone: '+79990000000',
       contactEmail: 'test@example.com',
       website: 'https://example.com',
@@ -173,12 +269,17 @@ export function CreateCompetitionPage() {
     }
   }
 
+  function fail(message: string) {
+    setError(message)
+    setSaving(false)
+  }
+
   async function publish() {
-    if (!form.startDateStr) return
+    const startMs = competitionStartMillis(form)
+    if (startMs == null) return
     setSaving(true)
     setError(null)
 
-    const startMs = zonedDateTimeToUtcMillis(form.startDateStr, form.startTime, form.zoneId)
     const regStart = form.registrationOpenImmediately
       ? null
       : form.regStartDateStr
@@ -186,8 +287,9 @@ export function CreateCompetitionPage() {
         : null
     const regEnd = form.registrationEndMode === 'DAY_BEFORE_START' ? startMs - DAY_MS : startMs
 
+    // Upsert по стабильному competitionId: при повторе после ошибки обновляет уже созданное соревнование.
     const createResult = await competitionRepository.createCompetition({
-      competitionId: crypto.randomUUID(),
+      competitionId,
       competition: {
         title: form.title.trim(),
         startDate: startMs,
@@ -201,7 +303,7 @@ export function CreateCompetitionPage() {
         registrationEnd: regEnd,
         maxParticipants: form.maxParticipants ? parseInt(form.maxParticipants, 10) : null,
         feeAmount: form.feeAmount ? parseFloat(form.feeAmount) : null,
-        feeCurrency: form.feeAmount ? 'RUB' : null,
+        feeCurrency: form.feeAmount ? form.feeCurrency : null,
         mainOrganizerId: profile?.id ?? null,
         organizerName: form.organizerName.trim() || null,
         contactEmail: form.contactEmail.trim() || null,
@@ -209,6 +311,8 @@ export function CreateCompetitionPage() {
         website: form.website.trim() || null,
         regulationUrl: form.regulationUrl.trim() || null,
         mapUrl: form.mapUrl.trim() || null,
+        imageUrl: form.imageUrl,
+        organizingClubId: form.organizingClubId,
         timeZoneId: form.zoneId,
         isTest: form.isTest,
         resultsStatus: 'NOT_PUBLISHED',
@@ -222,23 +326,24 @@ export function CreateCompetitionPage() {
       byChoiceMode: form.byChoiceMode,
       teamScoring: teamScoringRequest(form.teamScoring, ranksByScore(form.direction, form.byChoiceMode)),
     })
-    if (createResult.kind === 'error') {
-      setError(createResult.message)
-      setSaving(false)
-      return
-    }
-    const competitionId = createResult.data.competitionId
-    if (!competitionId) {
-      setError('Сервер не вернул идентификатор соревнования')
-      setSaving(false)
-      return
+    if (createResult.kind === 'error') return fail(createResult.message)
+
+    const { savedDistanceIds } = progress.current
+
+    // Дистанции, сохранённые прошлой попыткой и с тех пор удалённые из мастера, убираем и с сервера.
+    const currentKeys = new Set(distances.map((d) => d.key))
+    for (const [key, id] of [...savedDistanceIds]) {
+      if (currentKeys.has(key)) continue
+      const deleted = await distanceRepository.deleteDistance(id)
+      if (deleted.kind === 'error') return fail(`Дистанции: ${deleted.message}`)
+      savedDistanceIds.delete(key)
     }
 
-    // Дистанции: ответ приходит в порядке запроса -> сопоставляем по индексу.
-    let savedManualDistances: Distance[] = []
+    // Уже сохранённые дистанции отправляются со своим id — сервер обновит их, а не создаст новые.
+    // Ответ приходит в порядке запроса -> сопоставляем по индексу.
     if (distances.length > 0) {
       const distRequests: SaveDistanceRequest[] = distances.map((d) => ({
-        distanceId: null,
+        distanceId: savedDistanceIds.get(d.key) ?? null,
         competitionId,
         name: d.name,
         lengthMeters: d.lengthMeters,
@@ -251,28 +356,32 @@ export function CreateCompetitionPage() {
         minControlsCount: d.minControlsCount ?? 0,
       }))
       const dr = await distanceRepository.saveDistances(distRequests)
-      if (dr.kind === 'error') {
-        setError(`Дистанции: ${dr.message}`)
-        setSaving(false)
-        return
-      }
-      savedManualDistances = dr.data
+      if (dr.kind === 'error') return fail(`Дистанции: ${dr.message}`)
+      dr.data.forEach((saved, i) => savedDistanceIds.set(distances[i].key, saved.id))
     }
 
-    // Импорт из IOF XML — сервер парсит файл сам и возвращает id в порядке Course-элементов,
-    // тот же порядок, что и (distances.length + i) в distanceOptions.
-    let importedDistances: Distance[] = []
-    if (importXmlContent != null) {
+    // Импорт из IOF XML — сервер парсит файл сам и возвращает id в порядке Course-элементов.
+    // Тот же файл повторно не импортируем; другой файл заменяет ранее импортированные дистанции.
+    let imported = progress.current.imported
+    if (imported != null && imported.content !== importXmlContent) {
+      for (const d of imported.distances) {
+        const deleted = await distanceRepository.deleteDistance(d.id)
+        if (deleted.kind === 'error') return fail(`Импорт XML: ${deleted.message}`)
+      }
+      imported = null
+      progress.current.imported = null
+    }
+    if (importXmlContent != null && imported == null) {
       const ir = await distanceRepository.importFromXml(competitionId, importXmlContent)
-      if (ir.kind === 'error') {
-        setError(`Импорт XML: ${ir.message}`)
-        setSaving(false)
-        return
-      }
-      importedDistances = ir.data
+      if (ir.kind === 'error') return fail(`Импорт XML: ${ir.message}`)
+      imported = { content: importXmlContent, distances: ir.data }
+      progress.current.imported = imported
     }
-    const savedDistances = [...savedManualDistances, ...importedDistances]
 
+    const distanceIdByKey = new Map(savedDistanceIds)
+    imported?.distances.forEach((d, i) => distanceIdByKey.set(xmlCourseKey(i), d.id))
+
+    // Группы сохраняются одним запросом последними: при ошибке их можно отправить снова целиком.
     if (groups.length > 0) {
       const groupRequests: CreateGroupRequest[] = groups.map((g) => ({
         groupId: null,
@@ -281,7 +390,7 @@ export function CreateCompetitionPage() {
         gender: g.gender,
         minAge: g.minAge,
         maxAge: g.maxAge,
-        distanceId: savedDistances[g.distanceIndex]?.id ?? null,
+        distanceId: distanceIdByKey.get(g.distanceKey) ?? null,
         maxParticipants: g.maxParticipants,
         timeLimitMinutes: g.timeLimitMinutes,
         scorePenaltyPerMinute: g.scorePenaltyPerMinute,
@@ -289,11 +398,7 @@ export function CreateCompetitionPage() {
         teamCountedResults: g.teamCountedResults ?? 0,
       }))
       const gr = await groupRepository.saveGroups(groupRequests)
-      if (gr.kind === 'error') {
-        setError(`Группы: ${gr.message}`)
-        setSaving(false)
-        return
-      }
+      if (gr.kind === 'error') return fail(`Группы: ${gr.message}`)
     }
 
     analytics.trackEvent(
@@ -307,6 +412,9 @@ export function CreateCompetitionPage() {
     await queryClient.invalidateQueries({ queryKey: ['my-competitions'] })
     navigate(`/management/${competitionId}`)
   }
+
+  const editedDistance = distanceDialog?.index != null ? distances[distanceDialog.index] : undefined
+  const editedGroup = groupDialog?.index != null ? groups[groupDialog.index] : undefined
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col bg-bg text-fg">
@@ -328,17 +436,18 @@ export function CreateCompetitionPage() {
               <DebugTestToolsCard isTest={form.isTest} onIsTest={(isTest) => patchForm({ isTest })} onFill={fillTestData} />
             )}
 
-            {step === 0 && <BasicStep form={form} onPatch={patchForm} />}
+            {step === 0 && <BasicStep form={form} onPatch={patchForm} isPastEvent={isPastEvent} />}
             {step === 1 && <RegistrationStep form={form} onPatch={patchForm} />}
-            {step === 2 && <OrganizerStep form={form} onPatch={patchForm} />}
+            {step === 2 && <OrganizerStep form={form} onPatch={patchForm} myClubs={myClubs} />}
             {step === 3 && (
               <DistancesStep
                 distances={distances}
                 importXmlName={importXmlName}
                 importedPreviews={importedPreviews}
                 isPastEvent={isPastEvent}
-                onAdd={() => setShowDistanceDialog(true)}
-                onRemove={(idx) => setDistances(distances.filter((_, i) => i !== idx))}
+                onAdd={() => setDistanceDialog({ index: null })}
+                onEdit={(index) => setDistanceDialog({ index })}
+                onRemove={removeDistance}
                 onPickXml={handlePickXml}
                 onClearXml={clearXml}
               />
@@ -348,14 +457,16 @@ export function CreateCompetitionPage() {
                 groups={groups}
                 distanceOptions={distanceOptions}
                 isPastEvent={isPastEvent}
-                onAdd={() => setShowGroupDialog(true)}
+                onAdd={() => setGroupDialog({ index: null })}
+                onAddStandard={() => setShowStandardGroups(true)}
+                onEdit={(index) => setGroupDialog({ index })}
                 onRemove={(idx) => setGroups(groups.filter((_, i) => i !== idx))}
               />
             )}
 
             {step === 3 && distancesWithoutStartCp.length > 0 && (
               <ErrorMessage
-                message={`У дистанций (${distancesWithoutStartCp.map((d) => d.name ?? 'без названия').join(', ')}) не указано стартовое КП — удалите и добавьте их заново`}
+                message={`У дистанций (${distancesWithoutStartCp.map((d) => d.name ?? 'без названия').join(', ')}) не указано стартовое КП — исправьте их`}
               />
             )}
             {error && <ErrorMessage message={error} />}
@@ -379,29 +490,41 @@ export function CreateCompetitionPage() {
         </div>
       )}
 
-      {showDistanceDialog && (
+      {distanceDialog && (
         <DistanceDialog
           direction={form.direction}
           byChoiceMode={form.byChoiceMode}
           isStartCpRequired={form.startTimeMode === 'BY_START_STATION'}
-          onDismiss={() => setShowDistanceDialog(false)}
+          initial={editedDistance}
+          onDismiss={() => setDistanceDialog(null)}
           onSave={(distance) => {
-            setDistances([...distances, distance])
-            setShowDistanceDialog(false)
+            const index = distanceDialog.index
+            setDistances(index == null ? [...distances, distance] : distances.map((d, i) => (i === index ? distance : d)))
+            setDistanceDialog(null)
           }}
         />
       )}
-      {showGroupDialog && (
+      {groupDialog && (
         <GroupDialog
           distanceOptions={distanceOptions}
           isScoreO={ranksByScore(form.direction, form.byChoiceMode)}
           competitionControlTimeMinutes={form.controlTimeMinutes ? parseInt(form.controlTimeMinutes, 10) : null}
           competitionTeamCounted={form.teamScoring?.groupCountedResults ?? null}
-          onDismiss={() => setShowGroupDialog(false)}
+          initial={editedGroup}
+          onDismiss={() => setGroupDialog(null)}
           onSave={(group) => {
-            setGroups([...groups, group])
-            setShowGroupDialog(false)
+            const index = groupDialog.index
+            setGroups(index == null ? [...groups, group] : groups.map((g, i) => (i === index ? group : g)))
+            setGroupDialog(null)
           }}
+        />
+      )}
+      {showStandardGroups && (
+        <StandardGroupsDialog
+          distanceOptions={distanceOptions}
+          existingTitles={groups.map((g) => g.title)}
+          onDismiss={() => setShowStandardGroups(false)}
+          onConfirm={addStandardGroups}
         />
       )}
     </div>

@@ -76,6 +76,16 @@ export const AnalyticsEvents = {
     name: 'create_competition_step_completed',
     params: { step },
   }),
+  /** В мастере выбран IOF XML с дистанциями (Mapper). */
+  createCompetitionCoursesImported: (coursesCount: number): AnalyticsEvent => ({
+    name: 'create_competition_courses_imported',
+    params: { courses_count: coursesCount },
+  }),
+  /** В мастере добавлены группы из стандартного набора. */
+  createCompetitionStandardGroupsAdded: (groupsCount: number): AnalyticsEvent => ({
+    name: 'create_competition_standard_groups_added',
+    params: { groups_count: groupsCount },
+  }),
   /** [format] — forward / marking / by_choice_score / by_choice_min_controls; [teamScoring] — none / groups / both. */
   createCompetitionFinished: (competitionId: string, kindOfSport: string, format: string, teamScoring: string): AnalyticsEvent => ({
     name: 'create_competition_finished',
