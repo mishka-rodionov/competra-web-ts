@@ -183,6 +183,10 @@ function GroupCard({
       )}
       {ageRange && <span className="text-sm text-on-surface-variant">{ageRange}</span>}
       {distInfo && <span className="text-sm text-fg">{distInfo}</span>}
+      {/* LEFT JOIN в деталке: у неназначенной или удалённой дистанции нет и числа КП. */}
+      {(group.distanceId == null || group.distanceControlsCount == null) && (
+        <span className="text-sm text-on-surface-variant">Дистанция уточняется</span>
+      )}
       {isMinControls && group.distanceControlsCount != null && (
         <span className="text-sm text-fg">{minControlsLabel(group.distanceMinControlsCount, group.distanceControlsCount)}</span>
       )}

@@ -4,11 +4,14 @@ import { groupRepository } from '../../api/groupRepository'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Loading } from '../../components/Loading'
+import { hasAssignedDistance } from '../../lib/groupDistance'
 import type { ParticipantGroupDetail } from '../../types/competition'
+import type { Distance } from '../../types/distance'
 import { genderLabel } from '../competitions/labels'
 import { useDistances } from '../competition-detail/hooks'
 import { AddGroupDialog } from './AddGroupDialog'
 import { useGroups } from './hooks'
+import { NoDistanceBadge } from './NoDistanceNotice'
 
 interface ManageGroupsTabProps {
   competitionId: string
@@ -67,6 +70,7 @@ export function ManageGroupsTab({
           <GroupRow
             key={group.groupId}
             group={group}
+            distances={distances}
             competitionControlTimeMinutes={competitionControlTimeMinutes}
             onEdit={() => setEditingGroup(group)}
             onDelete={() => handleDelete(group.groupId)}
@@ -111,19 +115,24 @@ function controlTimeLabel(group: ParticipantGroupDetail, competitionControlTimeM
 
 function GroupRow({
   group,
+  distances,
   competitionControlTimeMinutes,
   onEdit,
   onDelete,
 }: {
   group: ParticipantGroupDetail
+  /** undefined — дистанции ещё грузятся: метку «без дистанции» не показываем раньше времени. */
+  distances: Distance[] | undefined
   competitionControlTimeMinutes: number | null
   onEdit: () => void
   onDelete: () => void
 }) {
+  // /participantGroups отдаёт только distanceId, без названия дистанции — берём его из списка дистанций.
+  const distance = distances?.find((d) => d.id === group.distanceId)
   const details = [
     genderLabel(group.gender),
     group.minAge != null || group.maxAge != null ? `${group.minAge ?? ''}–${group.maxAge ?? ''} лет` : null,
-    group.distanceName ? `Дистанция: ${group.distanceName}` : null,
+    distance ? `Дистанция: ${distance.name ?? 'без названия'}` : null,
     group.maxParticipants != null ? `Мест: ${group.registeredCount}/${group.maxParticipants}` : null,
     controlTimeLabel(group, competitionControlTimeMinutes),
     group.scorePenaltyPerMinute != null ? `Штраф: ${group.scorePenaltyPerMinute} очк/мин` : null,
@@ -135,6 +144,7 @@ function GroupRow({
       <div className="flex flex-col">
         <span className="font-semibold text-fg">{group.title}</span>
         {details.length > 0 && <span className="text-sm text-on-surface-variant">{details.join('  •  ')}</span>}
+        {distances && !hasAssignedDistance(group, distances) && <NoDistanceBadge />}
       </div>
       <div className="flex gap-3">
         <button type="button" onClick={onEdit} className="text-sm text-primary">

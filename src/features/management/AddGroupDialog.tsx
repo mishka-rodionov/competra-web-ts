@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { groupRepository } from '../../api/groupRepository'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { LabeledSelect } from '../../components/LabeledSelect'
+import { hasAssignedDistance } from '../../lib/groupDistance'
 import type { ParticipantGroupDetail } from '../../types/competition'
 import type { Distance } from '../../types/distance'
 import { GENDER_OPTIONS } from './dictionaries'
@@ -46,7 +47,10 @@ export function AddGroupDialog({
   const [minAge, setMinAge] = useState(numberText(editingGroup?.minAge))
   const [maxAge, setMaxAge] = useState(numberText(editingGroup?.maxAge))
   const [maxParticipants, setMaxParticipants] = useState(numberText(editingGroup?.maxParticipants))
-  const [distanceId, setDistanceId] = useState<number>(editingGroup?.distanceId ?? NO_DISTANCE)
+  // Удалённую дистанцию (висячий distanceId) показываем как «не назначена». Пока список дистанций
+  // пуст (в т.ч. ещё грузится), id не трогаем — иначе сохранение молча сняло бы дистанцию с группы.
+  const keepsDistance = editingGroup?.distanceId != null && (distances.length === 0 || hasAssignedDistance(editingGroup, distances))
+  const [distanceId, setDistanceId] = useState<number>(keepsDistance ? editingGroup!.distanceId! : NO_DISTANCE)
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(numberText(editingGroup?.timeLimitMinutes))
   const [scorePenaltyPerMinute, setScorePenaltyPerMinute] = useState(
     editingGroup ? numberText(editingGroup.scorePenaltyPerMinute) : '1',
@@ -168,13 +172,17 @@ export function AddGroupDialog({
             />
           </>
         )}
-        {distances.length > 0 && (
+        {distances.length > 0 ? (
           <LabeledSelect
             label="Дистанция"
             value={distanceId}
-            options={[[NO_DISTANCE, 'Не выбрана'], ...distances.map((d) => [d.id, d.name ?? 'Без названия'] as [number, string])]}
+            options={[[NO_DISTANCE, 'Не назначена'], ...distances.map((d) => [d.id, d.name ?? 'Без названия'] as [number, string])]}
             onChange={setDistanceId}
           />
+        ) : (
+          <p className="text-sm text-on-surface-variant">
+            Дистанций пока нет — группа будет без дистанции. Назначьте её, когда добавите дистанции.
+          </p>
         )}
         {error && <ErrorMessage message={error} />}
         <div className="mt-2 flex gap-2">
