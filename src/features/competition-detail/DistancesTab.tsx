@@ -180,6 +180,8 @@ function DistanceCard({ distance, canEditMap, direction, byChoiceMode, onExpandM
   const [showAttachDialog, setShowAttachDialog] = useState(false)
   const [showRulesDialog, setShowRulesDialog] = useState(false)
   const hasMap = distanceMapCorners(distance) != null
+  // Карта есть, но бэкенд её не отдал — до старта её видят только организаторы.
+  const isMapHidden = !hasMap && distance.hasMap === true && distance.mapUrl == null
   const isByChoice = direction === 'BY_CHOICE'
   const hasMinControls = isMinControls(direction, byChoiceMode)
   const required = requiredControlNumbers(distance)
@@ -207,6 +209,7 @@ function DistanceCard({ distance, canEditMap, direction, byChoiceMode, onExpandM
           Открыть карту дистанции
         </button>
       )}
+      {isMapHidden && <span className="text-sm text-on-surface-variant">Карта дистанции откроется после старта</span>}
       {canEditMap && isByChoice && (
         <button type="button" onClick={() => setShowRulesDialog(true)} className="rounded-md border border-outline px-3 py-1.5 text-sm text-fg">
           {hasMinControls ? 'Минимум и обязательные КП' : 'Обязательные КП'}

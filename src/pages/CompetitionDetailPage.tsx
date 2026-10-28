@@ -12,6 +12,7 @@ import { DistancesTab } from '../features/competition-detail/DistancesTab'
 import { GroupsTab } from '../features/competition-detail/GroupsTab'
 import {
   LIVE_STATUSES,
+  STARTED_STATUSES,
   useCompetitionDetail,
   useParticipants,
   useTrackedDistances,
@@ -53,7 +54,12 @@ export function CompetitionDetailPage() {
   const { data: detail, isLoading, isError, error } = useCompetitionDetail(id!)
   const { data: trackedDistances } = useTrackedDistances(id!)
   // Вкладка онлайн-треков — пока соревнование идёт или если треки уже есть (архив после финиша).
-  const showLiveTracks = (detail != null && LIVE_STATUSES.has(detail.status)) || (trackedDistances?.length ?? 0) > 0
+  // Трек можно включить за сутки до старта, но до старта треки видит только организатор — проверить,
+  // что трекинг работает; остальным вкладка появляется со стартом.
+  const hasTracks = (trackedDistances?.length ?? 0) > 0
+  const showLiveTracks =
+    detail != null &&
+    (LIVE_STATUSES.has(detail.status) || (hasTracks && (STARTED_STATUSES.has(detail.status) || detail.viewerIsOrganizer === true)))
   const tabs = showLiveTracks ? [...TABS, LIVE_TRACKS_TAB] : TABS
   const tab = tabs.some((t) => t.key === tabParam) ? tabParam! : 'info'
   function setTab(key: string) {

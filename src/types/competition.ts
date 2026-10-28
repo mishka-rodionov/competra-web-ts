@@ -216,6 +216,11 @@ export interface CompetitionDetail {
   resultsUrl: string | null
   participantGroups: ParticipantGroupDetail[]
   isUserRegistered: boolean
+  /**
+   * Зритель — организатор соревнования (любая роль). Ему онлайн-треки видны и до старта — проверить,
+   * что трекинг работает. Необязателен: старый бэкенд его не присылает.
+   */
+  viewerIsOrganizer?: boolean
   isTest: boolean
   direction: string
   controlTimeMinutes: number | null

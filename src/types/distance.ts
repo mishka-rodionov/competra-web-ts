@@ -40,6 +40,12 @@ export interface Distance {
   mapTopRightLng: number | null
   mapBottomRightLat: number | null
   mapBottomRightLng: number | null
+  /**
+   * Прикреплена ли карта. До старта соревнования не-организаторам бэкенд не отдаёт `mapUrl`, углы
+   * карты и координаты КП/старта/финиша — по флагу показываем «карта откроется после старта».
+   * Необязателен: старый бэкенд его не присылает.
+   */
+  hasMap?: boolean
   updatedAt: number
 }
 

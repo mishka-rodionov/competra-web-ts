@@ -36,8 +36,9 @@ export const competitionRepository = {
     )
   },
 
+  /** Через authRequest ради `viewerIsOrganizer`: бэкенд читает токен, если он есть, но без него не отвечает 401. */
   getCompetitionDetail(id: string) {
-    return safeApiCall(() => publicRequest<CompetitionDetail>(`/event/orienteering/competitions/public/${id}`))
+    return safeApiCall(() => authRequest<CompetitionDetail>(`/event/orienteering/competitions/public/${id}`))
   },
 
   /**

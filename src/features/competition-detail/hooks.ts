@@ -69,6 +69,8 @@ export function useParticipants(competitionId: string) {
 
 /** Статусы соревнования «идёт сейчас». */
 export const LIVE_STATUSES = new Set(['IN_PROGRESS', 'STARTED'])
+/** Статусы «соревнование уже стартовало» — идёт или завершено. */
+export const STARTED_STATUSES = new Set([...LIVE_STATUSES, 'FINISHED', 'ARCHIVED'])
 const LIVE_POLL_INTERVAL_MS = 30_000
 
 export function useResults(competitionId: string, competitionStatus: string) {
