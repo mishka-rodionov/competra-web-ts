@@ -44,10 +44,12 @@ export function ParticipantEditorDialog({
   // Дозаявка после жеребьёвки: номер — следующий сквозной, время — свободная минута по правилам
   // жеребьёвки, конец протокола или вручную. При старте по стартовой станции время берётся из отметки.
   const drawSettings = drawSettingsOf(competition)
-  const isLateEntry =
-    !editingParticipant &&
-    (drawSettings != null || competition.isDrawConducted === true) &&
-    competition.startTimeMode !== 'BY_START_STATION'
+  const isDrawDone = drawSettings != null || competition.isDrawConducted === true
+  const isLateEntry = !editingParticipant && isDrawDone && competition.startTimeMode !== 'BY_START_STATION'
+  // До жеребьёвки номер и время неизвестны — их назначит жеребьёвка (в Android), поэтому при
+  // добавлении полей нет. При старте по стартовой станции жеребьёвки нет — номер вводится вручную.
+  // При редактировании поля есть всегда: так номер задаётся, если жеребьёвку не проводят.
+  const isBeforeDraw = !editingParticipant && !isDrawDone && competition.startTimeMode !== 'BY_START_STATION'
   const nextStartNumber = Math.max(0, ...participants.map((p) => parseInt(p.startNumber ?? '', 10)).filter((n) => !Number.isNaN(n))) + 1
   const [placement, setPlacement] = useState<LateEntryPlacement>('FREE_SLOT')
   // Момент открытия диалога — для предпросмотра; при сохранении время пересчитывается заново.
@@ -69,10 +71,26 @@ export function ParticipantEditorDialog({
   const [lastName, setLastName] = useState(editingParticipant?.lastName ?? '')
   const [firstName, setFirstName] = useState(editingParticipant?.firstName ?? '')
   const [commandName, setCommandName] = useState(editingParticipant?.commandName ?? '')
-  const [startNumber, setStartNumber] = useState(editingParticipant?.startNumber ?? (isLateEntry ? String(nextStartNumber) : ''))
+  // Пустые номер и время сохраняются как 0 — «не назначено», как у самостоятельной регистрации
+  // на сервере; такие значения и показываются пустыми, а не «0» и «03:00» (полночь эпохи по Москве).
+  const [startNumber, setStartNumber] = useState(
+    editingParticipant
+      ? editingParticipant.startNumber && editingParticipant.startNumber !== '0'
+        ? editingParticipant.startNumber
+        : ''
+      : isLateEntry
+        ? String(nextStartNumber)
+        : '',
+  )
   const [groupId, setGroupId] = useState<number>(editingParticipant?.groupId ?? defaultGroupId ?? groups[0]?.groupId ?? 0)
   const [startTimeStr, setStartTimeStr] = useState(
-    editingParticipant?.startTime != null ? utcMillisToZonedTime(editingParticipant.startTime, zoneId) : '10:00',
+    editingParticipant
+      ? isValidStartTimestamp(editingParticipant.startTime)
+        ? utcMillisToZonedTime(editingParticipant.startTime, zoneId)
+        : ''
+      : isBeforeDraw
+        ? ''
+        : '10:00',
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -98,9 +116,14 @@ export function ParticipantEditorDialog({
 
   async function handleSave() {
     const group = groups.find((g) => g.groupId === groupId)
-    const numberInt = parseInt(startNumber, 10)
-    if (!lastName.trim() || !firstName.trim() || Number.isNaN(numberInt) || !group) {
-      setError('Заполните фамилию, имя и номер старта (числом)')
+    // Поле номера пропускает только цифры, поэтому parseInt даёт NaN лишь для пустой строки.
+    const numberInt = parseInt(startNumber, 10) || 0
+    if (!lastName.trim() || !firstName.trim() || !group) {
+      setError('Заполните фамилию и имя')
+      return
+    }
+    if (isLateEntry && placement === 'MANUAL' && !startTimeStr) {
+      setError('Укажите время старта')
       return
     }
     setSaving(true)
@@ -108,7 +131,7 @@ export function ParticipantEditorDialog({
     // Стартовое время участника — на календарную дату старта соревнования (в UTC, как и
     // старая Kotlin-версия: zonedDateTimeToUtcMillis там брал именно UTC-дату из millis, а не
     // локальную дату в зоне соревнования), плюс выбранное время в этой зоне.
-    let startTimeMillis = zonedDateTimeToUtcMillis(utcMillisToZonedDate(baseDateMillis, 'UTC'), startTimeStr, zoneId)
+    let startTimeMillis = startTimeStr ? zonedDateTimeToUtcMillis(utcMillisToZonedDate(baseDateMillis, 'UTC'), startTimeStr, zoneId) : 0
     if (isLateEntry) {
       const finder = lateEntryFinder(lateEntryNotBefore())
       if (placement === 'FREE_SLOT') startTimeMillis = finder.freeSlot(group.groupId)
@@ -159,13 +182,17 @@ export function ParticipantEditorDialog({
           className="rounded-md border border-outline bg-bg px-3 py-2 text-fg"
         />
         <LabeledSelect label="Группа" value={groupId} options={groups.map((g) => [g.groupId, g.title] as [number, string])} onChange={setGroupId} />
-        <input
-          value={startNumber}
-          onChange={(e) => setStartNumber(e.target.value.replace(/\D/g, ''))}
-          placeholder="Номер старта"
-          inputMode="numeric"
-          className="rounded-md border border-outline bg-bg px-3 py-2 text-fg"
-        />
+        {isBeforeDraw ? (
+          <p className="text-sm text-on-surface-variant">Номер и время старта назначит жеребьёвка.</p>
+        ) : (
+          <input
+            value={startNumber}
+            onChange={(e) => setStartNumber(e.target.value.replace(/\D/g, ''))}
+            placeholder="Номер старта"
+            inputMode="numeric"
+            className="rounded-md border border-outline bg-bg px-3 py-2 text-fg"
+          />
+        )}
         {previewFinder && (
           <fieldset className="flex flex-col gap-1">
             <legend className="mb-1 text-sm text-on-surface-variant">Время старта</legend>
@@ -183,7 +210,7 @@ export function ParticipantEditorDialog({
             ))}
           </fieldset>
         )}
-        {(!isLateEntry || placement === 'MANUAL') && (
+        {!isBeforeDraw && (!isLateEntry || placement === 'MANUAL') && (
           <label className="flex flex-col gap-1">
             <span className="text-sm text-on-surface-variant">Время старта</span>
             <input
