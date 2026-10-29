@@ -11,6 +11,8 @@ import type { Distance } from '../../types/distance'
 import { AttachMapDialog } from '../management/AttachMapDialog'
 import { DistanceDialog } from '../management/DistanceDialog'
 import { DistanceRulesDialog } from '../management/DistanceRulesDialog'
+import { useGroups } from '../management/hooks'
+import type { PendingDistance } from '../management/types'
 import { useDistances } from './hooks'
 
 interface DistancesTabProps {
@@ -39,11 +41,17 @@ export function DistancesTab({
 }: DistancesTabProps) {
   const queryClient = useQueryClient()
   const { data: distances, isLoading, isError, error } = useDistances(competitionId)
+  // Группы нужны только организатору — чтобы не удалить дистанцию, на которую они ссылаются.
+  const { data: groups } = useGroups(competitionId, showImport)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
   const [importWarning, setImportWarning] = useState<string | null>(null)
   const [expandedMapDistance, setExpandedMapDistance] = useState<Distance | null>(null)
+  const [deletingDistance, setDeletingDistance] = useState<Distance | null>(null)
+  /** Текст лоадера поверх списка дистанций, пока идёт создание/удаление и перезагрузка списка. */
+  const [busyText, setBusyText] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const expandedMapCorners = expandedMapDistance ? distanceMapCorners(expandedMapDistance) : null
 
   async function invalidate() {
@@ -65,6 +73,56 @@ export function DistancesTab({
     setImporting(false)
   }
 
+  /**
+   * Дистанцию, на которую ссылаются группы, не удаляем — иначе группы остались бы без дистанции
+   * (сервер это не проверяет). То же правило, что в мастере и в competra-android.
+   */
+  function requestDelete(distance: Distance) {
+    setActionError(null)
+    const usedBy = (groups ?? []).filter((g) => g.distanceId === distance.id).map((g) => g.title)
+    if (usedBy.length > 0) {
+      setActionError(`Дистанция используется в группах ${usedBy.join(', ')} — сначала смените им дистанцию или удалите их`)
+      return
+    }
+    setDeletingDistance(distance)
+  }
+
+  async function handleDelete() {
+    if (!deletingDistance) return
+    const distanceId = deletingDistance.id
+    setDeletingDistance(null)
+    setBusyText('Удаляю дистанцию…')
+    const result = await distanceRepository.deleteDistance(distanceId)
+    // Лоадер держим и на перезагрузку списка — иначе удалённая дистанция ещё мелькает на экране.
+    if (result.kind === 'success') await invalidate()
+    else setActionError('Не удалось удалить дистанцию')
+    setBusyText(null)
+  }
+
+  async function handleCreate(pending: PendingDistance) {
+    setShowCreateDialog(false)
+    setActionError(null)
+    setBusyText('Сохраняю дистанцию…')
+    const result = await distanceRepository.saveDistances([
+      {
+        distanceId: null,
+        competitionId,
+        name: pending.name,
+        lengthMeters: pending.lengthMeters,
+        climbMeters: pending.climbMeters,
+        controlsCount: pending.controlPoints.length,
+        description: pending.description ?? '',
+        controlPoints: pending.controlPoints,
+        finishControlPoint: pending.finishControlPoint,
+        startControlPoint: pending.startControlPoint,
+        minControlsCount: pending.minControlsCount ?? 0,
+      },
+    ])
+    if (result.kind === 'success') await invalidate()
+    else setActionError(`Не удалось сохранить дистанцию: ${result.message}`)
+    setBusyText(null)
+  }
+
   if (isLoading) return <Loading />
   if (isError) return <ErrorMessage message={(error as Error).message} />
 
@@ -74,7 +132,12 @@ export function DistancesTab({
         <div className="flex flex-col gap-2 rounded-lg border border-outline-variant bg-surface p-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-fg">Дистанции</span>
-            <button type="button" onClick={() => setShowCreateDialog(true)} className="rounded-md border border-outline px-3 py-1.5 text-sm text-fg">
+            <button
+              type="button"
+              disabled={busyText != null}
+              onClick={() => setShowCreateDialog(true)}
+              className="rounded-md border border-outline px-3 py-1.5 text-sm text-fg disabled:opacity-50"
+            >
               + Создать
             </button>
           </div>
@@ -97,21 +160,41 @@ export function DistancesTab({
         </div>
       )}
 
-      {!distances || distances.length === 0 ? (
-        <EmptyState text={showImport ? 'Нет дистанций. Создайте или импортируйте из Mapper.' : 'Дистанции не добавлены'} />
-      ) : (
-        distances.map((distance) => (
-          <DistanceCard
-            key={distance.id}
-            distance={distance}
-            canEditMap={showImport}
-            direction={direction}
-            byChoiceMode={byChoiceMode}
-            onExpandMap={setExpandedMapDistance}
-            onMapUpdated={invalidate}
-          />
-        ))
+      {actionError && <ErrorMessage message={actionError} />}
+
+      {/*
+        Лоадер — отдельной строкой над списком, а не полупрозрачным слоем поверх: слой просвечивал и
+        его текст накладывался на карточки. Блокируется только список, остальная страница доступна.
+      */}
+      {busyText && (
+        <div className="flex items-center justify-center gap-2 rounded-lg border border-outline-variant bg-surface p-3" role="status">
+          <div className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-outline-variant border-t-primary" />
+          <span className="text-sm text-on-surface-variant">{busyText}</span>
+        </div>
       )}
+      <div
+        className={`flex flex-col gap-2 ${busyText ? 'pointer-events-none opacity-40' : ''}`}
+        aria-busy={busyText != null}
+      >
+        {!distances || distances.length === 0 ? (
+          !busyText && (
+            <EmptyState text={showImport ? 'Нет дистанций. Создайте или импортируйте из Mapper.' : 'Дистанции не добавлены'} />
+          )
+        ) : (
+          distances.map((distance) => (
+            <DistanceCard
+              key={distance.id}
+              distance={distance}
+              canEditMap={showImport}
+              direction={direction}
+              byChoiceMode={byChoiceMode}
+              onExpandMap={setExpandedMapDistance}
+              onMapUpdated={invalidate}
+              onDelete={() => requestDelete(distance)}
+            />
+          ))
+        )}
+      </div>
 
       {expandedMapDistance?.mapUrl && expandedMapCorners && (
         <div className="fixed inset-0 z-20 flex flex-col bg-bg">
@@ -127,31 +210,34 @@ export function DistancesTab({
         </div>
       )}
 
+      {deletingDistance && (
+        <div className="fixed inset-0 z-20 flex items-center justify-center bg-fg/40 p-4">
+          <div className="w-full max-w-sm rounded-lg bg-surface p-4">
+            <h3 className="text-lg font-medium text-fg">Удалить дистанцию?</h3>
+            <p className="mt-2 text-sm text-on-surface-variant">{deletingDistance.name ?? 'Без названия'}</p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setDeletingDistance(null)}
+                className="flex-1 rounded-md border border-outline px-4 py-2 text-sm text-fg"
+              >
+                Отмена
+              </button>
+              <button type="button" onClick={handleDelete} className="flex-1 rounded-md bg-error px-4 py-2 text-sm text-on-error">
+                Удалить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showCreateDialog && (
         <DistanceDialog
           direction={direction}
           byChoiceMode={byChoiceMode}
           isStartCpRequired={isStartCpRequired}
           onDismiss={() => setShowCreateDialog(false)}
-          onSave={async (pending) => {
-            setShowCreateDialog(false)
-            await distanceRepository.saveDistances([
-              {
-                distanceId: null,
-                competitionId,
-                name: pending.name,
-                lengthMeters: pending.lengthMeters,
-                climbMeters: pending.climbMeters,
-                controlsCount: pending.controlPoints.length,
-                description: pending.description ?? '',
-                controlPoints: pending.controlPoints,
-                finishControlPoint: pending.finishControlPoint,
-                startControlPoint: pending.startControlPoint,
-                minControlsCount: pending.minControlsCount ?? 0,
-              },
-            ])
-            await invalidate()
-          }}
+          onSave={handleCreate}
         />
       )}
     </div>
@@ -174,9 +260,10 @@ interface DistanceCardProps {
   byChoiceMode: string
   onExpandMap: (distance: Distance) => void
   onMapUpdated: () => void
+  onDelete: () => void
 }
 
-function DistanceCard({ distance, canEditMap, direction, byChoiceMode, onExpandMap, onMapUpdated }: DistanceCardProps) {
+function DistanceCard({ distance, canEditMap, direction, byChoiceMode, onExpandMap, onMapUpdated, onDelete }: DistanceCardProps) {
   const [showAttachDialog, setShowAttachDialog] = useState(false)
   const [showRulesDialog, setShowRulesDialog] = useState(false)
   const hasMap = distanceMapCorners(distance) != null
@@ -218,6 +305,11 @@ function DistanceCard({ distance, canEditMap, direction, byChoiceMode, onExpandM
       {canEditMap && (
         <button type="button" onClick={() => setShowAttachDialog(true)} className="rounded-md border border-outline px-3 py-1.5 text-sm text-fg">
           {distance.mapUrl != null ? 'Заменить карту' : 'Прикрепить карту'}
+        </button>
+      )}
+      {canEditMap && (
+        <button type="button" onClick={onDelete} className="self-start text-sm text-error">
+          Удалить дистанцию
         </button>
       )}
 

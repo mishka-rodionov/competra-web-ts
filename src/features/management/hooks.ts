@@ -13,7 +13,7 @@ export function useManagedCompetition(competitionId: string) {
   })
 }
 
-export function useGroups(competitionId: string) {
+export function useGroups(competitionId: string, enabled = true) {
   return useQuery({
     queryKey: ['groups', competitionId],
     queryFn: async () => {
@@ -21,5 +21,6 @@ export function useGroups(competitionId: string) {
       if (result.kind === 'error') throw new Error(result.message)
       return result.data
     },
+    enabled,
   })
 }
