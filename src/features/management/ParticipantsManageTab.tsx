@@ -16,7 +16,7 @@ import { ParticipantEditorDialog } from './ParticipantEditorDialog'
 
 const ALL_TAB = 'all'
 
-/** null/нечисловое значение сортируется в конец — но startNumber "0" (валидный номер) не должен попасть сюда: Number("0") ложно в JS, поэтому нельзя сравнивать через `||`. */
+/** null (номер не назначен — сервер присылает 0, `resultRepository` превращает его в null) и нечисловое значение сортируются в конец. */
 function sortableStartNumber(startNumber: string | null): number {
   if (startNumber == null) return Infinity
   const parsed = Number(startNumber)
