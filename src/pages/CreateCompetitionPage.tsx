@@ -445,6 +445,8 @@ export function CreateCompetitionPage() {
                 importXmlName={importXmlName}
                 importedPreviews={importedPreviews}
                 isPastEvent={isPastEvent}
+                direction={form.direction}
+                byChoiceMode={form.byChoiceMode}
                 onAdd={() => setDistanceDialog({ index: null })}
                 onEdit={(index) => setDistanceDialog({ index })}
                 onRemove={removeDistance}

@@ -17,6 +17,7 @@ import { minControlsLabel, ranksByScore } from '../../lib/byChoiceMode'
 import { isRequiredControl } from '../../lib/controlPoints'
 import { CompetitionFormatFields } from './CompetitionFormatFields'
 import { CoverPickerField } from './CoverPickerField'
+import { DistanceDetailsDialog } from './DistanceDetailsDialog'
 import { competitionStartMillis, isRegistrationStartAfterCompetition } from './createCompetitionValidation'
 import { ControlTimeFields } from './ControlTimeFields'
 import { LimitAndFeeFields } from './LimitAndFeeFields'
@@ -220,6 +221,8 @@ interface DistancesStepProps {
   importXmlName: string | null
   importedPreviews: XmlCoursePreview[]
   isPastEvent: boolean
+  direction: string
+  byChoiceMode: string
   onAdd: () => void
   onEdit: (index: number) => void
   onRemove: (index: number) => void
@@ -232,12 +235,19 @@ export function DistancesStep({
   importXmlName,
   importedPreviews,
   isPastEvent,
+  direction,
+  byChoiceMode,
   onAdd,
   onEdit,
   onRemove,
   onPickXml,
   onClearXml,
 }: DistancesStepProps) {
+  const [detailsIndex, setDetailsIndex] = useState<number | null>(null)
+  const detailsDistance = detailsIndex != null ? distances[detailsIndex] : undefined
+  // В «по выбору» порядка нет — номера через запятую, а не стрелками.
+  const controlsSeparator = direction === 'BY_CHOICE' ? ', ' : ' → '
+
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-base font-medium text-fg">Дистанции</h2>
@@ -278,9 +288,14 @@ export function DistancesStep({
             <p className="text-sm text-error">В файле не найдено ни одной дистанции (Course).</p>
           ) : (
             importedPreviews.map((p, i) => (
-              <p key={i} className="text-sm text-fg">
-                {p.name} — {p.lengthMeters} м, КП: {p.controlsCount}
-              </p>
+              <div key={i} className="flex flex-col">
+                <span className="text-sm text-fg">
+                  {p.name} — {p.lengthMeters} м, КП: {p.controlNumbers.length}
+                </span>
+                {p.controlNumbers.length > 0 && (
+                  <span className="text-sm text-on-surface-variant">{p.controlNumbers.join(controlsSeparator)}</span>
+                )}
+              </div>
             ))
           ))}
       </div>
@@ -293,13 +308,18 @@ export function DistancesStep({
             key={index}
             className="flex items-center justify-between gap-2 rounded-lg border border-outline-variant bg-surface p-3"
           >
-            <div className="flex flex-col">
+            <button
+              type="button"
+              onClick={() => setDetailsIndex(index)}
+              aria-label={`Подробнее о дистанции ${d.name ?? ''}`.trim()}
+              className="-m-1 flex flex-1 flex-col rounded-md p-1 text-left hover:bg-surface-variant"
+            >
               <span className="font-semibold text-fg">{d.name ?? 'Без названия'}</span>
               <span className="text-sm text-on-surface-variant">
                 Длина: {d.lengthMeters} м • Набор: {d.climbMeters} м • КП: {d.controlPoints.length}
               </span>
               {pendingRulesLabel(d) && <span className="text-sm text-on-surface-variant">{pendingRulesLabel(d)}</span>}
-            </div>
+            </button>
             <div className="flex shrink-0 gap-3">
               <button type="button" onClick={() => onEdit(index)} className="text-sm text-primary">
                 Изменить
@@ -314,6 +334,15 @@ export function DistancesStep({
       <button type="button" onClick={onAdd} className="rounded-md border border-outline px-4 py-2 text-sm text-fg">
         + Добавить дистанцию
       </button>
+
+      {detailsDistance && (
+        <DistanceDetailsDialog
+          distance={detailsDistance}
+          direction={direction}
+          byChoiceMode={byChoiceMode}
+          onDismiss={() => setDetailsIndex(null)}
+        />
+      )}
     </div>
   )
 }

@@ -119,20 +119,16 @@ export interface CreateCompetitionFormState {
 
 /**
  * Превью дистанции из импортируемого IOF XML — только для отображения и выбора в группах.
- * Реальный парсинг (с координатами КП) делает сервер при публикации (importFromXml);
- * до тех пор, пока соревнование не создано, читаем из XML только имя/длину/число КП
- * простым регэкспом.
+ * Реальный парсинг (с координатами КП) делает сервер при публикации (importFromXml); до тех пор,
+ * пока соревнование не создано, читаем из XML только имя, длину и номера КП — так же, как их
+ * разбирает `IOFXmlParser.kt` в eSport (старт и финиш в список КП не входят).
  */
 export interface XmlCoursePreview {
   name: string
   lengthMeters: number
-  controlsCount: number
+  /** Номера КП по порядку дистанции, без старта и финиша. */
+  controlNumbers: number[]
 }
-
-const COURSE_REGEX = /<Course>([\s\S]*?)<\/Course>/g
-const NAME_REGEX = /<Name>([\s\S]*?)<\/Name>/
-const LENGTH_REGEX = /<Length>([\s\S]*?)<\/Length>/
-const COURSE_CONTROL_REGEX = /<CourseControl\b/g
 
 /** Ключ дистанции из IOF XML для [PendingGroup.distanceKey] — по порядку Course в файле. */
 export function xmlCourseKey(index: number): string {
@@ -140,13 +136,20 @@ export function xmlCourseKey(index: number): string {
 }
 
 export function parseXmlCoursePreviews(xmlContent: string): XmlCoursePreview[] {
-  const previews: XmlCoursePreview[] = []
-  for (const match of xmlContent.matchAll(COURSE_REGEX)) {
-    const block = match[1]
-    const name = NAME_REGEX.exec(block)?.[1]?.trim() || 'Без названия'
-    const lengthMeters = parseInt(LENGTH_REGEX.exec(block)?.[1]?.trim() ?? '', 10) || 0
-    const controlsCount = [...block.matchAll(COURSE_CONTROL_REGEX)].length
-    previews.push({ name, lengthMeters, controlsCount })
-  }
-  return previews
+  const doc = new DOMParser().parseFromString(xmlContent, 'application/xml')
+  if (doc.getElementsByTagName('parsererror').length > 0) return []
+  const raceCourseData = doc.getElementsByTagName('RaceCourseData')[0]
+  if (!raceCourseData) return []
+  return [...raceCourseData.getElementsByTagName('Course')].map((course): XmlCoursePreview => {
+    const name = course.getElementsByTagName('Name')[0]?.textContent?.trim() || 'Без названия'
+    const lengthMeters = parseInt(course.getElementsByTagName('Length')[0]?.textContent?.trim() ?? '', 10) || 0
+    const controlNumbers = [...course.getElementsByTagName('CourseControl')].flatMap((cc, j) => {
+      const type = cc.getAttribute('type')
+      if (type === 'Start' || type === 'Finish') return []
+      // Как в eSport: номер — цифры из ссылки на КП («31», «C31»), без цифр — позиция в Course.
+      const code = parseInt((cc.getElementsByTagName('Control')[0]?.textContent ?? '').replace(/\D/g, ''), 10)
+      return [Number.isNaN(code) ? j : code]
+    })
+    return { name, lengthMeters, controlNumbers }
+  })
 }

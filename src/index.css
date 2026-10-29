@@ -25,6 +25,8 @@
   --color-outline-variant: var(--les-outline-variant);
   --color-error: var(--les-error);
   --color-on-error: var(--les-on-error);
+  /* Предупреждение, не ошибка: «не хватает данных, но провести соревнование можно». */
+  --color-warning: var(--les-warning);
 
   --radius-xs: 0.25rem;
   --radius-sm: 0.5rem;
@@ -53,6 +55,7 @@
   --les-outline-variant: #c9cec3;
   --les-error: #b3261e;
   --les-on-error: #ffffff;
+  --les-warning: #8a6100;
 
   color-scheme: light dark;
 }
@@ -77,6 +80,7 @@
     --les-outline-variant: #3f4a42;
     --les-error: #f2b8b5;
     --les-on-error: #601410;
+    --les-warning: #e6c25a;
   }
 }
 

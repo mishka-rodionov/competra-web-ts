@@ -9,6 +9,7 @@ import { importedCoursesWarning, isMinControls, minControlsLabel, requiredContro
 import { distanceMapCorners } from '../../lib/mapCorners'
 import type { Distance } from '../../types/distance'
 import { AttachMapDialog } from '../management/AttachMapDialog'
+import { DistanceDetailsDialog } from '../management/DistanceDetailsDialog'
 import { DistanceDialog } from '../management/DistanceDialog'
 import { DistanceRulesDialog } from '../management/DistanceRulesDialog'
 import { useGroups } from '../management/hooks'
@@ -253,6 +254,19 @@ function Stat({ label, value }: { label: string; value: string }) {
   )
 }
 
+function DistanceSummary({ distance }: { distance: Distance }) {
+  return (
+    <>
+      <span className="text-sm font-semibold text-fg">{distance.name ?? 'Без названия'}</span>
+      <div className="flex gap-6">
+        {distance.lengthMeters > 0 && <Stat label="Длина" value={`${distance.lengthMeters} м`} />}
+        {distance.climbMeters > 0 && <Stat label="Набор" value={`${distance.climbMeters} м`} />}
+        <Stat label="КП" value={`${distance.controlsCount}`} />
+      </div>
+    </>
+  )
+}
+
 interface DistanceCardProps {
   distance: Distance
   canEditMap: boolean
@@ -266,6 +280,7 @@ interface DistanceCardProps {
 function DistanceCard({ distance, canEditMap, direction, byChoiceMode, onExpandMap, onMapUpdated, onDelete }: DistanceCardProps) {
   const [showAttachDialog, setShowAttachDialog] = useState(false)
   const [showRulesDialog, setShowRulesDialog] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
   const hasMap = distanceMapCorners(distance) != null
   // Карта есть, но бэкенд её не отдал — до старта её видят только организаторы.
   const isMapHidden = !hasMap && distance.hasMap === true && distance.mapUrl == null
@@ -275,12 +290,24 @@ function DistanceCard({ distance, canEditMap, direction, byChoiceMode, onExpandM
 
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-outline-variant bg-surface p-4">
-      <span className="text-sm font-semibold text-fg">{distance.name ?? 'Без названия'}</span>
-      <div className="flex gap-6">
-        {distance.lengthMeters > 0 && <Stat label="Длина" value={`${distance.lengthMeters} м`} />}
-        {distance.climbMeters > 0 && <Stat label="Набор" value={`${distance.climbMeters} м`} />}
-        <Stat label="КП" value={`${distance.controlsCount}`} />
-      </div>
+      {/* Организатору по клику — порядок КП и координаты, чтобы проверить, что дистанция загрузилась. */}
+      {canEditMap ? (
+        <button
+          type="button"
+          onClick={() => setShowDetails(true)}
+          aria-label={`Подробнее о дистанции ${distance.name ?? ''}`.trim()}
+          className="-m-2 flex items-center gap-2 rounded-md p-2 text-left hover:bg-surface-variant"
+        >
+          <div className="flex flex-1 flex-col gap-2">
+            <DistanceSummary distance={distance} />
+          </div>
+          <span className="text-xl text-on-surface-variant" aria-hidden>
+            ›
+          </span>
+        </button>
+      ) : (
+        <DistanceSummary distance={distance} />
+      )}
       {hasMinControls && (
         <span className="text-sm text-fg">{minControlsLabel(distance.minControlsCount, distance.controlPoints.length)}</span>
       )}
@@ -313,6 +340,14 @@ function DistanceCard({ distance, canEditMap, direction, byChoiceMode, onExpandM
         </button>
       )}
 
+      {showDetails && (
+        <DistanceDetailsDialog
+          distance={distance}
+          direction={direction}
+          byChoiceMode={byChoiceMode}
+          onDismiss={() => setShowDetails(false)}
+        />
+      )}
       {showRulesDialog && (
         <DistanceRulesDialog
           distance={distance}
