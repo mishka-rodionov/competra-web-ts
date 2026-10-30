@@ -1,8 +1,8 @@
 export const DEFAULT_TIME_ZONE = 'Europe/Moscow'
 
-/** Дата в локали ru-RU, напр. "12.09.2026". */
-export function toLocaleDateString(ms: number): string {
-  return new Date(ms).toLocaleDateString('ru-RU')
+/** Дата в локали ru-RU, напр. "12.09.2026"; без zoneId — в часовом поясе браузера. */
+export function toLocaleDateString(ms: number, zoneId?: string): string {
+  return new Date(ms).toLocaleDateString('ru-RU', zoneId ? { timeZone: zoneId } : undefined)
 }
 
 /** Время «ЧЧ:ММ» из UTC-таймстампа в указанном часовом поясе. */
@@ -14,6 +14,17 @@ export function utcMillisToZonedTime(ms: number, zoneId: string): string {
     hour12: false,
   }).format(new Date(ms))
   return formatted.startsWith('24:') ? `00:${formatted.slice(3)}` : formatted
+}
+
+/**
+ * Время старта соревнования «ЧЧ:ММ» в его часовом поясе: фактическое startTime, если секундомер
+ * уже запущен, иначе плановое — время из startDate. null, если времени нет: старые соревнования
+ * хранили дату без времени (полночь). Та же логика, что buildStartTimeText в Android.
+ */
+export function competitionStartTime(startDate: number, startTime: number | null, zoneId: string): string | null {
+  if (startTime != null && startTime > 0) return utcMillisToZonedTime(startTime, zoneId)
+  const planned = utcMillisToZonedTime(startDate, zoneId)
+  return planned === '00:00' ? null : planned
 }
 
 /** "1:23:45" для часов>0, иначе "23:45". totalSeconds — целое число секунд. */

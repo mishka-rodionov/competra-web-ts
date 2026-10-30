@@ -1,4 +1,4 @@
-import { DEFAULT_TIME_ZONE, toLocaleDateString, utcMillisToZonedTime } from '../../lib/dateUtils'
+import { competitionStartTime, DEFAULT_TIME_ZONE, toLocaleDateString } from '../../lib/dateUtils'
 import type { CompetitionDetail } from '../../types/competition'
 import { sportLabel, statusColorClass, statusLabel } from '../competitions/labels'
 import { Field, LinkField } from './Field'
@@ -49,6 +49,7 @@ export function InfoTab({ detail }: { detail: CompetitionDetail }) {
   const contactPhone = blankToNull(detail.contactPhone)
   const organizerLine = buildOrganizerLine(organizerClubName, detail)
   const registrationPeriod = registrationPeriodText(detail)
+  const startTime = competitionStartTime(detail.startDate, detail.startTime, zone)
   const hasRegistrationInfo =
     detail.registrationStart != null || detail.registrationEnd != null || detail.maxParticipants != null || (detail.feeAmount ?? 0) > 0
   const hasOrganizerInfo = organizerLine != null || contactEmail != null || contactPhone != null
@@ -66,12 +67,10 @@ export function InfoTab({ detail }: { detail: CompetitionDetail }) {
       </div>
 
       <InfoCard title="Когда и где">
-        <span className="text-base font-semibold text-fg">{toLocaleDateString(detail.startDate)}</span>
-        {detail.startTime != null && (
-          <span className="text-base text-on-surface-variant">Старт в {utcMillisToZonedTime(detail.startTime, zone)}</span>
-        )}
+        <span className="text-base font-semibold text-fg">{toLocaleDateString(detail.startDate, zone)}</span>
+        {startTime && <span className="text-base text-on-surface-variant">Старт в {startTime}</span>}
         {detail.endDate != null && detail.endDate !== detail.startDate && (
-          <span className="text-base text-on-surface-variant">Окончание: {toLocaleDateString(detail.endDate)}</span>
+          <span className="text-base text-on-surface-variant">Окончание: {toLocaleDateString(detail.endDate, zone)}</span>
         )}
         {detail.address && <Field label="Место проведения" value={detail.address} />}
       </InfoCard>

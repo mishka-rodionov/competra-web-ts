@@ -1,4 +1,4 @@
-import { toLocaleDateString } from '../../lib/dateUtils'
+import { competitionStartTime, DEFAULT_TIME_ZONE, toLocaleDateString } from '../../lib/dateUtils'
 import type { Competition } from '../../types/competition'
 import { statusColorClass, statusLabel } from './labels'
 
@@ -8,6 +8,9 @@ interface CompetitionCardProps {
 }
 
 export function CompetitionCard({ competition, onClick }: CompetitionCardProps) {
+  const zone = competition.timeZoneId || DEFAULT_TIME_ZONE
+  // Список (/public) не отдаёт фактический startTime — только плановое время из startDate.
+  const startTime = competitionStartTime(competition.startDate, null, zone)
   return (
     <button
       type="button"
@@ -21,7 +24,8 @@ export function CompetitionCard({ competition, onClick }: CompetitionCardProps) 
         </span>
       </div>
       <span className="text-sm text-on-surface-variant">
-        {toLocaleDateString(competition.startDate)}
+        {toLocaleDateString(competition.startDate, zone)}
+        {startTime && `, ${startTime}`}
         {competition.isTest && <span className="ml-2 font-medium text-tertiary">Тестовое</span>}
       </span>
       {competition.address && <span className="text-sm text-on-surface-variant">{competition.address}</span>}
