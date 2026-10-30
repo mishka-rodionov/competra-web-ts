@@ -4,12 +4,22 @@ import type { OrienteeringParticipant, OrienteeringResult, SaveParticipantReques
 import type { TeamStandings } from '../types/teamStandings'
 import type { CommonModel } from './types'
 
-/** Участник в ответе сервера: startNumber приходит числом, 0 — «номер не назначен» (самостоятельная регистрация, добавление до жеребьёвки). */
+/**
+ * Участник в ответе сервера: startNumber приходит числом. Номер и время старта до жеребьёвки
+ * не назначены (самостоятельная регистрация, добавление до жеребьёвки) — сервер хранит их как 0.
+ */
 type ParticipantResponse = Omit<OrienteeringParticipant, 'startNumber'> & { startNumber: number | string | null }
 
-/** Приводит startNumber к строке, а неназначенный (0) — к null, чтобы он показывался как «—», а не «0». */
+/**
+ * Приводит startNumber к строке, а неназначенные номер и время старта (0) — к null, чтобы они
+ * показывались как «—», а не «0» и полночь UTC с первой стартовой минутой.
+ */
 function toParticipant(p: ParticipantResponse): OrienteeringParticipant {
-  return { ...p, startNumber: p.startNumber != null && Number(p.startNumber) > 0 ? String(p.startNumber) : null }
+  return {
+    ...p,
+    startNumber: p.startNumber != null && Number(p.startNumber) > 0 ? String(p.startNumber) : null,
+    startTime: p.startTime != null && p.startTime > 0 ? p.startTime : null,
+  }
 }
 
 function toParticipants(response: CommonModel<ParticipantResponse[]>): CommonModel<OrienteeringParticipant[]> {
