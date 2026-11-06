@@ -10,7 +10,8 @@ export function AthleteStartsPage() {
   const ratingId = id!
   const navigate = useNavigate()
 
-  const { data: standings, isLoading, isError, error } = useStandings(ratingId, Number(groupId))
+  const { data: standingsResponse, isLoading, isError, error } = useStandings(ratingId, Number(groupId))
+  const standings = standingsResponse?.standings
   const { data: competitions } = useRatingCompetitions(ratingId)
 
   if (isLoading) return <Loading />

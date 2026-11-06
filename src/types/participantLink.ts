@@ -74,3 +74,24 @@ export interface CompetitionLinkRequest {
   /** У заявителя уже есть свой участник в этом соревновании — одобрить нельзя, нужно удалить дубль. */
   userAlreadyInCompetition: boolean
 }
+
+/** Аккаунт, к которому организатор может привязать участника (без email/телефона). */
+export interface LinkCandidate {
+  userId: string
+  firstName: string
+  lastName: string
+  middleName?: string | null
+  birthYear?: number | null
+  gender?: string | null
+  /** ФИО в профиле совпадает с участником протокола. */
+  nameMatches: boolean
+  /** Пол/возраст не подходят к группе участника; нет — подходят. */
+  eligibilityWarning?: string | null
+  /** У пользователя уже есть свой участник в этом соревновании — привязать нельзя. */
+  alreadyInCompetition: boolean
+}
+
+/** Итог привязки, переименования или объединения организатором. */
+export interface OrganizerLinkResult {
+  updatedCount: number
+}

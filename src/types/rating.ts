@@ -52,6 +52,8 @@ export interface RatingStandingBreakdownEntry {
   competitionId: string
   place: number | null
   points: number
+  /** Запись участника в протоколе этого соревнования. */
+  participantId: string
 }
 
 export interface RatingStanding {
@@ -60,11 +62,23 @@ export interface RatingStanding {
   totalPoints: number
   rank: number
   breakdown: RatingStandingBreakdownEntry[]
+  /** Аккаунт, если строка собрана по привязанным участникам; нет — ручные записи без аккаунта. */
+  userId?: string | null
+  firstName: string
+  lastName: string
 }
 
 export interface RatingStandingsResponse {
   ratingGroupId: number
   standings: RatingStanding[]
+  /** Группы participantKey, похожих на одного человека (та же фамилия, «М.» ~ «Михаил»). */
+  possibleDuplicates?: string[][]
+}
+
+export interface MergeStandingsRequest {
+  ratingGroupId: number
+  targetKey: string
+  sourceKeys: string[]
 }
 
 export interface RatingGroupRequest {

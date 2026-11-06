@@ -10,10 +10,12 @@ import { useClubMembers } from '../features/clubs/hooks'
 import { useUserProfile } from '../features/profile/hooks'
 import { CompetitionRatingCard } from '../features/ratings/CompetitionRatingCard'
 import { useRating, useRatingCompetitions, useStandings } from '../features/ratings/hooks'
+import { MergeStandingsDialog } from '../features/ratings/MergeStandingsDialog'
 import { RatingPointsInfoDialog } from '../features/ratings/RatingPointsInfoDialog'
 import { RatingStandingRow } from '../features/ratings/RatingStandingRow'
 import { analytics } from '../lib/analytics/analytics'
 import { AnalyticsEvents } from '../lib/analytics/events'
+import type { RatingStanding } from '../types/rating'
 
 export function RatingDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -30,9 +32,27 @@ export function RatingDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showPointsInfo, setShowPointsInfo] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  // Режим ручного выбора строк для объединения (если дубль не подсказан — например, опечатка в фамилии).
+  const [selectingForMerge, setSelectingForMerge] = useState(false)
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([])
+  const [mergingEntries, setMergingEntries] = useState<RatingStanding[] | null>(null)
 
   const effectiveGroupId = selectedGroupId ?? rating?.groups[0]?.id ?? null
-  const { data: standings, isLoading: standingsLoading } = useStandings(ratingId, effectiveGroupId)
+  const { data: standingsResponse, isLoading: standingsLoading } = useStandings(ratingId, effectiveGroupId)
+  const standings = standingsResponse?.standings
+  const standingByKey = new Map((standings ?? []).map((s) => [s.participantKey, s]))
+  const duplicateGroups = (standingsResponse?.possibleDuplicates ?? [])
+    .map((keys) => keys.map((k) => standingByKey.get(k)).filter((s): s is RatingStanding => s != null))
+    .filter((group) => group.length > 1)
+
+  function exitSelection() {
+    setSelectingForMerge(false)
+    setSelectedKeys([])
+  }
+
+  function toggleSelected(key: string) {
+    setSelectedKeys((keys) => (keys.includes(key) ? keys.filter((k) => k !== key) : [...keys, key]))
+  }
 
   const myRole = clubMembers?.find((m) => m.userId === profile?.id)?.role
   const isAdmin = myRole === 'FOUNDER' || myRole === 'ADMIN'
@@ -97,7 +117,14 @@ export function RatingDetailPage() {
             <EmptyState text="В рейтинге нет групп зачёта" />
           ) : (
             <>
-              <TabBar tabs={groupTabs} active={String(effectiveGroupId)} onChange={(key) => setSelectedGroupId(Number(key))} />
+              <TabBar
+                tabs={groupTabs}
+                active={String(effectiveGroupId)}
+                onChange={(key) => {
+                  exitSelection()
+                  setSelectedGroupId(Number(key))
+                }}
+              />
               <button
                 type="button"
                 onClick={() => setShowPointsInfo(true)}
@@ -105,6 +132,51 @@ export function RatingDetailPage() {
               >
                 ⓘ Как начисляются очки
               </button>
+              {isAdmin && duplicateGroups.length > 0 && !selectingForMerge && (
+                <div className="flex flex-col gap-2 rounded-lg border border-secondary bg-secondary/10 p-3">
+                  <span className="text-sm font-semibold text-fg">Похоже, это один человек</span>
+                  {duplicateGroups.map((group) => (
+                    <div key={group.map((g) => g.participantKey).join('|')} className="flex items-center justify-between gap-2">
+                      <span className="text-sm text-fg">
+                        {group.map((g) => `${g.lastName} ${g.firstName}${g.userId ? ' (аккаунт)' : ''}`).join(' · ')}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setMergingEntries(group)}
+                        className="shrink-0 rounded-md border border-outline px-3 py-1 text-sm text-fg"
+                      >
+                        Объединить
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {isAdmin && standings && standings.length > 1 && (
+                <div className="flex flex-wrap items-center gap-3">
+                  {selectingForMerge ? (
+                    <>
+                      <span className="text-sm text-on-surface-variant">Отметьте записи одного человека</span>
+                      <button
+                        type="button"
+                        disabled={selectedKeys.length < 2}
+                        onClick={() =>
+                          setMergingEntries(selectedKeys.map((k) => standingByKey.get(k)).filter((x): x is RatingStanding => x != null))
+                        }
+                        className="rounded-md bg-primary px-3 py-1 text-sm text-on-primary disabled:opacity-50"
+                      >
+                        Объединить ({selectedKeys.length})
+                      </button>
+                      <button type="button" onClick={exitSelection} className="text-sm text-fg">
+                        Отмена
+                      </button>
+                    </>
+                  ) : (
+                    <button type="button" onClick={() => setSelectingForMerge(true)} className="text-sm text-primary underline">
+                      Объединить записи вручную
+                    </button>
+                  )}
+                </div>
+              )}
               {standingsLoading ? (
                 <Loading />
               ) : !standings || standings.length === 0 ? (
@@ -115,7 +187,13 @@ export function RatingDetailPage() {
                     <RatingStandingRow
                       key={standing.participantKey}
                       standing={standing}
-                      onClick={() => navigate(`/ratings/${ratingId}/athlete/${effectiveGroupId}/${standing.participantKey}`)}
+                      selectable={selectingForMerge}
+                      selected={selectedKeys.includes(standing.participantKey)}
+                      onClick={() =>
+                        selectingForMerge
+                          ? toggleSelected(standing.participantKey)
+                          : navigate(`/ratings/${ratingId}/athlete/${effectiveGroupId}/${encodeURIComponent(standing.participantKey)}`)
+                      }
                     />
                   ))}
                 </div>
@@ -143,6 +221,19 @@ export function RatingDetailPage() {
       </div>
 
       {showPointsInfo && <RatingPointsInfoDialog onDismiss={() => setShowPointsInfo(false)} />}
+
+      {mergingEntries && effectiveGroupId != null && (
+        <MergeStandingsDialog
+          ratingId={ratingId}
+          ratingGroupId={effectiveGroupId}
+          entries={mergingEntries}
+          onDismiss={() => setMergingEntries(null)}
+          onMerged={() => {
+            setMergingEntries(null)
+            exitSelection()
+          }}
+        />
+      )}
 
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-20 flex items-center justify-center bg-fg/40 p-4">

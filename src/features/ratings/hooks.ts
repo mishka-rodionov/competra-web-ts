@@ -56,7 +56,7 @@ export function useStandings(ratingId: string, groupId: number | null) {
     queryFn: async () => {
       const result = await ratingRepository.getStandings(ratingId, groupId!)
       if (result.kind === 'error') throw new Error(result.message)
-      return result.data.standings
+      return result.data
     },
     enabled: groupId != null,
   })

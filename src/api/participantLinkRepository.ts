@@ -3,8 +3,10 @@ import { safeApiCall, safeApiCallUnit } from './safeApiCall'
 import type {
   CompetitionLinkRequest,
   LinkRequest,
+  LinkCandidate,
   LinkRequestSource,
   LinkSuggestion,
+  OrganizerLinkResult,
 } from '../types/participantLink'
 
 export const participantLinkRepository = {
@@ -54,6 +56,24 @@ export const participantLinkRepository = {
   unlinkParticipant(participantId: string) {
     return safeApiCallUnit(() =>
       authRequest(`/event/orienteering/participants/${participantId}/unlink`, { method: 'POST' }),
+    )
+  },
+
+  /** Аккаунты для привязки участника организатором; без query — по фамилии участника. */
+  getLinkCandidates(participantId: string, query: string) {
+    const params = query.trim() ? `?${new URLSearchParams({ query: query.trim() })}` : ''
+    return safeApiCall(() =>
+      authRequest<LinkCandidate[]>(`/event/orienteering/participants/${participantId}/link-candidates${params}`),
+    )
+  },
+
+  /** Организатор сам привязывает участников к аккаунту — без заявки пользователя. */
+  linkParticipants(userId: string, participantIds: string[]) {
+    return safeApiCall(() =>
+      authRequest<OrganizerLinkResult>('/event/orienteering/participants/link', {
+        method: 'POST',
+        body: JSON.stringify({ userId, participantIds }),
+      }),
     )
   },
 }

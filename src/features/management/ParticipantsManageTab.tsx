@@ -11,6 +11,7 @@ import { buildDnsResultRequest, canBeMarkedDns, isParticipantDeletionLocked } fr
 import type { OrienteeringCompetition } from '../../types/competition'
 import type { OrienteeringParticipant } from '../../types/participant'
 import { useParticipants, useResults } from '../competition-detail/hooks'
+import { LinkToAccountDialog } from '../participant-links/LinkToAccountDialog'
 import { useGroups } from './hooks'
 import { ParticipantEditorDialog } from './ParticipantEditorDialog'
 
@@ -34,6 +35,7 @@ export function ParticipantsManageTab({ competition }: { competition: Orienteeri
   const [deletingParticipant, setDeletingParticipant] = useState<OrienteeringParticipant | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [dnsSavingId, setDnsSavingId] = useState<string | null>(null)
+  const [linkingParticipant, setLinkingParticipant] = useState<OrienteeringParticipant | null>(null)
 
   const competitionStatus = competition.competition.status
   // После старта участников не удаляют — вместо удаления доступна отметка «Не стартовал»
@@ -125,7 +127,17 @@ export function ParticipantsManageTab({ competition }: { competition: Orienteeri
                   </span>
                   {effectiveTab === ALL_TAB && p.groupName && <span className="text-sm text-primary">{p.groupName}</span>}
                   {p.commandName?.trim() && <span className="text-sm text-on-surface-variant">{p.commandName}</span>}
-                  {p.userId && <span className="text-sm text-primary">Привязан к профилю пользователя</span>}
+                  {p.userId ? (
+                    <span className="text-sm text-primary">Привязан к профилю пользователя</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setLinkingParticipant(p)}
+                      className="self-start text-sm text-on-surface-variant underline"
+                    >
+                      Привязать к аккаунту
+                    </button>
+                  )}
                   {isDns && <span className="text-sm text-error">Не стартовал</span>}
                 </div>
                 <div className="flex shrink-0 gap-3">
@@ -168,6 +180,14 @@ export function ParticipantsManageTab({ competition }: { competition: Orienteeri
             await queryClient.invalidateQueries({ queryKey: ['participants', competitionId] })
             setEditingParticipant(undefined)
           }}
+        />
+      )}
+
+      {linkingParticipant && (
+        <LinkToAccountDialog
+          participant={linkingParticipant}
+          onDismiss={() => setLinkingParticipant(null)}
+          onLinked={() => setLinkingParticipant(null)}
         />
       )}
 

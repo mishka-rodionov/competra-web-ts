@@ -7,16 +7,26 @@ const RANK_BADGE_CLASS: Record<number, string> = {
   3: 'bg-[#c17a3e] text-[#2a2a2a]',
 }
 
-export function RatingStandingRow({ standing, onClick }: { standing: RatingStanding; onClick: () => void }) {
+interface RatingStandingRowProps {
+  standing: RatingStanding
+  onClick: () => void
+  /** Режим выбора строк для объединения: клик переключает выбор вместо перехода. */
+  selectable?: boolean
+  selected?: boolean
+}
+
+export function RatingStandingRow({ standing, onClick, selectable, selected }: RatingStandingRowProps) {
   const isTopThree = standing.rank >= 1 && standing.rank <= 3
   const badgeClass = RANK_BADGE_CLASS[standing.rank] ?? 'bg-surface-variant text-on-surface-variant'
+  const background = selected ? 'bg-primary/10 border-primary' : isTopThree ? 'bg-primary-container/30' : 'bg-surface'
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-lg border border-outline-variant p-3 text-left hover:bg-surface-variant/40 ${isTopThree ? 'bg-primary-container/30' : 'bg-surface'}`}
+      className={`flex w-full items-center gap-3 rounded-lg border border-outline-variant p-3 text-left hover:bg-surface-variant/40 ${background}`}
     >
+      {selectable && <input type="checkbox" checked={selected ?? false} readOnly tabIndex={-1} className="shrink-0" />}
       <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${badgeClass}`}>
         {isTopThree ? '🏆' : standing.rank}
       </div>
@@ -24,6 +34,7 @@ export function RatingStandingRow({ standing, onClick }: { standing: RatingStand
         <div className="text-fg">{standing.displayName}</div>
         <div className="text-xs text-on-surface-variant">
           {standing.breakdown.length} {startsCountLabel(standing.breakdown.length)}
+          {selectable && (standing.userId ? ' · аккаунт' : ' · без аккаунта')}
         </div>
       </div>
       <div className="flex flex-col items-end">

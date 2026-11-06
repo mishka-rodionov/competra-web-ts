@@ -1,6 +1,7 @@
 import { authRequest, publicRequest } from './client'
 import { safeApiCall, safeApiCallUnit } from './safeApiCall'
 import type { PagedResponse } from './types'
+import type { OrganizerLinkResult } from '../types/participantLink'
 import type {
   AddCompetitionToRatingResult,
   CreateRatingRequest,
@@ -9,6 +10,7 @@ import type {
   RatingCompetition,
   RatingGroupMappingSuggestion,
   RatingStandingsResponse,
+  MergeStandingsRequest,
   RatingSummary,
   UpdateRatingRequest,
 } from '../types/rating'
@@ -77,6 +79,16 @@ export const ratingRepository = {
   getStandings(id: string, groupId: number) {
     return safeApiCall(() =>
       publicRequest<RatingStandingsResponse>(`/ratings/${id}/standings?${new URLSearchParams({ groupId: String(groupId) })}`),
+    )
+  },
+
+  /** Объединить дубли в таблице рейтинга: привязать к аккаунту основной строки или переименовать в её ФИО. */
+  mergeStandings(id: string, request: MergeStandingsRequest) {
+    return safeApiCall(() =>
+      authRequest<OrganizerLinkResult>(`/ratings/${id}/standings/merge`, {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }),
     )
   },
 }
