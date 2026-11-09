@@ -10,6 +10,7 @@ import {
   REG_END_MODE_OPTIONS,
   START_INTERVAL_OPTIONS,
   START_TIME_MODE_HINT,
+  finishRegistrationPatch,
   startTimeModeOptionsFor,
   startTimeModePatch,
 } from './dictionaries'
@@ -87,13 +88,36 @@ export function BasicStep({ form, onPatch, isPastEvent }: StepProps & { isPastEv
         options={punchingSystemOptionsFor(form.startTimeMode, form.punchingSystem)}
         onChange={(punchingSystem) => onPatch({ punchingSystem })}
       />
-      <LabeledSelect
-        label="Способ старта"
-        value={form.startTimeMode}
-        options={startTimeModeOptionsFor(form.startTimeMode)}
-        onChange={(startTimeMode) => onPatch(startTimeModePatch(startTimeMode, form.punchingSystem))}
-      />
-      <span className="-mt-2 text-xs text-on-surface-variant">{START_TIME_MODE_HINT}</span>
+      {!isPastEvent && (
+        <label className="flex items-center justify-between gap-2">
+          <span className="flex flex-col">
+            <span className="text-base text-fg">Регистрация на финише</span>
+            <span className="text-sm text-on-surface-variant">
+              Участников вносите при считывании чипа на финише в приложении — заранее регистрировать не нужно
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            checked={form.isFinishRegistration}
+            onChange={(e) => onPatch(finishRegistrationPatch(e.target.checked, form.punchingSystem))}
+          />
+        </label>
+      )}
+      {!isPastEvent && form.isFinishRegistration ? (
+        <span className="text-xs text-on-surface-variant">
+          Старт — по стартовой станции: время старта каждого фиксирует отметка на ней
+        </span>
+      ) : (
+        <>
+          <LabeledSelect
+            label="Способ старта"
+            value={form.startTimeMode}
+            options={startTimeModeOptionsFor(form.startTimeMode)}
+            onChange={(startTimeMode) => onPatch(startTimeModePatch(startTimeMode, form.punchingSystem))}
+          />
+          <span className="-mt-2 text-xs text-on-surface-variant">{START_TIME_MODE_HINT}</span>
+        </>
+      )}
       {/* При старте по стартовой станции реальное время старта берётся из чипа — интервал не нужен. */}
       {form.startTimeMode !== 'BY_START_STATION' && (
         <LabeledSelect

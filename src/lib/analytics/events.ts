@@ -86,10 +86,25 @@ export const AnalyticsEvents = {
     name: 'create_competition_standard_groups_added',
     params: { groups_count: groupsCount },
   }),
-  /** [format] — forward / marking / by_choice_score / by_choice_min_controls; [teamScoring] — none / groups / both. */
-  createCompetitionFinished: (competitionId: string, kindOfSport: string, format: string, teamScoring: string): AnalyticsEvent => ({
+  /**
+   * [format] — forward / marking / by_choice_score / by_choice_min_controls; [teamScoring] — none / groups / both;
+   * [isFinishRegistration] — режим «Регистрация на финише».
+   */
+  createCompetitionFinished: (
+    competitionId: string,
+    kindOfSport: string,
+    format: string,
+    teamScoring: string,
+    isFinishRegistration: boolean,
+  ): AnalyticsEvent => ({
     name: 'create_competition_finished',
-    params: { competition_id: competitionId, kind_of_sport: kindOfSport, format, team_scoring: teamScoring },
+    params: {
+      competition_id: competitionId,
+      kind_of_sport: kindOfSport,
+      format,
+      team_scoring: teamScoring,
+      is_finish_registration: isFinishRegistration,
+    },
   }),
   /** Открыт командный зачёт в результатах. */
   teamStandingsOpened: (competitionId: string): AnalyticsEvent => ({

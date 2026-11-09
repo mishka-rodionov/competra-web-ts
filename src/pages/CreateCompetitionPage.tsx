@@ -50,6 +50,7 @@ const INITIAL_FORM: CreateCompetitionFormState = {
   direction: 'FORWARD',
   byChoiceMode: 'SCORE',
   teamScoring: null,
+  isFinishRegistration: false,
   punchingSystem: 'SPORTIDUINO',
   startTimeMode: 'USER_SET',
   startInterval: 60,
@@ -325,6 +326,7 @@ export function CreateCompetitionPage() {
       overtimePolicy: form.overtimePolicy,
       byChoiceMode: form.byChoiceMode,
       teamScoring: teamScoringRequest(form.teamScoring, ranksByScore(form.direction, form.byChoiceMode)),
+      isFinishRegistration: !isPastEvent && form.isFinishRegistration,
     })
     if (createResult.kind === 'error') return fail(createResult.message)
 
@@ -407,6 +409,7 @@ export function CreateCompetitionPage() {
         KIND_OF_SPORT,
         competitionFormat(form.direction, form.byChoiceMode),
         teamScoringAnalyticsValue(form.teamScoring),
+        !isPastEvent && form.isFinishRegistration,
       ),
     )
     await queryClient.invalidateQueries({ queryKey: ['my-competitions'] })
@@ -497,6 +500,7 @@ export function CreateCompetitionPage() {
           direction={form.direction}
           byChoiceMode={form.byChoiceMode}
           isStartCpRequired={form.startTimeMode === 'BY_START_STATION'}
+          punchingSystem={form.punchingSystem}
           initial={editedDistance}
           onDismiss={() => setDistanceDialog(null)}
           onSave={(distance) => {

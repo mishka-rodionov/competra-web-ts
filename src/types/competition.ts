@@ -61,6 +61,8 @@ export interface OrienteeringCompetition {
   byChoiceMode?: string
   /** Настройки командного зачёта; нет — зачёта нет. */
   teamScoring?: TeamScoring | null
+  /** «Регистрация на финише»: участников вносят при считывании чипа на финише (Android). Нет у старых ответов сервера. */
+  isFinishRegistration?: boolean
   /** Режим проведённой жеребьёвки (GENERAL / GROUP / DISTANCE); null — не проводилась. Нет у старых ответов сервера. */
   drawMode?: string | null
   /** Коридоры жеребьёвки по дистанциям. */
@@ -179,6 +181,8 @@ export interface CreateCompetitionRequest {
   byChoiceMode: string
   /** Командный зачёт: не передан — не менять, enabled = false — выключить. */
   teamScoring?: TeamScoringRequest
+  /** «Регистрация на финише»: не передан — не менять. */
+  isFinishRegistration?: boolean
   countdownTimer?: number | null
 }
 
@@ -229,4 +233,6 @@ export interface CompetitionDetail {
   byChoiceMode?: string
   /** Настройки командного зачёта; нет — зачёта нет. */
   teamScoring?: TeamScoring | null
+  /** «Регистрация на финише»: участников вносят при считывании чипа на финише. Нет у старых ответов сервера. */
+  isFinishRegistration?: boolean
 }

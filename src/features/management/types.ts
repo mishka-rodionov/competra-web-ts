@@ -91,6 +91,8 @@ export interface CreateCompetitionFormState {
   byChoiceMode: string
   /** Командный зачёт; null — зачёта нет. */
   teamScoring: TeamScoring | null
+  /** «Регистрация на финише»: старт при нём — только по стартовой станции. */
+  isFinishRegistration: boolean
   punchingSystem: string
   startTimeMode: string
   startInterval: number

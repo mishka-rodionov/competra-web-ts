@@ -108,6 +108,26 @@ export function startTimeModePatch(
   return { startTimeMode, punchingSystem: resetPunching ? 'SPORTIDUINO' : punchingSystem }
 }
 
+/**
+ * Включение/выключение «Регистрации на финише»: участники стартуют сами, без протокола, поэтому
+ * время старта даёт только стартовая станция — она требует электронной системы отметки.
+ */
+export function finishRegistrationPatch(
+  enabled: boolean,
+  punchingSystem: string,
+): { isFinishRegistration: boolean; startTimeMode?: string; punchingSystem?: string } {
+  if (!enabled) return { isFinishRegistration: false }
+  return { isFinishRegistration: true, ...startTimeModePatch('BY_START_STATION', punchingSystem) }
+}
+
+/**
+ * Стандартные коды стартовой и финишной станций системы отметки — подставляются в пустые поля
+ * дистанции. При добавлении новой системы отметки задай её коды (как PunchingSystem в Android).
+ */
+export const DEFAULT_STATION_CODES: Record<string, { start: number; finish: number }> = {
+  SPORTIDUINO: { start: 240, finish: 245 },
+}
+
 export const START_TIME_MODE_OPTIONS: [string, string][] = [
   ['STRICT', 'Строгое время старта'],
   ['USER_SET', 'По стартовому протоколу'],

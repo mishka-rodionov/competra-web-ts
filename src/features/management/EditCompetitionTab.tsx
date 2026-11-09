@@ -236,13 +236,21 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
         options={punchingSystemOptionsFor(form.startTimeMode, form.punchingSystem)}
         onChange={(punchingSystem) => patch({ punchingSystem })}
       />
-      <LabeledSelect
-        label="Способ старта"
-        value={form.startTimeMode}
-        options={startTimeModeOptionsFor(form.startTimeMode)}
-        onChange={(startTimeMode) => patch(startTimeModePatch(startTimeMode, form.punchingSystem))}
-      />
-      <span className="-mt-2 text-xs text-on-surface-variant">{START_TIME_MODE_HINT}</span>
+      {competition.isFinishRegistration ? (
+        <span className="text-sm text-on-surface-variant">
+          Регистрация на финише — участников вносят при считывании чипа в приложении, старт по стартовой станции
+        </span>
+      ) : (
+        <>
+          <LabeledSelect
+            label="Способ старта"
+            value={form.startTimeMode}
+            options={startTimeModeOptionsFor(form.startTimeMode)}
+            onChange={(startTimeMode) => patch(startTimeModePatch(startTimeMode, form.punchingSystem))}
+          />
+          <span className="-mt-2 text-xs text-on-surface-variant">{START_TIME_MODE_HINT}</span>
+        </>
+      )}
       {/* При старте по стартовой станции реальное время старта берётся из чипа — интервал не нужен. */}
       {form.startTimeMode !== 'BY_START_STATION' && (
         <LabeledSelect

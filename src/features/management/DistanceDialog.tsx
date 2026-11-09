@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { formatControlPoints, parseControlPoints } from '../../lib/controlPoints'
 import { isMinControls, ranksByScore } from '../../lib/byChoiceMode'
+import { DEFAULT_STATION_CODES } from './dictionaries'
 import type { PendingDistance } from './types'
 
 interface DistanceDialogProps {
@@ -11,11 +12,21 @@ interface DistanceDialogProps {
   isStartCpRequired: boolean
   /** Дистанция для правки; не задана — создаётся новая. */
   initial?: PendingDistance
+  /** Система отметки — её стандартные коды станций подставляются в пустые поля старта/финиша. */
+  punchingSystem?: string
   onDismiss: () => void
   onSave: (distance: PendingDistance) => void
 }
 
-export function DistanceDialog({ direction, byChoiceMode, isStartCpRequired, initial, onDismiss, onSave }: DistanceDialogProps) {
+export function DistanceDialog({
+  direction,
+  byChoiceMode,
+  isStartCpRequired,
+  initial,
+  punchingSystem = 'SPORTIDUINO',
+  onDismiss,
+  onSave,
+}: DistanceDialogProps) {
   const isByChoice = direction === 'BY_CHOICE'
   const hasScores = ranksByScore(direction, byChoiceMode)
   const hasMinControls = isMinControls(direction, byChoiceMode)
@@ -25,8 +36,9 @@ export function DistanceDialog({ direction, byChoiceMode, isStartCpRequired, ini
   const [controlPointsInput, setControlPointsInput] = useState(
     initial ? formatControlPoints(initial.controlPoints, isByChoice, hasScores) : '',
   )
-  const [finishCp, setFinishCp] = useState(initial?.finishControlPoint?.toString() ?? '')
-  const [startCp, setStartCp] = useState(initial?.startControlPoint?.toString() ?? '')
+  const stationCodes = DEFAULT_STATION_CODES[punchingSystem]
+  const [finishCp, setFinishCp] = useState((initial?.finishControlPoint ?? stationCodes?.finish)?.toString() ?? '')
+  const [startCp, setStartCp] = useState((initial?.startControlPoint ?? stationCodes?.start)?.toString() ?? '')
   const [showStartCpError, setShowStartCpError] = useState(false)
   const [description, setDescription] = useState(initial?.description ?? '')
   const [minControls, setMinControls] = useState(initial?.minControlsCount ? String(initial.minControlsCount) : '')

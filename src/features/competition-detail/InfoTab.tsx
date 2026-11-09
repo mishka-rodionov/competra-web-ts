@@ -73,6 +73,9 @@ export function InfoTab({ detail }: { detail: CompetitionDetail }) {
           <span className="text-base text-on-surface-variant">Окончание: {toLocaleDateString(detail.endDate, zone)}</span>
         )}
         {detail.address && <Field label="Место проведения" value={detail.address} />}
+        {detail.isFinishRegistration && (
+          <Field label="Регистрация" value="На финише — организатор вносит участников при считывании чипа" />
+        )}
       </InfoCard>
 
       {hasRegistrationInfo && (
