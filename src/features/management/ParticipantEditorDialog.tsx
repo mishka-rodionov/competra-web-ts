@@ -71,6 +71,7 @@ export function ParticipantEditorDialog({
   const [lastName, setLastName] = useState(editingParticipant?.lastName ?? '')
   const [firstName, setFirstName] = useState(editingParticipant?.firstName ?? '')
   const [commandName, setCommandName] = useState(editingParticipant?.commandName ?? '')
+  const [isOutOfCompetition, setIsOutOfCompetition] = useState(editingParticipant?.isOutOfCompetition ?? false)
   // Пустые номер и время сохраняются как 0 — «не назначено», как у самостоятельной регистрации
   // на сервере; такие значения и показываются пустыми, а не «0» и «03:00» (полночь эпохи по Москве).
   const [startNumber, setStartNumber] = useState(
@@ -155,9 +156,14 @@ export function ParticipantEditorDialog({
       chipNumber: isLateEntry && competition.punchingSystem === 'SPORTIDUINO' ? numberInt : (editingParticipant?.chipNumber ?? 0),
       comment: editingParticipant?.comment ?? null,
       isChipGiven: editingParticipant?.isChipGiven ?? false,
+      isOutOfCompetition,
     })
     if (result.kind === 'success') {
-      if (!editingParticipant) analytics.trackEvent(AnalyticsEvents.participantAdded('manual'))
+      if (!editingParticipant) {
+        analytics.trackEvent(AnalyticsEvents.participantAdded('manual', isOutOfCompetition))
+      } else if ((editingParticipant.isOutOfCompetition ?? false) !== isOutOfCompetition) {
+        analytics.trackEvent(AnalyticsEvents.participantOutOfCompetitionChanged(isOutOfCompetition, 'participant_list'))
+      }
       onSaved()
     } else {
       setError(result.message)
@@ -227,6 +233,20 @@ export function ParticipantEditorDialog({
           placeholder="Команда (опционально)"
           className="rounded-md border border-outline bg-bg px-3 py-2 text-fg"
         />
+        <label className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            checked={isOutOfCompetition}
+            onChange={(e) => setIsOutOfCompetition(e.target.checked)}
+            className="mt-1"
+          />
+          <span className="flex flex-col">
+            <span className="text-sm text-fg">Вне конкурса</span>
+            <span className="text-xs text-on-surface-variant">
+              Результат показывается в протоколе, но не получает места и не идёт в командный зачёт и рейтинг
+            </span>
+          </span>
+        </label>
         {editingParticipant?.userId && (
           <div className="flex flex-col gap-2 rounded-md bg-primary/10 p-3">
             <span className="text-sm text-fg">Участник привязан к профилю пользователя</span>

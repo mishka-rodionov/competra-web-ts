@@ -115,9 +115,14 @@ export const AnalyticsEvents = {
     name: 'competition_deleted',
     params: { competition_id: competitionId },
   }),
-  participantAdded: (method: ParticipantAddMethod): AnalyticsEvent => ({
+  participantAdded: (method: ParticipantAddMethod, outOfCompetition = false): AnalyticsEvent => ({
     name: 'participant_added',
-    params: { method },
+    params: { method, out_of_competition: outOfCompetition },
+  }),
+  /** Организатор поставил или снял отметку «Вне конкурса» у существующего участника. */
+  participantOutOfCompetitionChanged: (enabled: boolean, source: 'participant_list' | 'finish_read'): AnalyticsEvent => ({
+    name: 'participant_out_of_competition_changed',
+    params: { enabled, source },
   }),
   /** Организатор отметил участника «Не стартовал» (DNS) — после старта вместо удаления. */
   participantDnsMarked: (competitionId: string): AnalyticsEvent => ({

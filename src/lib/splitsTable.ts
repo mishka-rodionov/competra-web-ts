@@ -309,10 +309,14 @@ export function buildSplitsTable(
     return split.timestamp - prevTimestamp(matched, i, startTs) >= MIN_RANKABLE_LEG_MS
   }
 
-  /** Ранги среди участников, для которых measure вернула время (> 0). */
+  /**
+   * Ранги среди участников, для которых measure вернула время (> 0). Участники вне конкурса мест
+   * на перегонах не получают и лучший перегон не забирают.
+   */
   const ranks = (measure: (matched: (SplitTime | null)[], startTs: number) => number | null): Map<string, number> =>
     new Map(
       pairs
+        .filter(({ participant }) => !participant.isOutOfCompetition)
         .map(({ participant, result }) => {
           const startTs = anchorStartTime(participant, result)
           if (startTs == null) return null
@@ -371,13 +375,16 @@ export function buildSplitsTable(
  * Строит данные графика гонки (отставание от "виртуального" лидера — минимальное кумулятивное
  * время на каждом КП среди финишировавших) из уже построенной таблицы сплитов. Участники не в
  * статусе FINISHED исключаются. Каждая кривая начинается с синтетической точки старта
- * (positionIndex=0, deltaSeconds=0) — все участники стартуют вместе.
+ * (positionIndex=0, deltaSeconds=0) — все участники стартуют вместе. Лидер выбирается среди
+ * участников в зачёте: кривая участника вне конкурса рисуется, но отсчёт от него не ведётся.
  */
 export function buildRaceGraphData(table: SplitsTable): RaceGraphData {
   const finishedRows = table.rows.filter((r) => r.result?.status === 'FINISHED')
+  const competingRows = finishedRows.filter((r) => !r.participant.isOutOfCompetition)
+  const leaderRows = competingRows.length > 0 ? competingRows : finishedRows
 
   const leaderCumulativeByColumn = table.columns.map((_, i) => {
-    const values = finishedRows.map((r) => r.cells[i]?.cumulativeSeconds).filter((v): v is number => v != null)
+    const values = leaderRows.map((r) => r.cells[i]?.cumulativeSeconds).filter((v): v is number => v != null)
     return values.length > 0 ? Math.min(...values) : null
   })
 

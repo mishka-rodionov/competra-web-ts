@@ -96,8 +96,10 @@ export function GroupSplitsTablePage() {
                         {showsScore ? scoreLabel(row) : row.result?.totalTime != null ? formatTime(row.result.totalTime) : ''}
                       </div>
                     )}
-                    {row.result && resultPlaceLabel(row.result) !== '—' && (
-                      <div className="text-xs text-on-surface-variant">Место {resultPlaceLabel(row.result)}</div>
+                    {row.result && resultPlaceLabel(row.result, row.participant) !== '—' && (
+                      <div className="text-xs text-on-surface-variant">
+                        {row.participant.isOutOfCompetition ? 'Вне конкурса' : `Место ${resultPlaceLabel(row.result)}`}
+                      </div>
                     )}
                   </td>
                   {row.cells.map((cell, i) => (

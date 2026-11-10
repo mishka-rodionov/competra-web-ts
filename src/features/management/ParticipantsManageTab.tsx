@@ -127,6 +127,7 @@ export function ParticipantsManageTab({ competition }: { competition: Orienteeri
                   </span>
                   {effectiveTab === ALL_TAB && p.groupName && <span className="text-sm text-primary">{p.groupName}</span>}
                   {p.commandName?.trim() && <span className="text-sm text-on-surface-variant">{p.commandName}</span>}
+                  {p.isOutOfCompetition && <span className="text-sm font-medium text-tertiary">Вне конкурса</span>}
                   {p.userId ? (
                     <span className="text-sm text-primary">Привязан к профилю пользователя</span>
                   ) : (
@@ -178,6 +179,8 @@ export function ParticipantsManageTab({ competition }: { competition: Orienteeri
           onDismiss={() => setEditingParticipant(undefined)}
           onSaved={async () => {
             await queryClient.invalidateQueries({ queryKey: ['participants', competitionId] })
+            // Смена «Вне конкурса» или группы пересчитывает места на сервере.
+            await queryClient.invalidateQueries({ queryKey: ['results', competitionId] })
             setEditingParticipant(undefined)
           }}
         />

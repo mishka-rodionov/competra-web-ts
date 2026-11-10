@@ -55,7 +55,11 @@ export function ParticipantSplitsPage() {
             label={[
               `${participant.lastName} ${participant.firstName}`.trim(),
               participant.groupName,
-              result && resultPlaceLabel(result) !== '—' ? `${resultPlaceLabel(result)} место` : null,
+              participant.isOutOfCompetition
+                ? 'вне конкурса'
+                : result && resultPlaceLabel(result) !== '—'
+                  ? `${resultPlaceLabel(result)} место`
+                  : null,
             ]
               .filter(Boolean)
               .join(' · ')}
@@ -63,7 +67,7 @@ export function ParticipantSplitsPage() {
 
           {result && (
             <div className="flex justify-between rounded-lg border border-outline-variant bg-surface p-4">
-              <SummaryColumn label="Место" value={resultPlaceLabel(result)} />
+              <SummaryColumn label="Место" value={resultPlaceLabel(result, participant)} />
               <SummaryColumn label="Общее время" value={result.totalTime != null ? formatTime(result.totalTime) : '—'} />
               <SummaryColumn label="Статус" value={resultStatusLabel(result.status)} />
             </div>

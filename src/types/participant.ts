@@ -12,6 +12,8 @@ export interface OrienteeringParticipant {
   chipNumber: number | null
   comment: string | null
   isChipGiven: boolean
+  /** Вне конкурса (ВК): результат без места, не идёт в командный зачёт и рейтинг. Нет у старого сервера. */
+  isOutOfCompetition?: boolean
 }
 
 /** Форма 1:1 с бэкендовым OrienteeringParticipantRequest — создание/обновление участника вручную. */
@@ -29,6 +31,8 @@ export interface SaveParticipantRequest {
   chipNumber: number
   comment: string | null
   isChipGiven: boolean
+  /** Вне конкурса (ВК); undefined — не менять. */
+  isOutOfCompetition?: boolean
 }
 
 export interface SplitTime {

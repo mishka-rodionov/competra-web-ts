@@ -9,7 +9,12 @@ import { ranksByScore } from '../../lib/byChoiceMode'
 import { formatTime } from '../../lib/dateUtils'
 import type { ParticipantGroupDetail } from '../../types/competition'
 import type { OrienteeringParticipant, OrienteeringResult } from '../../types/participant'
-import { resultPlaceLabel, resultStatusColorClass, resultStatusLabel } from '../competitions/labels'
+import {
+  compareResultsForProtocol,
+  resultPlaceLabel,
+  resultStatusColorClass,
+  resultStatusLabel,
+} from '../competitions/labels'
 import { LinkSuggestionBanner } from '../participant-links/LinkSuggestionBanner'
 import { useParticipants, useResults } from './hooks'
 import { TeamStandingsView } from './TeamStandingsView'
@@ -104,12 +109,9 @@ export function ResultsTab({
       )}
       {showTeam && <TeamStandingsView competitionId={competitionId} competitionStatus={competitionStatus} />}
       {!showTeam && sortedGroupIds.map((groupId) => {
-        const groupResults = [...(resultsByGroup.get(groupId) ?? [])].sort((a, b) => {
-          // Место есть только у FINISHED: OVERTIME и снятые уходят в конец.
-          const rankA = a.status === 'FINISHED' ? (a.rank ?? Infinity) : Infinity
-          const rankB = b.status === 'FINISHED' ? (b.rank ?? Infinity) : Infinity
-          return rankA - rankB
-        })
+        // Место есть только у FINISHED: OVERTIME и снятые уходят в конец, участник вне конкурса
+        // стоит среди финишировавших по своему результату.
+        const groupResults = [...(resultsByGroup.get(groupId) ?? [])].sort(compareResultsForProtocol(isByChoice))
         return (
           <GroupResultsCard
             key={groupId}
@@ -197,7 +199,7 @@ function GroupResultsCard({ competitionId, groupId, groupTitle, groupResults, is
                 onClick={() => openParticipantSplits(result.participantId)}
                 className="cursor-pointer border-b border-outline-variant last:border-0 hover:bg-surface-variant/40"
               >
-                <td className="py-2 pr-2 text-fg">{resultPlaceLabel(result)}</td>
+                <td className="py-2 pr-2 text-fg">{resultPlaceLabel(result, participant)}</td>
                 <td className="py-2 pr-2">
                   <div className="text-fg">{name}</div>
                   {participant?.startNumber && (

@@ -159,7 +159,11 @@ export function RaceGraphPage() {
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: raceGraphColor(originalIndex) }} />
               <span className={`text-sm text-fg ${isHighlighted ? 'font-bold' : ''}`}>
                 {`${series.participant.lastName} ${series.participant.firstName}`.trim()}
-                {series.result?.rank != null ? ` · Место ${series.result.rank}` : ''}
+                {series.participant.isOutOfCompetition
+                  ? ' · Вне конкурса'
+                  : series.result?.rank != null
+                    ? ` · Место ${series.result.rank}`
+                    : ''}
               </span>
             </div>
           )
