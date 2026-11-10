@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Участник вне конкурса</title>
+<style>
+  :root{ color-scheme: light dark; }
+  html,body{ margin:0; padding:0; }
+  img{ max-width:100%; }
+
+  @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
+  :root{
+    --bg:#F6F2E8;
+    --surface:#FFFFFF;
+    --surface-2:#ECE6D4;
+    --ink:#1E2A20;
+    --ink-soft:#54604F;
+    --accent:#2E6B4E;
+    --accent-strong:#1F4D38;
+    --flag:#BE4B2A;
+    --line:#DAD2B9;
+    --font-display:'Unbounded', 'Arial Narrow', sans-serif;
+    --font-body:'Manrope', 'Segoe UI', sans-serif;
+    --font-mono:'JetBrains Mono', 'Courier New', monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14190F;
+      --surface:#1C2317;
+      --surface-2:#24301F;
+      --ink:#E9E7D8;
+      --ink-soft:#9FAC93;
+      --accent:#75C596;
+      --accent-strong:#9BDBB4;
+      --flag:#E58A63;
+      --line:#333F2B;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14190F;
+    --surface:#1C2317;
+    --surface-2:#24301F;
+    --ink:#E9E7D8;
+    --ink-soft:#9FAC93;
+    --accent:#75C596;
+    --accent-strong:#9BDBB4;
+    --flag:#E58A63;
+    --line:#333F2B;
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .page{
+    max-width:740px;
+    margin:0 auto;
+    padding:56px 24px 88px;
+  }
+
+  header.intro{
+    margin-bottom:40px;
+  }
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--flag);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:18px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:22px;
+    height:1px;
+    background:var(--flag);
+    display:inline-block;
+  }
+  h1{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:clamp(28px,5vw,40px);
+    line-height:1.14;
+    letter-spacing:-0.01em;
+    margin:0 0 18px;
+    text-wrap:balance;
+    color:var(--ink);
+  }
+  .subtitle{
+    font-size:16.5px;
+    line-height:1.65;
+    color:var(--ink-soft);
+    max-width:60ch;
+    margin:0;
+  }
+
+  .checklist{
+    margin:36px 0 8px;
+    border:1px solid var(--line);
+    background:var(--surface);
+    border-radius:14px;
+    padding:20px 22px;
+  }
+  .checklist-title{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    font-weight:700;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:0 0 14px;
+  }
+  .checklist ul{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px 20px;
+  }
+  .checklist li{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    font-size:14.5px;
+    line-height:1.45;
+    color:var(--ink);
+  }
+  .checklist svg{
+    flex:none;
+    width:18px;
+    height:18px;
+    margin-top:1px;
+    stroke:var(--accent);
+  }
+
+  .stages{
+    margin-top:52px;
+    border-top:1px solid var(--line);
+  }
+  .stage{
+    display:grid;
+    grid-template-columns:64px 1fr;
+    gap:22px;
+    padding:30px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .stage-num{
+    font-family:var(--font-mono);
+    font-weight:700;
+    font-size:26px;
+    color:var(--flag);
+    line-height:1;
+    padding-top:4px;
+    font-variant-numeric:tabular-nums;
+  }
+  .stage h2{
+    font-family:var(--font-display);
+    font-weight:500;
+    font-size:19px;
+    margin:0 0 10px;
+    color:var(--ink);
+    text-wrap:balance;
+  }
+  .stage p{
+    font-size:15px;
+    line-height:1.68;
+    color:var(--ink);
+    margin:0 0 14px;
+    max-width:62ch;
+  }
+  .stage p strong{ color:var(--accent-strong); font-weight:700; }
+  .stage > div > ul{
+    font-size:15px;
+    line-height:1.68;
+    color:var(--ink);
+    margin:-6px 0 14px;
+    padding-left:20px;
+    max-width:62ch;
+  }
+  .stage > div > ul strong{ color:var(--accent-strong); font-weight:700; }
+
+  .tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .tag{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    font-weight:500;
+    letter-spacing:.02em;
+    color:var(--ink-soft);
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:5px 9px;
+    white-space:nowrap;
+  }
+
+  .wizard{
+    margin:18px 0 4px;
+    border:1px solid var(--line);
+    background:var(--surface-2);
+    border-radius:12px;
+    padding:18px 20px 20px;
+  }
+  .wizard-title{
+    font-family:var(--font-mono);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:0 0 14px;
+  }
+  .wizard-steps{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+  }
+  .wizard-steps li{
+    padding:14px 0 0;
+    margin-top:14px;
+    border-top:1px solid var(--line);
+  }
+  .wizard-steps li:first-child{
+    padding-top:0;
+    margin-top:0;
+    border-top:none;
+  }
+  .wizard-step-title{
+    display:block;
+    font-family:var(--font-display);
+    font-weight:500;
+    font-size:14.5px;
+    color:var(--ink);
+    margin-bottom:6px;
+  }
+  .wizard-steps p{
+    font-size:13.5px;
+    line-height:1.62;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+    max-width:60ch;
+  }
+  .required{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:7px;
+  }
+  .req-label{
+    font-family:var(--font-mono);
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--flag);
+  }
+  .req-tag{
+    font-family:var(--font-mono);
+    font-size:11px;
+    font-weight:700;
+    color:var(--flag);
+    background:transparent;
+    border:1px solid var(--flag);
+    border-radius:6px;
+    padding:3px 8px;
+  }
+
+  .callout{
+    margin:26px 0 0;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-left:3px solid var(--accent);
+    border-radius:0 10px 10px 0;
+    padding:16px 18px;
+  }
+  .callout-label{
+    font-family:var(--font-mono);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 6px;
+  }
+  .callout p{
+    margin:0;
+    font-size:14px;
+    line-height:1.6;
+    color:var(--ink-soft);
+  }
+
+  footer.closing{
+    margin-top:48px;
+    padding-top:8px;
+  }
+  footer.closing p{
+    font-size:15px;
+    line-height:1.68;
+    color:var(--ink-soft);
+    max-width:62ch;
+    margin:0 0 14px;
+  }
+  footer.closing p:last-child{ margin-bottom:0; }
+  footer.closing strong{ color:var(--ink); font-weight:700; }
+
+  @media (max-width:520px){
+    .stage{ grid-template-columns:1fr; gap:8px; }
+    .stage-num{ font-size:20px; }
+    .checklist ul{ grid-template-columns:1fr; }
+  }
+
+  a{ color:var(--accent-strong); text-underline-offset:2px; }
+  .stage > div > ol{
+    font-size:15px;
+    line-height:1.68;
+    color:var(--ink);
+    margin:-6px 0 14px;
+    padding-left:22px;
+    max-width:62ch;
+  }
+  .stage > div > ol strong{ color:var(--accent-strong); font-weight:700; }
+  .stage .callout{ margin:4px 0 16px; }
+
+  .protocol{
+    margin:4px 0 16px;
+    border:1px solid var(--line);
+    background:var(--surface);
+    border-radius:12px;
+    overflow:hidden;
+  }
+  .protocol table{ width:100%; border-collapse:collapse; font-size:14px; }
+  .protocol th{
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    text-align:left;
+    padding:10px 12px;
+    background:var(--surface-2);
+  }
+  .protocol td{
+    padding:9px 12px;
+    border-top:1px solid var(--line);
+    color:var(--ink);
+    font-variant-numeric:tabular-nums;
+  }
+  .protocol td.place{
+    width:52px;
+    font-family:var(--font-mono);
+    font-weight:700;
+    color:var(--accent-strong);
+  }
+  .protocol tr.ooc td{ background:var(--surface-2); }
+  .protocol tr.ooc td.place{ color:var(--flag); }
+  .protocol-caption{
+    margin:0;
+    padding:10px 12px;
+    border-top:1px solid var(--line);
+    font-size:13px;
+    line-height:1.55;
+    color:var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="intro">
+    <div class="eyebrow">Competra · гид организатора</div>
+    <h1>Участник вне конкурса</h1>
+    <p class="subtitle">Участник вне конкурса (в/к) бежит вместе со всеми, и его результат есть в протоколе. Но места он не занимает, места остальных не сдвигает и не приносит очков команде и рейтингу. В графе «Место» у него стоит «ВК».</p>
+  </header>
+
+  <div class="checklist">
+    <p class="checklist-title">Кого ставят вне конкурса</p>
+    <ul>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 11l2 2 4-4"/></svg>Спортсмена, который бежит не в своей возрастной группе</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M6 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Гостя из другого региона или клуба вне зачёта</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Участника без допуска или медицинской справки</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4"/><path d="M6 4h11l-2.5 4L17 12H6"/></svg>Организатора или судью, который бежит дистанцию</li>
+    </ul>
+  </div>
+
+  <div class="stages">
+
+    <section class="stage">
+      <div class="stage-num">01</div>
+      <div>
+        <h2>Отметьте участника</h2>
+        <p>Отметку «вне конкурса» ставит только организатор. При самостоятельной регистрации участник её не выбирает.</p>
+        <ul>
+          <li><strong>В приложении</strong>: «Управление» → карточка события → «Стартовый протокол» (в режиме регистрации на финише — «Участники»). При добавлении или редактировании участника включите переключатель <strong>«Вне конкурса»</strong> под полем «Команда». После добавления переключатель выключается, чтобы следующий участник не стал вне конкурса случайно.</li>
+          <li><strong>На сайте</strong>: «Управление» → соревнование → вкладка «Участники» → «+ Добавить» или «Изменить» → флажок <strong>«Вне конкурса»</strong>.</li>
+          <li><strong>На финише</strong> (режим «Регистрация на финише»): тот же переключатель есть в карточке «Новый участник» при считывании незнакомого чипа и в «Изменить участника».</li>
+        </ul>
+        <p>В списке участников у такого участника стоит пометка «Вне конкурса».</p>
+        <div class="tags"><span class="tag">Стартовый протокол</span><span class="tag">Участники</span><span class="tag">Вне конкурса</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="stage-num">02</div>
+      <div>
+        <h2>Как это выглядит в протоколе</h2>
+        <p>Участник вне конкурса стоит в протоколе <strong>среди остальных по своему времени</strong> (в соревнованиях по баллам — по баллам), а не в конце группы. В графе «Место» у него <strong>«ВК»</strong>, а места остальных идут подряд, как будто его нет:</p>
+        <div class="protocol">
+          <table>
+            <thead><tr><th>Место</th><th>Участник</th><th>Время</th></tr></thead>
+            <tbody>
+              <tr><td class="place">1</td><td>Иванов Иван</td><td>24:10</td></tr>
+              <tr class="ooc"><td class="place">ВК</td><td>Петров Пётр</td><td>24:52</td></tr>
+              <tr><td class="place">2</td><td>Сидоров Алексей</td><td>25:30</td></tr>
+              <tr><td class="place">2</td><td>Кузнецов Олег</td><td>25:30</td></tr>
+              <tr><td class="place">4</td><td>Смирнов Денис</td><td>27:05</td></tr>
+            </tbody>
+          </table>
+          <p class="protocol-caption">Петров бежит вне конкурса и не сдвигает места Сидорова и Кузнецова. У них одинаковое время, поэтому они делят 2-е место, а следующий участник получает 4-е.</p>
+        </div>
+        <ul>
+          <li>Если участник вне конкурса сошёл, снят или превысил контрольное время, вместо «ВК» показывается его статус, как у всех.</li>
+          <li>Отставание считается от лучшего участника в зачёте. Если участник вне конкурса пробежал быстрее победителя, в HTML-протоколе из приложения у него будет отрицательное отставание, например «−0:42».</li>
+          <li>В таблице сплитов и на графиках гонки его времена и линия видны, а вместо места написано «Вне конкурса». Мест на перегонах у него нет, и лучшим на перегоне он не становится.</li>
+          <li>«ВК» стоит и в экспорте протокола в CSV, PDF и HTML.</li>
+        </ul>
+        <div class="tags"><span class="tag">ВК</span><span class="tag">Сплиты</span><span class="tag">График гонки</span><span class="tag">CSV · PDF · HTML</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="stage-num">03</div>
+      <div>
+        <h2>Что не учитывается</h2>
+        <ul>
+          <li><strong>Командный зачёт</strong>: участник вне конкурса не идёт ни в зачёт по очкам, ни в зачёт по сумме времени и не входит в число лучших результатов команды. Его команда считается по остальным участникам.</li>
+          <li><strong>Рейтинг</strong>: результат без места очков рейтинга не приносит.</li>
+          <li><strong>Места на перегонах</strong> в сплитах считаются без него.</li>
+        </ul>
+        <p>Контрольное время к участнику вне конкурса применяется как обычно: если он его превысил, статус будет «Превышено КВ».</p>
+        <div class="tags"><span class="tag">Командный зачёт</span><span class="tag">Рейтинг</span><span class="tag">Контрольное время</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="stage-num">04</div>
+      <div>
+        <h2>Передумали — снимите отметку</h2>
+        <p>Отметку можно поставить или снять в любой момент, в том числе после финиша, например если допуск принесли уже после старта. Места в группе пересчитаются сразу. В приложении это работает и без интернета: места пересчитываются на телефоне и уходят на сервер при синхронизации.</p>
+        <div class="tags"><span class="tag">Редактирование участника</span><span class="tag">Пересчёт мест</span></div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="closing">
+    <p>Как собрать стартовый протокол и провести старт — в инструкции <a href="first-competition-guide.html">«Как провести своё первое соревнование»</a>. Соревнование без заявок, где участников вносят на финише, — в инструкции <a href="finish-registration-guide.html">«Соревнование без предварительной регистрации»</a>.</p>
+  </footer>
+
+</div>
+
+</body>
+</html>

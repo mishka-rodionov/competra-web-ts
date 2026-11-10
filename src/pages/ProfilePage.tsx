@@ -17,6 +17,8 @@ import type { OrienteeringCompetition } from '../types/competition'
 
 const ORGANIZER_GUIDE_URL = 'guides/first-competition-guide.html'
 const MAPPER_GUIDE_URL = 'guides/mapper-course-planning-guide.html'
+const FINISH_REGISTRATION_GUIDE_URL = 'guides/finish-registration-guide.html'
+const OUT_OF_COMPETITION_GUIDE_URL = 'guides/out-of-competition-guide.html'
 
 export function ProfilePage() {
   const navigate = useNavigate()
@@ -281,6 +283,22 @@ function ProfileLinks() {
         className="w-full rounded-md border border-outline px-4 py-2 text-center text-sm text-fg"
       >
         Инструкция по работе в Mapper
+      </a>
+      <a
+        href={FINISH_REGISTRATION_GUIDE_URL}
+        target="_blank"
+        rel="noreferrer"
+        className="w-full rounded-md border border-outline px-4 py-2 text-center text-sm text-fg"
+      >
+        Соревнование без предварительной регистрации
+      </a>
+      <a
+        href={OUT_OF_COMPETITION_GUIDE_URL}
+        target="_blank"
+        rel="noreferrer"
+        className="w-full rounded-md border border-outline px-4 py-2 text-center text-sm text-fg"
+      >
+        Участник вне конкурса
       </a>
       <button
         type="button"

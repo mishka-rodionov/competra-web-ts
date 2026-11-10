@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Соревнование без предварительной регистрации</title>
+<style>
+  :root{ color-scheme: light dark; }
+  html,body{ margin:0; padding:0; }
+  img{ max-width:100%; }
+
+  @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
+  :root{
+    --bg:#F6F2E8;
+    --surface:#FFFFFF;
+    --surface-2:#ECE6D4;
+    --ink:#1E2A20;
+    --ink-soft:#54604F;
+    --accent:#2E6B4E;
+    --accent-strong:#1F4D38;
+    --flag:#BE4B2A;
+    --line:#DAD2B9;
+    --font-display:'Unbounded', 'Arial Narrow', sans-serif;
+    --font-body:'Manrope', 'Segoe UI', sans-serif;
+    --font-mono:'JetBrains Mono', 'Courier New', monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14190F;
+      --surface:#1C2317;
+      --surface-2:#24301F;
+      --ink:#E9E7D8;
+      --ink-soft:#9FAC93;
+      --accent:#75C596;
+      --accent-strong:#9BDBB4;
+      --flag:#E58A63;
+      --line:#333F2B;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14190F;
+    --surface:#1C2317;
+    --surface-2:#24301F;
+    --ink:#E9E7D8;
+    --ink-soft:#9FAC93;
+    --accent:#75C596;
+    --accent-strong:#9BDBB4;
+    --flag:#E58A63;
+    --line:#333F2B;
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .page{
+    max-width:740px;
+    margin:0 auto;
+    padding:56px 24px 88px;
+  }
+
+  header.intro{
+    margin-bottom:40px;
+  }
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--flag);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:18px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:22px;
+    height:1px;
+    background:var(--flag);
+    display:inline-block;
+  }
+  h1{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:clamp(28px,5vw,40px);
+    line-height:1.14;
+    letter-spacing:-0.01em;
+    margin:0 0 18px;
+    text-wrap:balance;
+    color:var(--ink);
+  }
+  .subtitle{
+    font-size:16.5px;
+    line-height:1.65;
+    color:var(--ink-soft);
+    max-width:60ch;
+    margin:0;
+  }
+
+  .checklist{
+    margin:36px 0 8px;
+    border:1px solid var(--line);
+    background:var(--surface);
+    border-radius:14px;
+    padding:20px 22px;
+  }
+  .checklist-title{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    font-weight:700;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:0 0 14px;
+  }
+  .checklist ul{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px 20px;
+  }
+  .checklist li{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    font-size:14.5px;
+    line-height:1.45;
+    color:var(--ink);
+  }
+  .checklist svg{
+    flex:none;
+    width:18px;
+    height:18px;
+    margin-top:1px;
+    stroke:var(--accent);
+  }
+
+  .stages{
+    margin-top:52px;
+    border-top:1px solid var(--line);
+  }
+  .stage{
+    display:grid;
+    grid-template-columns:64px 1fr;
+    gap:22px;
+    padding:30px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .stage-num{
+    font-family:var(--font-mono);
+    font-weight:700;
+    font-size:26px;
+    color:var(--flag);
+    line-height:1;
+    padding-top:4px;
+    font-variant-numeric:tabular-nums;
+  }
+  .stage h2{
+    font-family:var(--font-display);
+    font-weight:500;
+    font-size:19px;
+    margin:0 0 10px;
+    color:var(--ink);
+    text-wrap:balance;
+  }
+  .stage p{
+    font-size:15px;
+    line-height:1.68;
+    color:var(--ink);
+    margin:0 0 14px;
+    max-width:62ch;
+  }
+  .stage p strong{ color:var(--accent-strong); font-weight:700; }
+  .stage > div > ul{
+    font-size:15px;
+    line-height:1.68;
+    color:var(--ink);
+    margin:-6px 0 14px;
+    padding-left:20px;
+    max-width:62ch;
+  }
+  .stage > div > ul strong{ color:var(--accent-strong); font-weight:700; }
+
+  .tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .tag{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    font-weight:500;
+    letter-spacing:.02em;
+    color:var(--ink-soft);
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:5px 9px;
+    white-space:nowrap;
+  }
+
+  .wizard{
+    margin:18px 0 4px;
+    border:1px solid var(--line);
+    background:var(--surface-2);
+    border-radius:12px;
+    padding:18px 20px 20px;
+  }
+  .wizard-title{
+    font-family:var(--font-mono);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:0 0 14px;
+  }
+  .wizard-steps{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+  }
+  .wizard-steps li{
+    padding:14px 0 0;
+    margin-top:14px;
+    border-top:1px solid var(--line);
+  }
+  .wizard-steps li:first-child{
+    padding-top:0;
+    margin-top:0;
+    border-top:none;
+  }
+  .wizard-step-title{
+    display:block;
+    font-family:var(--font-display);
+    font-weight:500;
+    font-size:14.5px;
+    color:var(--ink);
+    margin-bottom:6px;
+  }
+  .wizard-steps p{
+    font-size:13.5px;
+    line-height:1.62;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+    max-width:60ch;
+  }
+  .required{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:7px;
+  }
+  .req-label{
+    font-family:var(--font-mono);
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--flag);
+  }
+  .req-tag{
+    font-family:var(--font-mono);
+    font-size:11px;
+    font-weight:700;
+    color:var(--flag);
+    background:transparent;
+    border:1px solid var(--flag);
+    border-radius:6px;
+    padding:3px 8px;
+  }
+
+  .callout{
+    margin:26px 0 0;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-left:3px solid var(--accent);
+    border-radius:0 10px 10px 0;
+    padding:16px 18px;
+  }
+  .callout-label{
+    font-family:var(--font-mono);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 6px;
+  }
+  .callout p{
+    margin:0;
+    font-size:14px;
+    line-height:1.6;
+    color:var(--ink-soft);
+  }
+
+  footer.closing{
+    margin-top:48px;
+    padding-top:8px;
+  }
+  footer.closing p{
+    font-size:15px;
+    line-height:1.68;
+    color:var(--ink-soft);
+    max-width:62ch;
+    margin:0 0 14px;
+  }
+  footer.closing p:last-child{ margin-bottom:0; }
+  footer.closing strong{ color:var(--ink); font-weight:700; }
+
+  @media (max-width:520px){
+    .stage{ grid-template-columns:1fr; gap:8px; }
+    .stage-num{ font-size:20px; }
+    .checklist ul{ grid-template-columns:1fr; }
+  }
+
+  a{ color:var(--accent-strong); text-underline-offset:2px; }
+  .stage > div > ol{
+    font-size:15px;
+    line-height:1.68;
+    color:var(--ink);
+    margin:-6px 0 14px;
+    padding-left:22px;
+    max-width:62ch;
+  }
+  .stage > div > ol strong{ color:var(--accent-strong); font-weight:700; }
+  .stage .callout{ margin:4px 0 16px; }
+
+  .protocol{
+    margin:4px 0 16px;
+    border:1px solid var(--line);
+    background:var(--surface);
+    border-radius:12px;
+    overflow:hidden;
+  }
+  .protocol table{ width:100%; border-collapse:collapse; font-size:14px; }
+  .protocol th{
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    text-align:left;
+    padding:10px 12px;
+    background:var(--surface-2);
+  }
+  .protocol td{
+    padding:9px 12px;
+    border-top:1px solid var(--line);
+    color:var(--ink);
+    font-variant-numeric:tabular-nums;
+  }
+  .protocol td.place{
+    width:52px;
+    font-family:var(--font-mono);
+    font-weight:700;
+    color:var(--accent-strong);
+  }
+  .protocol tr.ooc td{ background:var(--surface-2); }
+  .protocol tr.ooc td.place{ color:var(--flag); }
+  .protocol-caption{
+    margin:0;
+    padding:10px 12px;
+    border-top:1px solid var(--line);
+    font-size:13px;
+    line-height:1.55;
+    color:var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="intro">
+    <div class="eyebrow">Competra · гид организатора</div>
+    <h1>Соревнование без предварительной регистрации</h1>
+    <p class="subtitle">Режим «Регистрация на финише» — для технического старта, тренировки или небольшого старта, где люди приходят без заявки. Участники берут чипы, стартуют отметкой на стартовой станции и бегут, а вы вносите человека и его группу в приложении, когда считываете его чип на финише. Места по группам считаются сами.</p>
+  </header>
+
+  <div class="checklist">
+    <p class="checklist-title">Что понадобится</p>
+    <ul>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/></svg>Android-телефон с NFC и приложением Competra — на финише</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>Очищенные чипы Sportiduino — по одному на участника</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4"/><path d="M6 4h11l-2.5 4L17 12H6"/></svg>Стартовая (240) и финишная (245) станции с выставленным временем</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="9" r="2.4"/><path d="M15 20c.3-2.6 2-4.6 4-5"/></svg>Список групп — например, М21, Ж21, Open</li>
+    </ul>
+  </div>
+
+  <div class="stages">
+
+    <section class="stage">
+      <div class="stage-num">01</div>
+      <div>
+        <h2>Создайте соревнование в режиме «Регистрация на финише»</h2>
+        <p>В приложении: <strong>«Управление»</strong> → «Создать новое событие» → «Спортивное ориентирование». На первом шаге мастера включите переключатель <strong>«Регистрация на финише»</strong>. На сайте: «Управление» → «Создать», на шаге «Основное» поставьте галочку <strong>«Регистрация на финише»</strong>. Режим выбирается только при создании соревнования.</p>
+        <p>В этом режиме старт всегда <strong>по стартовой станции</strong>: время старта каждого участника — его отметка на ней, общего старта нет. Система отметки — Sportiduino.</p>
+        <p>Нужна хотя бы одна <strong>группа</strong>. Дистанции необязательны:</p>
+        <ul>
+          <li><strong>Группа с дистанцией</strong> проверяется как обычно: пропущенные и лишние КП, порядок, контрольное время.</li>
+          <li><strong>Группа без дистанции</strong> считается только по времени: от отметки на стартовой станции до первой отметки на финишной. КП не проверяются, правильность прохождения вы оцениваете сами.</li>
+        </ul>
+        <p>В форме дистанции стартовый и финишный КП сами заполнятся кодами <strong>240</strong> и <strong>245</strong> — это стандартные коды станций Sportiduino. Если у вас станции с другими номерами, поменяйте коды.</p>
+        <div class="tags"><span class="tag">Управление</span><span class="tag">Регистрация на финише</span><span class="tag">По стартовой станции</span><span class="tag">240 / 245</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="stage-num">02</div>
+      <div>
+        <h2>Подготовьте чипы и станции</h2>
+        <p>Перед стартом все чипы должны быть <strong>чистыми</strong>: старые отметки попадут в результат. Откройте «Центр» → <strong>«Станции и чипы»</strong> → вкладка «Очистить». Включите «Очищать подряд», нажмите «Начать очистку» и прикладывайте чипы по одному. Проверить чип можно на вкладке «Считать» — там должно быть «Чип чистый — Готов к старту».</p>
+        <p>Проверьте, что <strong>время на станциях выставлено</strong>. Если часы станции сбиты, на экране считывания появится предупреждение «Время станции не синхронизировано», и результат по такой станции будет неверным.</p>
+        <p>Регистрироваться заранее никому не нужно, но если кто-то записался на сайте или вы внесли людей сами, их чипы можно записать в разделе <strong>«Выдача чипов»</strong>. Это необязательно: чип, не записанный на старте, вы привяжете к заявленному участнику на финише. Список участников в этом режиме называется <strong>«Участники»</strong> (обычно — «Стартовый протокол»).</p>
+        <div class="tags"><span class="tag">Станции и чипы</span><span class="tag">Очистить</span><span class="tag">Очищать подряд</span><span class="tag">Выдача чипов</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="stage-num">03</div>
+      <div>
+        <h2>Откройте старт</h2>
+        <p>На экране управления соревнованием нажмите <strong>«ОТКРЫТЬ СТАРТ»</strong> и подтвердите. Участники уходят на дистанцию, отметившись на стартовой станции, когда готовы, — время старта у каждого своё. Участники без чипов в «Выдаче чипов» открыть старт не мешают.</p>
+        <p>Если пришёл человек из группы, которой нет, её можно добавить и после старта: при редактировании соревнования на шаге «Группы» или прямо на финише кнопкой «+ новая группа». Секундомер и статус соревнования при этом не сбрасываются.</p>
+        <div class="tags"><span class="tag">Открыть старт</span><span class="tag">+ новая группа</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="stage-num">04</div>
+      <div>
+        <h2>Считайте чип и внесите участника</h2>
+        <p>Когда участник финишировал, нажмите <strong>«Сканировать»</strong> и приложите его чип к телефону.</p>
+        <ul>
+          <li><strong>Чип уже привязан к участнику</strong> — результат считается как в обычном соревновании.</li>
+          <li><strong>Чип незнакомый</strong> — это обычная ситуация для этого режима, ошибкой она не считается. Приложение сохранит считывание и сразу откроет карточку участника.</li>
+        </ul>
+        <p>Вверху карточки — <strong>«Отметки на чипе»</strong>: цепочка КП по времени, например «240 (старт) → 46 → 47 → 245 (финиш)», время старта и время на дистанции. Если чип пустой, появится предупреждение «На чипе нет отметок»: скорее всего, чип не очистили или участник не стартовал.</p>
+        <p>На вкладке <strong>«Новый участник»</strong> заполните поля:</p>
+        <ul>
+          <li><strong>Фамилия</strong> и <strong>Имя</strong>. Появятся подсказки из ваших прошлых соревнований.</li>
+          <li><strong>Группа</strong>. Приложение подскажет её по отметкам: группа, на дистанции которой взяты все КП, помечена «· по отметкам», под списком — «По отметкам подходит: …». Если подходит одна группа, она выбирается сразу. Порядок КП при подсказке не учитывается, а группы без дистанции не подсказываются.</li>
+          <li><strong>Команда</strong>. Необязательное поле.</li>
+          <li>Переключатель <strong>«Вне конкурса»</strong>, если человек бежит вне зачёта. Об этом — в <a href="out-of-competition-guide.html">отдельной инструкции</a>.</li>
+        </ul>
+        <p>Нажмите <strong>«Сохранить и посчитать результат»</strong>: участник появится в списке, его результат и места в группе посчитаются.</p>
+        <p>Если человек уже заявлен (записался на сайте или вы внесли его заранее), откройте вкладку <strong>«Уже заявлен»</strong>, найдите его поиском по ФИО или номеру и коснитесь строки — чип привяжется к нему.</p>
+        <div class="tags"><span class="tag">Сканировать</span><span class="tag">Отметки на чипе</span><span class="tag">Новый участник</span><span class="tag">Уже заявлен</span><span class="tag">Сохранить и посчитать результат</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="stage-num">05</div>
+      <div>
+        <h2>Разберите отложенные считывания</h2>
+        <p>Если на финише очередь, вносить каждого сразу не обязательно. Закройте карточку — считывание никуда не пропадёт, а на экране появится плашка <strong>«Неразобранные считывания: N»</strong>. Та же строка видна на экране управления соревнованием.</p>
+        <p>Нажмите <strong>«Разобрать»</strong>: в списке для каждого чипа видны номер, время считывания, число отметок, время на дистанции, цепочка КП и подходящие по отметкам группы. Коснитесь строки — откроется та же карточка участника. Ошибочное считывание (например, кто-то приложил чужой чип) удалите кнопкой «Удалить».</p>
+        <div class="callout">
+          <p class="callout-label">Важно</p>
+          <p>Неразобранные считывания хранятся только на том телефоне, на котором чип считали: на сервер они не уходят. Считывайте и разбирайте чипы на одном телефоне и разберите все до завершения соревнования. Внесённые участники и их результаты синхронизируются как обычно.</p>
+        </div>
+        <div class="tags"><span class="tag">Неразобранные считывания</span><span class="tag">Разобрать</span><span class="tag">Удалить</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="stage-num">06</div>
+      <div>
+        <h2>Исправьте ошибки</h2>
+        <p>На экране считывания под карточкой участника есть две кнопки. Они видны сразу после внесения и когда вы снова прикладываете чип этого участника:</p>
+        <ul>
+          <li><strong>«Изменить участника»</strong> — поменять ФИО, команду или группу. При смене группы результат пересчитается по дистанции новой группы из отметок чипа, места пересчитаются в обеих группах.</li>
+          <li><strong>«Отвязать чип»</strong> — если чип привязали не тому. Считывание вернётся в неразобранные, и сразу откроется его карточка. В подтверждении выберите <strong>«Удалить участника»</strong>, если человека внесли по ошибке, или <strong>«Оставить участника»</strong>, если он заявлен, но чип считан не его: он останется без чипа и без результата и снова появится на вкладке «Уже заявлен».</li>
+        </ul>
+        <p>ФИО и команду можно поправить и в разделе «Участники». Группу там можно сменить, только пока у участника нет результата. Если результат уже есть, меняйте группу на экране считывания: там есть отметки чипа для пересчёта.</p>
+        <div class="tags"><span class="tag">Изменить участника</span><span class="tag">Отвязать чип</span><span class="tag">Удалить участника</span><span class="tag">Оставить участника</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="stage-num">07</div>
+      <div>
+        <h2>Поправьте статус вручную</h2>
+        <p>В этом режиме правильность прохождения решаете вы. Под результатом на экране считывания есть кнопки:</p>
+        <ul>
+          <li><strong>«Снять результат»</strong> — снять засчитанный результат (DSQ), например если участник срезал.</li>
+          <li><strong>«Засчитать результат»</strong> — засчитать снятый, если на чипе есть отметки старта и финиша: время считается от старта до финиша.</li>
+          <li><strong>«Засчитать финиш по времени считывания»</strong> — если участник забыл отметиться на финише. Время финиша возьмётся из момента считывания чипа. Затем нажмите «Сохранить результат».</li>
+        </ul>
+        <p>Такой результат помечается подписью «Статус выставлен организатором вручную», и пересчёт контрольного времени его не меняет. Если считать чип ещё раз и применить новый результат, статус снова будет считаться автоматически.</p>
+        <p>Без отметки на стартовой станции результат снимается с пометкой «Нет отметки на стартовой станции», в группе без дистанции без отметки финиша — «Нет отметки финиша».</p>
+        <div class="tags"><span class="tag">Снять результат</span><span class="tag">Засчитать результат</span><span class="tag">Засчитать финиш по времени считывания</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="stage-num">08</div>
+      <div>
+        <h2>Завершите соревнование</h2>
+        <p>Когда все финишировали, нажмите <strong>«ЗАВЕРШИТЬ СОРЕВНОВАНИЕ»</strong>. Если остались неразобранные считывания, приложение предупредит: «Осталось неразобранных считываний: N — они не попадут в результаты». Нажмите «Разобрать», чтобы вернуться к ним, или «Всё равно завершить». После завершения незнакомые чипы уже не сохраняются.</p>
+        <p>Дальше всё как в обычном соревновании: проверьте и утвердите результаты в разделе «Результаты» — см. этап 07 инструкции <a href="first-competition-guide.html">«Как провести своё первое соревнование»</a>.</p>
+        <div class="tags"><span class="tag">Завершить соревнование</span><span class="tag">Всё равно завершить</span><span class="tag">Результаты</span></div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="closing">
+    <p>Создать соревнование можно и в приложении, и на сайте, а считывать и разбирать чипы — только в приложении на Android: для этого нужен телефон с NFC.</p>
+    <p><strong>Участники увидят результаты</strong>, сплиты и графики на странице соревнования, как только вы внесёте их на финише.</p>
+  </footer>
+
+</div>
+
+</body>
+</html>
