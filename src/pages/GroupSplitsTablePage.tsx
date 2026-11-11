@@ -54,9 +54,10 @@ export function GroupSplitsTablePage() {
     if (!participants || !results || !detail) return null
     const groupParticipants = participants.filter((p) => p.groupId === numericGroupId)
     const distance = distances?.find((d) => d.id === group?.distanceId)
-    const sorted = sortedForResults(groupParticipants, results, format.direction)
+    // Сортировка по баллам — только в score-О; «по выбору» с минимумом КП — по времени, как и места.
+    const sorted = sortedForResults(groupParticipants, results, showsScore ? 'BY_CHOICE' : 'FORWARD')
     return buildSplitsTable(sorted, results, distance, format.direction)
-  }, [participants, results, detail, distances, group, numericGroupId, format.direction])
+  }, [participants, results, detail, distances, group, numericGroupId, format.direction, showsScore])
 
   if (isLoading) return <Loading />
   if (isError) return <ErrorMessage message={(error as Error).message} />

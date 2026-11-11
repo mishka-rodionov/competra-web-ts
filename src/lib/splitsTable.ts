@@ -124,7 +124,9 @@ export function sortedForResults(
       if (statusDiff !== 0) return statusDiff
       const scoreDiff = (rb?.totalScore ?? 0) - (ra?.totalScore ?? 0)
       if (scoreDiff !== 0) return scoreDiff
-      return (ra?.finishTime ?? Number.MAX_SAFE_INTEGER) - (rb?.finishTime ?? Number.MAX_SAFE_INTEGER)
+      // Тай-брейк — время прохождения, а не абсолютное время финиша (при интервальном старте
+      // более ранний финиш не значит более быстрый забег), как у мест.
+      return (ra?.totalTime ?? Number.MAX_SAFE_INTEGER) - (rb?.totalTime ?? Number.MAX_SAFE_INTEGER)
     })
   } else {
     sorted.sort((a, b) => {
@@ -132,7 +134,10 @@ export function sortedForResults(
       const rb = resultByParticipantId.get(b.id)
       const statusDiff = statusSortOrder(ra?.status) - statusSortOrder(rb?.status)
       if (statusDiff !== 0) return statusDiff
-      return (ra?.totalTime ?? Number.MAX_SAFE_INTEGER) - (rb?.totalTime ?? Number.MAX_SAFE_INTEGER)
+      // Время со штрафным — как у мест.
+      const ta = ra?.totalTime != null ? ra.totalTime + ra.penaltyTime : Number.MAX_SAFE_INTEGER
+      const tb = rb?.totalTime != null ? rb.totalTime + rb.penaltyTime : Number.MAX_SAFE_INTEGER
+      return ta - tb
     })
   }
   return sorted
