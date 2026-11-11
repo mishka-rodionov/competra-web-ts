@@ -10,10 +10,16 @@ import { LinkRequestsTab } from '../features/management/LinkRequestsTab'
 import { useGroups, useManagedCompetition } from '../features/management/hooks'
 import { ManageGroupsTab } from '../features/management/ManageGroupsTab'
 import { ManageResultsTab } from '../features/management/ManageResultsTab'
-import { GroupsWithoutDistanceBanner } from '../features/management/NoDistanceNotice'
+import { GroupsWithoutControlTimeBanner, GroupsWithoutDistanceBanner } from '../features/management/NoDistanceNotice'
 import { ParticipantsManageTab } from '../features/management/ParticipantsManageTab'
 import { usePendingLinkCounts } from '../features/participant-links/hooks'
-import { competitionCourseFormat } from '../lib/courseFormat'
+import {
+  competitionCourseFormat,
+  effectiveFormat,
+  formatRanksByScore,
+  groupsWithoutRequiredControlTime,
+  overtimePoliciesRequest,
+} from '../lib/courseFormat'
 import { groupsWithoutDistance } from '../lib/groupDistance'
 
 const TABS = [
@@ -40,6 +46,17 @@ export function ManageCompetitionPage() {
   const isFinished = competition?.competition.status === 'FINISHED' || competition?.competition.status === 'ARCHIVED'
   const noDistanceTitles =
     groups && distances && !isFinished ? groupsWithoutDistance(groups, distances).map((g) => g.title) : []
+  // Группы на дистанции с баллами со штрафом без КВ (своего и соревнования) — штраф не начислится.
+  const competitionFormat = competitionCourseFormat(competition?.direction, competition?.byChoiceMode)
+  const noControlTimeTitles =
+    competition && groups && distances && !isFinished
+      ? groupsWithoutRequiredControlTime(
+          groups,
+          (g) => formatRanksByScore(effectiveFormat(distances.find((d) => d.id === g.distanceId), competitionFormat)),
+          overtimePoliciesRequest(competition).scoreOvertimePolicy,
+          competition.controlTimeMinutes,
+        ).map((g) => g.title)
+      : []
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col bg-bg text-fg">
@@ -57,6 +74,15 @@ export function ManageCompetitionPage() {
       ) : (
         <>
           <TabBar tabs={tabs} active={tab} onChange={setTab} />
+          {noControlTimeTitles.length > 0 && (
+            <div className="px-4 pt-4">
+              <GroupsWithoutControlTimeBanner
+                titles={noControlTimeTitles}
+                hint="Задайте КВ у групп или на вкладке «Общее» у соревнования."
+                onOpenGroups={tab === 'groups' ? undefined : () => setTab('groups')}
+              />
+            </div>
+          )}
           {noDistanceTitles.length > 0 && (
             <div className="px-4 pt-4">
               <GroupsWithoutDistanceBanner titles={noDistanceTitles} onOpenGroups={tab === 'groups' ? undefined : () => setTab('groups')} />
@@ -68,6 +94,7 @@ export function ManageCompetitionPage() {
               <ManageGroupsTab
                 competitionId={competition.competitionId}
                 competitionFormat={competitionCourseFormat(competition.direction, competition.byChoiceMode)}
+                scoreOvertimePolicy={overtimePoliciesRequest(competition).scoreOvertimePolicy}
                 competitionControlTimeMinutes={competition.controlTimeMinutes}
                 competitionTeamCounted={competition.teamScoring?.groupCountedResults ?? null}
               />

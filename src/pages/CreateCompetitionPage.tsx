@@ -28,6 +28,7 @@ import {
   competitionCourseFormat,
   effectiveFormat,
   formatRanksByScore,
+  groupsWithoutRequiredControlTime,
   INHERIT_FORMAT,
   isMixedFormat,
 } from '../lib/courseFormat'
@@ -191,6 +192,14 @@ export function CreateCompetitionPage() {
   const distancesWithoutStartCp =
     form.startTimeMode === 'BY_START_STATION' ? distances.filter((d) => d.startControlPoint == null) : []
 
+  // Группы без нужного КВ: на дистанции с баллами со штрафом без КВ штраф не начислится.
+  const groupsWithoutControlTime = groupsWithoutRequiredControlTime(
+    groups,
+    (g) => isScoreOForDistance(g.distanceKey),
+    form.scoreOvertimePolicy,
+    form.controlTimeMinutes ? parseInt(form.controlTimeMinutes, 10) : null,
+  )
+
   const nextEnabled =
     step === 0
       ? form.title.trim() !== '' && form.startDateStr !== '' && form.zoneId !== '' && (form.address.trim() !== '' || isPastEvent)
@@ -200,7 +209,7 @@ export function CreateCompetitionPage() {
           ? isOrganizerStepValid(form) || isPastEvent
           : step === 3
             ? distancesWithoutStartCp.length === 0
-            : groups.length > 0 || isPastEvent
+            : (groups.length > 0 || isPastEvent) && groupsWithoutControlTime.length === 0
 
   async function handlePickXml(file: File) {
     const content = await file.text()
@@ -493,6 +502,7 @@ export function CreateCompetitionPage() {
             {step === 4 && (
               <GroupsStep
                 groups={groups}
+                groupsWithoutControlTime={groupsWithoutControlTime}
                 distanceOptions={distanceOptions}
                 isPastEvent={isPastEvent}
                 onAdd={() => setGroupDialog({ index: null })}
@@ -547,6 +557,7 @@ export function CreateCompetitionPage() {
         <GroupDialog
           distanceOptions={distanceOptions}
           isScoreOForDistance={isScoreOForDistance}
+          scoreOvertimePolicy={form.scoreOvertimePolicy}
           competitionControlTimeMinutes={form.controlTimeMinutes ? parseInt(form.controlTimeMinutes, 10) : null}
           competitionTeamCounted={form.teamScoring?.groupCountedResults ?? null}
           initial={editedGroup}

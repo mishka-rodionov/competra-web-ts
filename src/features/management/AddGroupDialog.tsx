@@ -3,7 +3,13 @@ import { groupRepository } from '../../api/groupRepository'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { LabeledSelect } from '../../components/LabeledSelect'
 import { hasAssignedDistance } from '../../lib/groupDistance'
-import { effectiveFormat, formatRanksByScore, type CourseFormat } from '../../lib/courseFormat'
+import {
+  effectiveFormat,
+  formatRanksByScore,
+  GROUP_CONTROL_TIME_REQUIRED_HINT,
+  isGroupControlTimeRequired,
+  type CourseFormat,
+} from '../../lib/courseFormat'
 import type { ParticipantGroupDetail } from '../../types/competition'
 import type { Distance } from '../../types/distance'
 import { GENDER_OPTIONS } from './dictionaries'
@@ -13,6 +19,8 @@ interface AddGroupDialogProps {
   distances: Distance[]
   /** Формат соревнования по умолчанию: формат группы — у её дистанции, без дистанции — этот. */
   competitionFormat: CourseFormat
+  /** Политика КВ для дистанций с баллами — при штрафе очками группе без КВ соревнования нужно своё КВ. */
+  scoreOvertimePolicy: string
   /** КВ соревнования — подсказка о том, что унаследует группа с пустым полем. */
   competitionControlTimeMinutes: number | null
   /** N командного зачёта соревнования; null — зачёт не включён, поле группы скрыто. */
@@ -38,6 +46,7 @@ export function AddGroupDialog({
   competitionId,
   distances,
   competitionFormat,
+  scoreOvertimePolicy,
   competitionControlTimeMinutes,
   competitionTeamCounted = null,
   editingGroup = null,
@@ -56,6 +65,9 @@ export function AddGroupDialog({
   // Штраф очками за опоздание — только на дистанциях с баллами; формат — у выбранной дистанции.
   const isScoreO = formatRanksByScore(effectiveFormat(distances.find((d) => d.id === distanceId), competitionFormat))
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(numberText(editingGroup?.timeLimitMinutes))
+  // Своё КВ группы обязательно на дистанции с баллами со штрафом, если у соревнования КВ нет.
+  const isControlTimeRequired = isGroupControlTimeRequired(isScoreO, scoreOvertimePolicy, competitionControlTimeMinutes)
+  const [showControlTimeError, setShowControlTimeError] = useState(false)
   const [scorePenaltyPerMinute, setScorePenaltyPerMinute] = useState(
     editingGroup ? numberText(editingGroup.scorePenaltyPerMinute) : '1',
   )
@@ -67,6 +79,10 @@ export function AddGroupDialog({
   async function handleSave() {
     if (!title.trim()) {
       setError('Укажите название')
+      return
+    }
+    if (isControlTimeRequired && !(parseInt(timeLimitMinutes, 10) > 0)) {
+      setShowControlTimeError(true)
       return
     }
     setSaving(true)
@@ -134,15 +150,20 @@ export function AddGroupDialog({
         <label className="flex flex-col gap-1">
           <input
             value={timeLimitMinutes}
-            onChange={(e) => setTimeLimitMinutes(e.target.value.replace(/\D/g, ''))}
-            placeholder="Контрольное время, мин"
+            onChange={(e) => {
+              setTimeLimitMinutes(e.target.value.replace(/\D/g, ''))
+              setShowControlTimeError(false)
+            }}
+            placeholder={isControlTimeRequired ? 'Контрольное время, мин *' : 'Контрольное время, мин'}
             inputMode="numeric"
-            className="rounded-md border border-outline bg-bg px-3 py-2 text-fg"
+            className={`rounded-md border bg-bg px-3 py-2 text-fg ${showControlTimeError && isControlTimeRequired ? 'border-error' : 'border-outline'}`}
           />
-          <span className="text-xs text-on-surface-variant">
+          <span className={`text-xs ${showControlTimeError && isControlTimeRequired ? 'text-error' : 'text-on-surface-variant'}`}>
             {competitionControlTimeMinutes != null
               ? `Пусто — как у соревнования: ${competitionControlTimeMinutes} мин`
-              : 'Пусто — без КВ для этой группы'}
+              : isControlTimeRequired
+                ? GROUP_CONTROL_TIME_REQUIRED_HINT
+                : 'Пусто — без КВ для этой группы'}
           </span>
         </label>
         {competitionTeamCounted != null && (

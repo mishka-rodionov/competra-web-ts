@@ -20,7 +20,8 @@ interface ControlTimeFieldsProps {
  *
  * КВ здесь — умолчание для всех групп; группа может задать своё (см. GroupDialog/AddGroupDialog).
  * Политика своя у дистанций по времени и с баллами: селектор каждого вида показывается, только
- * если такие дистанции есть, и только когда КВ задано — без КВ выбирать нечего.
+ * если такие дистанции есть. Для дистанций по времени — когда КВ соревнования задано; для дистанций
+ * с баллами — всегда: там КВ часто задают только у групп, а политика (штраф очками) нужна и им.
  */
 export function ControlTimeFields({
   controlTimeMinutes,
@@ -57,8 +58,13 @@ export function ControlTimeFields({
           <span className="text-xs text-on-surface-variant">{overtimePolicyHint(timeOvertimePolicy)}</span>
         </label>
       )}
-      {controlTimeMinutes !== '' && hasScoreCourses && (
+      {hasScoreCourses && (
         <label className="flex flex-col gap-1">
+          {controlTimeMinutes === '' && (
+            <span className="text-xs text-on-surface-variant">
+              Применяется к КВ групп. Со штрафом очками КВ нужно задать каждой группе на дистанции с баллами
+            </span>
+          )}
           <LabeledSelect
             label={showsBoth ? 'При превышении КВ — дистанции с баллами' : 'При превышении КВ'}
             value={scoreOvertimePolicy}

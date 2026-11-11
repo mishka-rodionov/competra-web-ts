@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { LabeledSelect } from '../../components/LabeledSelect'
 import { parseGroupTitle, type GroupTitleInfo } from '../../lib/standardGroups'
+import { GROUP_CONTROL_TIME_REQUIRED_HINT, isGroupControlTimeRequired } from '../../lib/courseFormat'
 import { GENDER_OPTIONS } from './dictionaries'
 import { NO_DISTANCE_KEY, type PendingGroup } from './types'
 
@@ -10,6 +11,8 @@ interface GroupDialogProps {
   distanceOptions: [string, string][]
   /** Места на дистанции [distanceKey] — по баллам (score-О): тогда у группы есть штраф очками за опоздание. */
   isScoreOForDistance: (distanceKey: string) => boolean
+  /** Политика КВ для дистанций с баллами — при штрафе очками группе без КВ соревнования нужно своё КВ. */
+  scoreOvertimePolicy: string
   /** КВ соревнования — подсказка о том, что унаследует группа с пустым полем. */
   competitionControlTimeMinutes: number | null
   /** N командного зачёта соревнования; null — зачёт не включён, поле группы скрыто. */
@@ -27,6 +30,7 @@ function numStr(value: number | null | undefined): string {
 export function GroupDialog({
   distanceOptions,
   isScoreOForDistance,
+  scoreOvertimePolicy,
   competitionControlTimeMinutes,
   competitionTeamCounted = null,
   initial,
@@ -42,6 +46,9 @@ export function GroupDialog({
   // Формат — у выбранной дистанции группы.
   const isScoreO = isScoreOForDistance(distanceKey)
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(numStr(initial?.timeLimitMinutes))
+  // Своё КВ группы обязательно на дистанции с баллами со штрафом, если у соревнования КВ нет.
+  const isControlTimeRequired = isGroupControlTimeRequired(isScoreO, scoreOvertimePolicy, competitionControlTimeMinutes)
+  const [showControlTimeError, setShowControlTimeError] = useState(false)
   const [scorePenaltyPerMinute, setScorePenaltyPerMinute] = useState(initial ? numStr(initial.scorePenaltyPerMinute) : '1')
   const [maxLatenessMinutes, setMaxLatenessMinutes] = useState(initial ? numStr(initial.maxLatenessMinutes) : '30')
   const [teamCountedResults, setTeamCountedResults] = useState(numStr(initial?.teamCountedResults))
@@ -62,6 +69,10 @@ export function GroupDialog({
   function handleSave() {
     if (!title.trim()) {
       setError('Укажите название')
+      return
+    }
+    if (isControlTimeRequired && !(parseInt(timeLimitMinutes, 10) > 0)) {
+      setShowControlTimeError(true)
       return
     }
     onSave({
@@ -115,15 +126,20 @@ export function GroupDialog({
         <label className="flex flex-col gap-1">
           <input
             value={timeLimitMinutes}
-            onChange={(e) => setTimeLimitMinutes(e.target.value.replace(/\D/g, ''))}
-            placeholder="Контрольное время, мин"
+            onChange={(e) => {
+              setTimeLimitMinutes(e.target.value.replace(/\D/g, ''))
+              setShowControlTimeError(false)
+            }}
+            placeholder={isControlTimeRequired ? 'Контрольное время, мин *' : 'Контрольное время, мин'}
             inputMode="numeric"
-            className="rounded-md border border-outline bg-bg px-3 py-2 text-fg"
+            className={`rounded-md border bg-bg px-3 py-2 text-fg ${showControlTimeError && isControlTimeRequired ? 'border-error' : 'border-outline'}`}
           />
-          <span className="text-xs text-on-surface-variant">
+          <span className={`text-xs ${showControlTimeError && isControlTimeRequired ? 'text-error' : 'text-on-surface-variant'}`}>
             {competitionControlTimeMinutes != null
               ? `Пусто — как у соревнования: ${competitionControlTimeMinutes} мин`
-              : 'Пусто — без КВ для этой группы'}
+              : isControlTimeRequired
+                ? GROUP_CONTROL_TIME_REQUIRED_HINT
+                : 'Пусто — без КВ для этой группы'}
           </span>
         </label>
         {competitionTeamCounted != null && (

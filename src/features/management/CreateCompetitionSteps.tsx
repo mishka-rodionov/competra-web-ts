@@ -23,7 +23,7 @@ import { DistanceDetailsDialog } from './DistanceDetailsDialog'
 import { competitionStartMillis, isRegistrationStartAfterCompetition } from './createCompetitionValidation'
 import { ControlTimeFields } from './ControlTimeFields'
 import { LimitAndFeeFields } from './LimitAndFeeFields'
-import { GroupsWithoutDistanceBanner, NoDistanceBadge } from './NoDistanceNotice'
+import { GroupsWithoutControlTimeBanner, GroupsWithoutDistanceBanner, NoControlTimeBadge, NoDistanceBadge } from './NoDistanceNotice'
 import { TeamScoringFields } from './TeamScoringFields'
 import type { CreateCompetitionFormState, PendingDistance, PendingGroup, XmlCoursePreview } from './types'
 
@@ -388,6 +388,8 @@ export function DistancesStep({
 
 interface GroupsStepProps {
   groups: PendingGroup[]
+  /** Группы без нужного КВ (дистанция с баллами со штрафом, у соревнования КВ нет) — с ними мастер не завершить. */
+  groupsWithoutControlTime: PendingGroup[]
   distanceOptions: [string, string][]
   isPastEvent: boolean
   onAdd: () => void
@@ -396,7 +398,16 @@ interface GroupsStepProps {
   onRemove: (index: number) => void
 }
 
-export function GroupsStep({ groups, distanceOptions, isPastEvent, onAdd, onAddStandard, onEdit, onRemove }: GroupsStepProps) {
+export function GroupsStep({
+  groups,
+  groupsWithoutControlTime,
+  distanceOptions,
+  isPastEvent,
+  onAdd,
+  onAddStandard,
+  onEdit,
+  onRemove,
+}: GroupsStepProps) {
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-base font-medium text-fg">Группы участников</h2>
@@ -431,6 +442,7 @@ export function GroupsStep({ groups, distanceOptions, isPastEvent, onAdd, onAddS
                   {distName != null && `Дистанция: ${distName}`}
                 </span>
                 {distName == null && !isPastEvent && <NoDistanceBadge />}
+                {groupsWithoutControlTime.includes(g) && <NoControlTimeBadge />}
               </div>
               <div className="flex shrink-0 gap-3">
                 <button type="button" onClick={() => onEdit(index)} className="text-sm text-primary">
@@ -444,6 +456,10 @@ export function GroupsStep({ groups, distanceOptions, isPastEvent, onAdd, onAddS
           )
         })
       )}
+      <GroupsWithoutControlTimeBanner
+        titles={groupsWithoutControlTime.map((g) => g.title)}
+        hint="Нажмите «Изменить» у группы и задайте КВ или задайте КВ соревнования на первом шаге — без этого мастер не завершить."
+      />
       {!isPastEvent && (
         <GroupsWithoutDistanceBanner
           titles={groups.filter((g) => !distanceOptions.some(([key]) => key === g.distanceKey)).map((g) => g.title)}

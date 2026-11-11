@@ -167,3 +167,36 @@ export function groupDetailFormat(
 ): CourseFormat {
   return group?.direction ? { direction: group.direction, byChoiceMode: group.byChoiceMode || 'SCORE' } : competition
 }
+
+/**
+ * Обязательно ли своё КВ группы: на дистанции с баллами со штрафом очками штраф считается от КВ, и
+ * если у соревнования КВ нет, без КВ группы он не начислится. Так же в Android (ParticipantGroupCreator).
+ */
+export function isGroupControlTimeRequired(
+  isScoreO: boolean,
+  scoreOvertimePolicy: string,
+  competitionControlTimeMinutes: number | null,
+): boolean {
+  return isScoreO && scoreOvertimePolicy === 'SCORE_PENALTY' && competitionControlTimeMinutes == null
+}
+
+/** Подсказка/ошибка под обязательным КВ группы. */
+export const GROUP_CONTROL_TIME_REQUIRED_HINT = 'Обязательно: на дистанции «по выбору» по баллам штраф начисляется после КВ'
+
+/**
+ * Группы, которым нужно своё КВ, а оно не задано (см. isGroupControlTimeRequired): например,
+ * добавленные «Стандартными группами» или созданные до смены формата дистанции на «по выбору».
+ * [isScoreOGroup] — места в группе по баллам (по формату её дистанции).
+ */
+export function groupsWithoutRequiredControlTime<G extends { timeLimitMinutes: number | null }>(
+  groups: G[],
+  isScoreOGroup: (group: G) => boolean,
+  scoreOvertimePolicy: string,
+  competitionControlTimeMinutes: number | null,
+): G[] {
+  return groups.filter(
+    (g) =>
+      !((g.timeLimitMinutes ?? 0) > 0) &&
+      isGroupControlTimeRequired(isScoreOGroup(g), scoreOvertimePolicy, competitionControlTimeMinutes),
+  )
+}

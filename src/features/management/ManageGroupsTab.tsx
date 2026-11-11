@@ -5,19 +5,21 @@ import { EmptyState } from '../../components/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Loading } from '../../components/Loading'
 import { hasAssignedDistance } from '../../lib/groupDistance'
-import type { CourseFormat } from '../../lib/courseFormat'
+import { effectiveFormat, formatRanksByScore, groupsWithoutRequiredControlTime, type CourseFormat } from '../../lib/courseFormat'
 import type { ParticipantGroupDetail } from '../../types/competition'
 import type { Distance } from '../../types/distance'
 import { genderLabel } from '../competitions/labels'
 import { useDistances } from '../competition-detail/hooks'
 import { AddGroupDialog } from './AddGroupDialog'
 import { useGroups } from './hooks'
-import { NoDistanceBadge } from './NoDistanceNotice'
+import { NoControlTimeBadge, NoDistanceBadge } from './NoDistanceNotice'
 
 interface ManageGroupsTabProps {
   competitionId: string
   /** Формат соревнования по умолчанию — формат групп без своей дистанции. */
   competitionFormat: CourseFormat
+  /** Политика КВ для дистанций с баллами. */
+  scoreOvertimePolicy: string
   /** N командного зачёта соревнования; null — зачёт не включён. */
   competitionTeamCounted?: number | null
   /** КВ соревнования — умолчание для групп без своего значения. */
@@ -27,6 +29,7 @@ interface ManageGroupsTabProps {
 export function ManageGroupsTab({
   competitionId,
   competitionFormat,
+  scoreOvertimePolicy,
   competitionControlTimeMinutes,
   competitionTeamCounted = null,
 }: ManageGroupsTabProps) {
@@ -72,6 +75,15 @@ export function ManageGroupsTab({
           <GroupRow
             key={group.groupId}
             group={group}
+            needsControlTime={
+              groupsWithoutRequiredControlTime(
+                [group],
+                (g) =>
+                  formatRanksByScore(effectiveFormat(distances?.find((d) => d.id === g.distanceId), competitionFormat)),
+                scoreOvertimePolicy,
+                competitionControlTimeMinutes,
+              ).length > 0
+            }
             distances={distances}
             competitionControlTimeMinutes={competitionControlTimeMinutes}
             onEdit={() => setEditingGroup(group)}
@@ -88,6 +100,7 @@ export function ManageGroupsTab({
           competitionId={competitionId}
           distances={distances ?? []}
           competitionFormat={competitionFormat}
+          scoreOvertimePolicy={scoreOvertimePolicy}
           competitionControlTimeMinutes={competitionControlTimeMinutes}
           competitionTeamCounted={competitionTeamCounted}
           onDismiss={() => {
@@ -117,12 +130,15 @@ function controlTimeLabel(group: ParticipantGroupDetail, competitionControlTimeM
 
 function GroupRow({
   group,
+  needsControlTime,
   distances,
   competitionControlTimeMinutes,
   onEdit,
   onDelete,
 }: {
   group: ParticipantGroupDetail
+  /** Группе нужно своё КВ (дистанция с баллами со штрафом, у соревнования КВ нет). */
+  needsControlTime: boolean
   /** undefined — дистанции ещё грузятся: метку «без дистанции» не показываем раньше времени. */
   distances: Distance[] | undefined
   competitionControlTimeMinutes: number | null
@@ -147,6 +163,7 @@ function GroupRow({
         <span className="font-semibold text-fg">{group.title}</span>
         {details.length > 0 && <span className="text-sm text-on-surface-variant">{details.join('  •  ')}</span>}
         {distances && !hasAssignedDistance(group, distances) && <NoDistanceBadge />}
+        {needsControlTime && <NoControlTimeBadge />}
       </div>
       <div className="flex gap-3">
         <button type="button" onClick={onEdit} className="text-sm text-primary">
