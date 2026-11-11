@@ -6,7 +6,7 @@ import {
   distanceFormatFields,
   distanceFormatOption,
   distanceFormatOptions,
-  effectiveFormat,
+  distanceOptionFormat,
   formatRanksByScore,
   INHERIT_FORMAT,
   type CourseFormat,
@@ -22,16 +22,17 @@ interface DistanceFormatDialogProps {
 }
 
 /**
- * Формат уже сохранённой дистанции (например, импортированной из IOF XML): свой или как у
- * соревнования. Остальные поля уходят как есть; карта и координаты не передаются — сервер их не
- * трогает. Сервер пересчитывает места групп этой дистанции.
+ * Формат уже сохранённой дистанции (например, импортированной из IOF XML). Вариант, совпадающий с
+ * форматом соревнования, сохраняется как «как у соревнования». Остальные поля уходят как есть;
+ * карта и координаты не передаются — сервер их не трогает. Сервер пересчитывает места групп этой
+ * дистанции.
  */
 export function DistanceFormatDialog({ distance, competitionFormat, onDismiss, onSaved }: DistanceFormatDialogProps) {
   const [option, setOption] = useState(distanceFormatOption(distance, competitionFormat))
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const fields = distanceFormatFields(option)
-  const format = effectiveFormat(fields, competitionFormat)
+  const fields = distanceFormatFields(option, competitionFormat)
+  const format = distanceOptionFormat(option)
 
   async function handleSave() {
     setSaving(true)
@@ -67,7 +68,7 @@ export function DistanceFormatDialog({ distance, competitionFormat, onDismiss, o
         <LabeledSelect
           label="Формат дистанции"
           value={option}
-          options={distanceFormatOptions(competitionFormat)}
+          options={distanceFormatOptions(option)}
           onChange={setOption}
         />
         <span className="text-xs text-on-surface-variant">

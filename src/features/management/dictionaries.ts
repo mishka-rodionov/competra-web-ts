@@ -6,6 +6,11 @@ export const DIRECTION_OPTIONS: [string, string][] = [
   ['MARKING', 'Маркированная трасса'],
 ]
 
+/** Направления для селектора: маркированная трасса пока не поддержана — только если уже выбрана ([current]). */
+export function directionOptionsFor(current: string): [string, string][] {
+  return DIRECTION_OPTIONS.filter(([key]) => key !== 'MARKING' || key === current)
+}
+
 export const PUNCHING_SYSTEM_OPTIONS: [string, string][] = [
   ['PENCIL', 'Карандаш'],
   ['PUNCH', 'Компостер'],

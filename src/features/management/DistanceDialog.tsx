@@ -6,7 +6,7 @@ import {
   distanceFormatFields,
   distanceFormatOption,
   distanceFormatOptions,
-  effectiveFormat,
+  distanceOptionFormat,
   formatRanksByScore,
 } from '../../lib/courseFormat'
 import { LabeledSelect } from '../../components/LabeledSelect'
@@ -37,10 +37,10 @@ export function DistanceDialog({
   onDismiss,
   onSave,
 }: DistanceDialogProps) {
-  // Формат дистанции: свой или как у соревнования. От него зависят баллы КП и минимум КП.
+  // Формат дистанции: у новой — как у соревнования. От него зависят баллы КП и минимум КП.
   const competitionFormat = competitionCourseFormat(direction, byChoiceMode)
   const [formatOption, setFormatOption] = useState(distanceFormatOption(initial, competitionFormat))
-  const format = effectiveFormat(distanceFormatFields(formatOption), competitionFormat)
+  const format = distanceOptionFormat(formatOption)
   const isByChoice = format.direction === 'BY_CHOICE'
   const hasScores = ranksByScore(format.direction, format.byChoiceMode)
   const hasMinControls = isMinControls(format.direction, format.byChoiceMode)
@@ -80,7 +80,7 @@ export function DistanceDialog({
       startControlPoint: isStartCpRequired && startCp ? parseInt(startCp, 10) : null,
       description: description.trim() || null,
       minControlsCount,
-      ...distanceFormatFields(formatOption),
+      ...distanceFormatFields(formatOption, competitionFormat),
     })
   }
 
@@ -114,7 +114,7 @@ export function DistanceDialog({
           <LabeledSelect
             label="Формат дистанции"
             value={formatOption}
-            options={distanceFormatOptions(competitionFormat)}
+            options={distanceFormatOptions(formatOption)}
             onChange={setFormatOption}
           />
           <span className="text-xs text-on-surface-variant">

@@ -63,41 +63,52 @@ export function formatLabel(format: CourseFormat): string {
   }
 }
 
-/** Вариант формата в редакторе дистанции: «как у соревнования» или свой формат одним полем. */
-const DISTANCE_FORMAT_FIELDS: Record<string, { direction: string | null; byChoiceMode: string | null }> = {
-  [INHERIT_FORMAT]: { direction: null, byChoiceMode: null },
-  FORWARD: { direction: 'FORWARD', byChoiceMode: null },
+/**
+ * Варианты формата в редакторе дистанции — направление и режим «по выбору» одним полем. Отдельного
+ * пункта «Как у соревнования» нет: у новой дистанции подставлен формат соревнования, а вариант,
+ * совпадающий с ним, сохраняется как «как у соревнования» (см. distanceFormatFields) — тогда смена
+ * формата соревнования меняет и такие дистанции. Так же в Android (DistanceFormatOption.kt).
+ */
+const DISTANCE_FORMATS: Record<string, CourseFormat> = {
+  FORWARD: { direction: 'FORWARD', byChoiceMode: 'SCORE' },
   BY_CHOICE_SCORE: { direction: 'BY_CHOICE', byChoiceMode: 'SCORE' },
   BY_CHOICE_MIN_CONTROLS: { direction: 'BY_CHOICE', byChoiceMode: 'MIN_CONTROLS' },
-  MARKING: { direction: 'MARKING', byChoiceMode: null },
+  // Маркированная трасса пока не поддержана: предлагается, только если уже выбрана.
+  MARKING: { direction: 'MARKING', byChoiceMode: 'SCORE' },
 }
 
-/** Варианты селектора формата дистанции: [ключ, подпись]; у «как у соревнования» в скобках формат соревнования. */
-export function distanceFormatOptions(competition: CourseFormat): [string, string][] {
-  return Object.entries(DISTANCE_FORMAT_FIELDS).map(([key, fields]) => [
-    key,
-    key === INHERIT_FORMAT
-      ? `Как у соревнования (${formatLabel(competition)})`
-      : formatLabel(effectiveFormat(fields, competition)),
-  ])
+/** Варианты селектора формата дистанции [ключ, подпись]; маркированная трасса — только если выбрана сейчас ([current]). */
+export function distanceFormatOptions(current: string): [string, string][] {
+  return Object.entries(DISTANCE_FORMATS)
+    .filter(([key]) => key !== 'MARKING' || key === current)
+    .map(([key, format]) => [key, formatLabel(format)])
 }
 
-/** Ключ варианта для сохранённой дистанции; «по выбору» без своего режима — с режимом соревнования. */
+/** Ключ варианта для дистанции — по её эффективному формату; новая дистанция — формат соревнования. */
 export function distanceFormatOption(
   distance: { direction?: string | null; byChoiceMode?: string | null } | null | undefined,
   competition: CourseFormat,
 ): string {
-  if (!distance?.direction) return INHERIT_FORMAT
-  const mode = distance.byChoiceMode || competition.byChoiceMode
-  const found = Object.entries(DISTANCE_FORMAT_FIELDS).find(
-    ([, f]) => f.direction === distance.direction && (distance.direction !== 'BY_CHOICE' || f.byChoiceMode === mode),
-  )
-  return found?.[0] ?? INHERIT_FORMAT
+  const format = effectiveFormat(distance, competition)
+  return Object.entries(DISTANCE_FORMATS).find(([, f]) => sameFormat(f, format))?.[0] ?? 'FORWARD'
 }
 
-/** Поля дистанции для варианта селектора (null — как у соревнования). */
-export function distanceFormatFields(option: string): { direction: string | null; byChoiceMode: string | null } {
-  return DISTANCE_FORMAT_FIELDS[option] ?? DISTANCE_FORMAT_FIELDS[INHERIT_FORMAT]
+/** Формат варианта селектора. */
+export function distanceOptionFormat(option: string): CourseFormat {
+  return DISTANCE_FORMATS[option] ?? DISTANCE_FORMATS.FORWARD
+}
+
+/**
+ * Поля дистанции для сохранения: null (как у соревнования), если вариант совпадает с форматом
+ * соревнования [competition], иначе — явный формат.
+ */
+export function distanceFormatFields(
+  option: string,
+  competition: CourseFormat,
+): { direction: string | null; byChoiceMode: string | null } {
+  const format = distanceOptionFormat(option)
+  if (sameFormat(format, competition)) return { direction: null, byChoiceMode: null }
+  return { direction: format.direction, byChoiceMode: format.direction === 'BY_CHOICE' ? format.byChoiceMode : null }
 }
 
 /** Политики КВ соревнования по виду дистанции. */

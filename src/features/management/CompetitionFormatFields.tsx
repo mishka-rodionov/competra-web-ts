@@ -1,5 +1,5 @@
 import { LabeledSelect } from '../../components/LabeledSelect'
-import { BY_CHOICE_MODE_OPTIONS, byChoiceModeHint, DIRECTION_OPTIONS } from './dictionaries'
+import { BY_CHOICE_MODE_OPTIONS, byChoiceModeHint, directionOptionsFor } from './dictionaries'
 
 interface CompetitionFormatFieldsProps {
   direction: string
@@ -19,7 +19,7 @@ export function CompetitionFormatFields({ direction, byChoiceMode, onChange }: C
         <LabeledSelect
           label="Направление"
           value={direction}
-          options={DIRECTION_OPTIONS}
+          options={directionOptionsFor(direction)}
           onChange={(value) => onChange({ direction: value, byChoiceMode })}
         />
         <span className="text-xs text-on-surface-variant">Формат по умолчанию — можно изменить для отдельной дистанции</span>
