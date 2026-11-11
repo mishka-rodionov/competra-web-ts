@@ -3,6 +3,7 @@ import { groupRepository } from '../../api/groupRepository'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { LabeledSelect } from '../../components/LabeledSelect'
 import { hasAssignedDistance } from '../../lib/groupDistance'
+import { effectiveFormat, formatRanksByScore, type CourseFormat } from '../../lib/courseFormat'
 import type { ParticipantGroupDetail } from '../../types/competition'
 import type { Distance } from '../../types/distance'
 import { GENDER_OPTIONS } from './dictionaries'
@@ -10,7 +11,8 @@ import { GENDER_OPTIONS } from './dictionaries'
 interface AddGroupDialogProps {
   competitionId: string
   distances: Distance[]
-  isScoreO: boolean
+  /** Формат соревнования по умолчанию: формат группы — у её дистанции, без дистанции — этот. */
+  competitionFormat: CourseFormat
   /** КВ соревнования — подсказка о том, что унаследует группа с пустым полем. */
   competitionControlTimeMinutes: number | null
   /** N командного зачёта соревнования; null — зачёт не включён, поле группы скрыто. */
@@ -35,7 +37,7 @@ const numberText = (value: number | null | undefined): string => (value != null 
 export function AddGroupDialog({
   competitionId,
   distances,
-  isScoreO,
+  competitionFormat,
   competitionControlTimeMinutes,
   competitionTeamCounted = null,
   editingGroup = null,
@@ -51,6 +53,8 @@ export function AddGroupDialog({
   // пуст (в т.ч. ещё грузится), id не трогаем — иначе сохранение молча сняло бы дистанцию с группы.
   const keepsDistance = editingGroup?.distanceId != null && (distances.length === 0 || hasAssignedDistance(editingGroup, distances))
   const [distanceId, setDistanceId] = useState<number>(keepsDistance ? editingGroup!.distanceId! : NO_DISTANCE)
+  // Штраф очками за опоздание — только на дистанциях с баллами; формат — у выбранной дистанции.
+  const isScoreO = formatRanksByScore(effectiveFormat(distances.find((d) => d.id === distanceId), competitionFormat))
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(numberText(editingGroup?.timeLimitMinutes))
   const [scorePenaltyPerMinute, setScorePenaltyPerMinute] = useState(
     editingGroup ? numberText(editingGroup.scorePenaltyPerMinute) : '1',

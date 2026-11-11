@@ -11,6 +11,8 @@ import type { Distance } from '../../types/distance'
 import { AttachMapDialog } from '../management/AttachMapDialog'
 import { DistanceDetailsDialog } from '../management/DistanceDetailsDialog'
 import { DistanceDialog } from '../management/DistanceDialog'
+import { DistanceFormatDialog } from '../management/DistanceFormatDialog'
+import { competitionCourseFormat, effectiveFormat, formatLabel, INHERIT_FORMAT, sameFormat } from '../../lib/courseFormat'
 import { DistanceRulesDialog } from '../management/DistanceRulesDialog'
 import { useGroups } from '../management/hooks'
 import type { PendingDistance } from '../management/types'
@@ -66,7 +68,8 @@ export function DistancesTab({
     const content = await file.text()
     const result = await distanceRepository.importFromXml(competitionId, content)
     if (result.kind === 'success') {
-      setImportWarning(importedCoursesWarning(result.data, direction, byChoiceMode))
+      const warning = importedCoursesWarning(result.data, direction, byChoiceMode)
+      setImportWarning(warning && `${warning} Формат можно задать и отдельной дистанции — кнопка «Формат дистанции».`)
       await invalidate()
     } else {
       setImportError(result.message)
@@ -117,6 +120,8 @@ export function DistancesTab({
         finishControlPoint: pending.finishControlPoint,
         startControlPoint: pending.startControlPoint,
         minControlsCount: pending.minControlsCount ?? 0,
+        direction: pending.direction ?? INHERIT_FORMAT,
+        byChoiceMode: pending.byChoiceMode ?? INHERIT_FORMAT,
       },
     ])
     if (result.kind === 'success') await invalidate()
@@ -277,7 +282,20 @@ interface DistanceCardProps {
   onDelete: () => void
 }
 
-function DistanceCard({ distance, canEditMap, direction, byChoiceMode, onExpandMap, onMapUpdated, onDelete }: DistanceCardProps) {
+function DistanceCard({
+  distance,
+  canEditMap,
+  direction: competitionDirection,
+  byChoiceMode: competitionByChoiceMode,
+  onExpandMap,
+  onMapUpdated,
+  onDelete,
+}: DistanceCardProps) {
+  // Формат дистанции — свой или как у соревнования; от него зависят правила на карточке.
+  const competitionFormat = competitionCourseFormat(competitionDirection, competitionByChoiceMode)
+  const format = effectiveFormat(distance, competitionFormat)
+  const { direction, byChoiceMode } = format
+  const [showFormatDialog, setShowFormatDialog] = useState(false)
   const [showAttachDialog, setShowAttachDialog] = useState(false)
   const [showRulesDialog, setShowRulesDialog] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
@@ -308,6 +326,7 @@ function DistanceCard({ distance, canEditMap, direction, byChoiceMode, onExpandM
       ) : (
         <DistanceSummary distance={distance} />
       )}
+      {!sameFormat(format, competitionFormat) && <span className="text-sm text-fg">Формат: {formatLabel(format)}</span>}
       {hasMinControls && (
         <span className="text-sm text-fg">{minControlsLabel(distance.minControlsCount, distance.controlPoints.length)}</span>
       )}
@@ -324,6 +343,11 @@ function DistanceCard({ distance, canEditMap, direction, byChoiceMode, onExpandM
         </button>
       )}
       {isMapHidden && <span className="text-sm text-on-surface-variant">Карта дистанции откроется после старта</span>}
+      {canEditMap && (
+        <button type="button" onClick={() => setShowFormatDialog(true)} className="rounded-md border border-outline px-3 py-1.5 text-sm text-fg">
+          Формат дистанции
+        </button>
+      )}
       {canEditMap && isByChoice && (
         <button type="button" onClick={() => setShowRulesDialog(true)} className="rounded-md border border-outline px-3 py-1.5 text-sm text-fg">
           {hasMinControls ? 'Минимум и обязательные КП' : 'Обязательные КП'}
@@ -346,6 +370,17 @@ function DistanceCard({ distance, canEditMap, direction, byChoiceMode, onExpandM
           direction={direction}
           byChoiceMode={byChoiceMode}
           onDismiss={() => setShowDetails(false)}
+        />
+      )}
+      {showFormatDialog && (
+        <DistanceFormatDialog
+          distance={distance}
+          competitionFormat={competitionFormat}
+          onDismiss={() => setShowFormatDialog(false)}
+          onSaved={() => {
+            setShowFormatDialog(false)
+            onMapUpdated()
+          }}
         />
       )}
       {showRulesDialog && (

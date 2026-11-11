@@ -1,5 +1,3 @@
-import { ranksByScore } from '../../lib/byChoiceMode'
-
 /** Словари значений соревнования — ключи совпадают с enum'ами Android/бэкенда. */
 
 export const DIRECTION_OPTIONS: [string, string][] = [
@@ -33,30 +31,6 @@ export const OVERTIME_POLICY_OPTIONS: [string, string][] = [
   ['DISQUALIFY', 'Дисквалифицировать'],
   ['SCORE_PENALTY', 'Штраф очками'],
 ]
-
-/**
- * Штраф очками осмыслен только в score-О («по выбору» по баллам) — в остальных форматах, в т.ч.
- * «по выбору» с минимумом КП, очков нет.
- */
-export function overtimePolicyOptionsFor(direction: string, byChoiceMode: string): [string, string][] {
-  return ranksByScore(direction, byChoiceMode)
-    ? OVERTIME_POLICY_OPTIONS
-    : OVERTIME_POLICY_OPTIONS.filter(([key]) => key !== 'SCORE_PENALTY')
-}
-
-/**
- * Патч формы при смене направления или режима «по выбору»: выбранный штраф очками сбрасывается,
- * если в новом формате очков нет (как withValidOvertimePolicy в Android) — иначе он остался бы
- * невидимым в селекторе.
- */
-export function formatPatch(
-  direction: string,
-  byChoiceMode: string,
-  overtimePolicy: string,
-): { direction: string; byChoiceMode: string; overtimePolicy: string } {
-  const resetPolicy = overtimePolicy === 'SCORE_PENALTY' && !ranksByScore(direction, byChoiceMode)
-  return { direction, byChoiceMode, overtimePolicy: resetPolicy ? 'IGNORE' : overtimePolicy }
-}
 
 /** Пояснение под селектором: что именно произойдёт с превысившими КВ. */
 export function overtimePolicyHint(policy: string): string {

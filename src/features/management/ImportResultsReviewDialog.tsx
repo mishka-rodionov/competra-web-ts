@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react'
 import { resultRepository } from '../../api/resultRepository'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { formatTime } from '../../lib/dateUtils'
-import { ranksByScore } from '../../lib/byChoiceMode'
+import { competitionCourseFormat, effectiveFormat, formatRanksByScore } from '../../lib/courseFormat'
+import { useDistances } from '../competition-detail/hooks'
+import { useGroups } from './hooks'
 import type { ImportResultRow, ImportResultsDiff } from '../../lib/resultsHtmlParser'
 import { resultPlaceLabel, resultStatusColorClass, resultStatusLabel } from '../competitions/labels'
 import type { OrienteeringCompetition } from '../../types/competition'
@@ -80,8 +82,16 @@ interface ImportResultsReviewDialogProps {
 }
 
 export function ImportResultsReviewDialog({ competition, participants, currentResults, diff, onDismiss, onImported }: ImportResultsReviewDialogProps) {
-  // Колонка очков — только в score-О; в «по выбору» с минимумом КП баллов нет.
-  const isByChoice = ranksByScore(competition.direction, competition.byChoiceMode)
+  // Колонка очков — только у групп, чья дистанция «по выбору» по баллам (у дистанции может быть
+  // свой формат); в «по выбору» с минимумом КП и в остальных форматах баллов нет.
+  const { data: groups } = useGroups(competition.competitionId)
+  const { data: distances } = useDistances(competition.competitionId)
+  const competitionFormat = competitionCourseFormat(competition.direction, competition.byChoiceMode)
+  function isScoreGroup(groupId: number): boolean {
+    const group = groups?.find((g) => g.groupId === groupId)
+    const distance = distances?.find((d) => group?.distanceId != null && d.id === group.distanceId)
+    return formatRanksByScore(effectiveFormat(distance, competitionFormat))
+  }
   const resultsStatus = competition.competition.resultsStatus
 
   const [checkedById, setCheckedById] = useState<Map<string, boolean>>(new Map(diff.changed.map((c) => [c.request.id, true])))
@@ -177,22 +187,26 @@ export function ImportResultsReviewDialog({ competition, participants, currentRe
 
       <div className="flex-1 overflow-y-auto px-4">
         {rows.length === 0 && <p className="pt-4 text-on-surface-variant">Нет данных для отображения</p>}
-        {rows.map(([groupTitle, groupRowsList]) => (
-          <div key={groupTitle}>
-            <h3 className="pt-3 pb-1 text-sm font-medium text-fg">{groupTitle}</h3>
-            <hr className="border-outline-variant" />
-            {groupRowsList.map((row) => (
-              <ReviewResultRow
-                key={row.participant.id}
-                row={row}
-                isByChoice={isByChoice}
-                showCheckbox={selectedTab === 'after'}
-                checked={row.change ? (checkedById.get(row.change.request.id) ?? false) : false}
-                onCheckedChange={(checked) => row.change && toggleChecked(row.change.request.id, checked)}
-              />
-            ))}
-          </div>
-        ))}
+        {rows.map(([groupTitle, groupRowsList]) => {
+          // Строки сгруппированы по группе — формат один на всю группу.
+          const isByChoice = groupRowsList.length > 0 && isScoreGroup(groupRowsList[0].participant.groupId)
+          return (
+            <div key={groupTitle}>
+              <h3 className="pt-3 pb-1 text-sm font-medium text-fg">{groupTitle}</h3>
+              <hr className="border-outline-variant" />
+              {groupRowsList.map((row) => (
+                <ReviewResultRow
+                  key={row.participant.id}
+                  row={row}
+                  isByChoice={isByChoice}
+                  showCheckbox={selectedTab === 'after'}
+                  checked={row.change ? (checkedById.get(row.change.request.id) ?? false) : false}
+                  onCheckedChange={(checked) => row.change && toggleChecked(row.change.request.id, checked)}
+                />
+              ))}
+            </div>
+          )
+        })}
       </div>
 
       <div className="flex items-center justify-between border-t border-outline-variant p-3">

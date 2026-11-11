@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { overtimePoliciesRequest } from '../../lib/courseFormat'
 import { competitionRepository } from '../../api/competitionRepository'
 import { groupRepository } from '../../api/groupRepository'
 import { EmptyState } from '../../components/EmptyState'
@@ -45,6 +46,7 @@ export function ManageResultsTab({ competition }: { competition: OrienteeringCom
       // пробросить как есть, иначе сохранение обнулило бы их.
       controlTimeMinutes: competition.controlTimeMinutes,
       overtimePolicy: competition.overtimePolicy,
+      ...overtimePoliciesRequest(competition),
       byChoiceMode: competition.byChoiceMode ?? 'SCORE',
     })
     if (result.kind === 'success') {

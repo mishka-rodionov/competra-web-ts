@@ -55,8 +55,12 @@ export interface OrienteeringCompetition {
   countdownTimer: number | null
   /** КВ соревнования в минутах — умолчание для групп без своего значения. */
   controlTimeMinutes: number | null
-  /** IGNORE / DISQUALIFY / SCORE_PENALTY — что делать с превысившими КВ. */
+  /** IGNORE / DISQUALIFY / SCORE_PENALTY — политика КВ для формата соревнования по умолчанию (legacy). */
   overtimePolicy: string
+  /** Политика КВ для дистанций, где места по времени. Нет у старых ответов сервера (см. resolveOvertimePolicies). */
+  timeOvertimePolicy?: string
+  /** Политика КВ для дистанций с баллами. Нет у старых ответов сервера. */
+  scoreOvertimePolicy?: string
   /** SCORE / MIN_CONTROLS — итог формата «по выбору» (см. ranksByScore). Нет у старых ответов сервера. */
   byChoiceMode?: string
   /** Настройки командного зачёта; нет — зачёта нет. */
@@ -85,6 +89,10 @@ export interface ParticipantGroupDetail {
   distanceDescription: string | null
   /** Минимум КП дистанции группы («по выбору» с минимумом КП); null — все КП. Только в деталке соревнования. */
   distanceMinControlsCount?: number | null
+  /** Эффективное направление группы (по её дистанции). Только в деталке соревнования, нет у старого сервера. */
+  direction?: string
+  /** Эффективный режим «по выбору» группы. Только в деталке соревнования. */
+  byChoiceMode?: string
   maxParticipants: number | null
   registeredCount: number
   /** Своё КВ группы в минутах (null — наследуется от соревнования). */
@@ -176,7 +184,12 @@ export interface CreateCompetitionRequest {
   startTimeMode: string
   startIntervalSeconds: number | null
   controlTimeMinutes: number | null
+  /** Политика КВ для формата по умолчанию — для клиентов без формата на дистанции. */
   overtimePolicy: string
+  /** Политика КВ для дистанций, где места по времени (IGNORE / DISQUALIFY). */
+  timeOvertimePolicy: string
+  /** Политика КВ для дистанций с баллами (IGNORE / DISQUALIFY / SCORE_PENALTY). */
+  scoreOvertimePolicy: string
   /** SCORE / MIN_CONTROLS — итог формата «по выбору»; для остальных направлений не используется. */
   byChoiceMode: string
   /** Командный зачёт: не передан — не менять, enabled = false — выключить. */
@@ -229,6 +242,12 @@ export interface CompetitionDetail {
   direction: string
   controlTimeMinutes: number | null
   overtimePolicy: string
+  /** Политика КВ для дистанций, где места по времени. Нет у старых ответов сервера. */
+  timeOvertimePolicy?: string
+  /** Политика КВ для дистанций с баллами. Нет у старых ответов сервера. */
+  scoreOvertimePolicy?: string
+  /** Есть дистанция с форматом, отличным от формата соревнования. Нет у старых ответов сервера. */
+  isMixedFormat?: boolean
   /** SCORE / MIN_CONTROLS — итог формата «по выбору». Нет у старых ответов сервера. */
   byChoiceMode?: string
   /** Настройки командного зачёта; нет — зачёта нет. */

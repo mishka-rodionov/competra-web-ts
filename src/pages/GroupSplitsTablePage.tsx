@@ -5,6 +5,7 @@ import { Loading } from '../components/Loading'
 import { useCompetitionDetail, useDistances, useParticipants, useResults } from '../features/competition-detail/hooks'
 import { resultPlaceLabel } from '../features/competitions/labels'
 import { ranksByScore } from '../lib/byChoiceMode'
+import { competitionCourseFormat, groupDetailFormat } from '../lib/courseFormat'
 import { formatTime } from '../lib/dateUtils'
 import { buildSplitsTable, sortedForResults } from '../lib/splitsTable'
 import type { SplitsTableRow } from '../types/splits'
@@ -42,18 +43,20 @@ export function GroupSplitsTablePage() {
   const { data: distances } = useDistances(competitionId)
 
   const group = detail?.participantGroups.find((g) => g.groupId === numericGroupId)
-  const isByChoice = detail?.direction === 'BY_CHOICE'
+  // Формат группы — по её дистанции (сервер присылает эффективный), иначе соревнования.
+  const format = groupDetailFormat(group, competitionCourseFormat(detail?.direction, detail?.byChoiceMode))
+  const isByChoice = format.direction === 'BY_CHOICE'
   // Под именем — баллы в score-О или время в «по выбору» с минимумом КП (колонки по позиции у обоих).
-  const showsScore = ranksByScore(detail?.direction ?? '', detail?.byChoiceMode)
+  const showsScore = ranksByScore(format.direction, format.byChoiceMode)
   const isLoading = detailLoading || participantsLoading || resultsLoading
 
   const table = useMemo(() => {
     if (!participants || !results || !detail) return null
     const groupParticipants = participants.filter((p) => p.groupId === numericGroupId)
     const distance = distances?.find((d) => d.id === group?.distanceId)
-    const sorted = sortedForResults(groupParticipants, results, detail.direction)
-    return buildSplitsTable(sorted, results, distance, detail.direction)
-  }, [participants, results, detail, distances, group, numericGroupId])
+    const sorted = sortedForResults(groupParticipants, results, format.direction)
+    return buildSplitsTable(sorted, results, distance, format.direction)
+  }, [participants, results, detail, distances, group, numericGroupId, format.direction])
 
   if (isLoading) return <Loading />
   if (isError) return <ErrorMessage message={(error as Error).message} />

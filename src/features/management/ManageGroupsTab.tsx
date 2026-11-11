@@ -5,6 +5,7 @@ import { EmptyState } from '../../components/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Loading } from '../../components/Loading'
 import { hasAssignedDistance } from '../../lib/groupDistance'
+import type { CourseFormat } from '../../lib/courseFormat'
 import type { ParticipantGroupDetail } from '../../types/competition'
 import type { Distance } from '../../types/distance'
 import { genderLabel } from '../competitions/labels'
@@ -15,7 +16,8 @@ import { NoDistanceBadge } from './NoDistanceNotice'
 
 interface ManageGroupsTabProps {
   competitionId: string
-  isScoreO: boolean
+  /** Формат соревнования по умолчанию — формат групп без своей дистанции. */
+  competitionFormat: CourseFormat
   /** N командного зачёта соревнования; null — зачёт не включён. */
   competitionTeamCounted?: number | null
   /** КВ соревнования — умолчание для групп без своего значения. */
@@ -24,7 +26,7 @@ interface ManageGroupsTabProps {
 
 export function ManageGroupsTab({
   competitionId,
-  isScoreO,
+  competitionFormat,
   competitionControlTimeMinutes,
   competitionTeamCounted = null,
 }: ManageGroupsTabProps) {
@@ -85,7 +87,7 @@ export function ManageGroupsTab({
           editingGroup={editingGroup}
           competitionId={competitionId}
           distances={distances ?? []}
-          isScoreO={isScoreO}
+          competitionFormat={competitionFormat}
           competitionControlTimeMinutes={competitionControlTimeMinutes}
           competitionTeamCounted={competitionTeamCounted}
           onDismiss={() => {

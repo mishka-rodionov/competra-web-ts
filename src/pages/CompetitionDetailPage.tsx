@@ -25,7 +25,8 @@ import { useUserProfile } from '../features/profile/hooks'
 import { analytics } from '../lib/analytics/analytics'
 import { competitionYear } from '../lib/groupEligibility'
 import { AnalyticsEvents, type RegistrationTeamSource } from '../lib/analytics/events'
-import { isMinControls } from '../lib/byChoiceMode'
+import { ranksByScore } from '../lib/byChoiceMode'
+import { competitionCourseFormat, resolveOvertimePolicies } from '../lib/courseFormat'
 import type { RegisterEventRequest } from '../types/competition'
 
 const TABS = [
@@ -141,8 +142,14 @@ export function CompetitionDetailPage() {
                 groups={detail.participantGroups}
                 competitionYear={competitionYear(detail.startDate, detail.timeZoneId)}
                 profile={isLoggedIn ? (profile ?? null) : null}
-                overtimePolicy={detail.overtimePolicy}
-                isMinControls={isMinControls(detail.direction, detail.byChoiceMode)}
+                competitionFormat={competitionCourseFormat(detail.direction, detail.byChoiceMode)}
+                overtimePolicies={resolveOvertimePolicies(
+                  detail.overtimePolicy,
+                  detail.timeOvertimePolicy,
+                  detail.scoreOvertimePolicy,
+                  ranksByScore(detail.direction, detail.byChoiceMode),
+                )}
+                isMixedFormat={detail.isMixedFormat ?? false}
                 registrationOpen={detail.status === 'REGISTRATION_OPEN'}
                 registeredGroupId={registeredGroupId}
                 registrationStatusLoading={registrationStatusLoading}

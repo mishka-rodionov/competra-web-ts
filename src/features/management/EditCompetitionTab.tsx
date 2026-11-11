@@ -19,6 +19,8 @@ import {
   STATUS_OPTIONS,
 } from './dictionaries'
 import { ranksByScore } from '../../lib/byChoiceMode'
+import { competitionCourseFormat, effectiveFormat, formatRanksByScore, resolveOvertimePolicies } from '../../lib/courseFormat'
+import { useDistances } from '../competition-detail/hooks'
 import { teamScoringRequest } from '../../lib/teamScoring'
 import type { TeamScoring } from '../../types/teamStandings'
 import { CompetitionFormatFields } from './CompetitionFormatFields'
@@ -44,7 +46,10 @@ interface EditFormState {
   startTimeMode: string
   startInterval: number
   controlTimeMinutes: string
-  overtimePolicy: string
+  /** Политика КВ для дистанций по времени. */
+  timeOvertimePolicy: string
+  /** Политика КВ для дистанций с баллами. */
+  scoreOvertimePolicy: string
   regStartDateStr: string
   regStartTime: string
   regEndDateStr: string
@@ -63,6 +68,12 @@ interface EditFormState {
 function toForm(competition: OrienteeringCompetition): EditFormState {
   const c = competition.competition
   const zoneId = c.timeZoneId || DEFAULT_TIME_ZONE
+  const policies = resolveOvertimePolicies(
+    competition.overtimePolicy,
+    competition.timeOvertimePolicy,
+    competition.scoreOvertimePolicy,
+    ranksByScore(competition.direction, competition.byChoiceMode),
+  )
   return {
     title: c.title,
     startDateStr: c.startDate > 0 ? utcMillisToZonedDate(c.startDate, 'UTC') : '',
@@ -81,7 +92,8 @@ function toForm(competition: OrienteeringCompetition): EditFormState {
     startTimeMode: competition.startTimeMode || 'USER_SET',
     startInterval: competition.startIntervalSeconds ?? 60,
     controlTimeMinutes: competition.controlTimeMinutes?.toString() ?? '',
-    overtimePolicy: competition.overtimePolicy || 'IGNORE',
+    timeOvertimePolicy: policies.time,
+    scoreOvertimePolicy: policies.score,
     regStartDateStr: c.registrationStart != null ? utcMillisToZonedDate(c.registrationStart, 'UTC') : '',
     regStartTime: c.registrationStart != null ? utcMillisToZonedTime(c.registrationStart, zoneId) : '10:00',
     regEndDateStr: c.registrationEnd != null ? utcMillisToZonedDate(c.registrationEnd, 'UTC') : '',
@@ -104,6 +116,12 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  // Форматы дистанций: от них зависят политики КВ и командный зачёт (у дистанции может быть свой формат).
+  const { data: distances } = useDistances(competition.competitionId)
+  const defaultFormat = competitionCourseFormat(form.direction, form.byChoiceMode)
+  const courseFormats = [defaultFormat, ...(distances ?? []).map((d) => effectiveFormat(d, defaultFormat))]
+  const hasScoreCourses = courseFormats.some(formatRanksByScore)
+  const hasTimeCourses = courseFormats.some((f) => !formatRanksByScore(f))
 
   function patch(p: Partial<EditFormState>) {
     setForm((prev) => ({ ...prev, ...p }))
@@ -163,9 +181,12 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
       startTimeMode: form.startTimeMode,
       startIntervalSeconds: form.startInterval,
       controlTimeMinutes: form.controlTimeMinutes ? parseInt(form.controlTimeMinutes, 10) : null,
-      overtimePolicy: form.overtimePolicy,
+      // Legacy-поле — политика для формата по умолчанию (для клиентов без формата на дистанции).
+      overtimePolicy: formatRanksByScore(defaultFormat) ? form.scoreOvertimePolicy : form.timeOvertimePolicy,
+      timeOvertimePolicy: form.timeOvertimePolicy,
+      scoreOvertimePolicy: form.scoreOvertimePolicy,
       byChoiceMode: form.byChoiceMode,
-      teamScoring: teamScoringRequest(form.teamScoring, ranksByScore(form.direction, form.byChoiceMode)),
+      teamScoring: teamScoringRequest(form.teamScoring, hasScoreCourses),
     })
 
     if (result.kind === 'success') {
@@ -224,12 +245,7 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
       <LabeledSelect label="Статус" value={form.status} options={STATUS_OPTIONS} onChange={(status) => patch({ status })} />
 
       <h2 className="mt-2 text-base font-medium text-fg">Параметры ориентирования</h2>
-      <CompetitionFormatFields
-        direction={form.direction}
-        byChoiceMode={form.byChoiceMode}
-        overtimePolicy={form.overtimePolicy}
-        onChange={patch}
-      />
+      <CompetitionFormatFields direction={form.direction} byChoiceMode={form.byChoiceMode} onChange={patch} />
       <LabeledSelect
         label="Система отметки"
         value={form.punchingSystem}
@@ -261,15 +277,16 @@ export function EditCompetitionTab({ competition }: { competition: OrienteeringC
         />
       )}
       <ControlTimeFields
-        direction={form.direction}
-        byChoiceMode={form.byChoiceMode}
         controlTimeMinutes={form.controlTimeMinutes}
-        overtimePolicy={form.overtimePolicy}
+        timeOvertimePolicy={form.timeOvertimePolicy}
+        scoreOvertimePolicy={form.scoreOvertimePolicy}
+        hasTimeCourses={hasTimeCourses}
+        hasScoreCourses={hasScoreCourses}
         onChange={(patchValues) => patch(patchValues)}
       />
       <TeamScoringFields
         value={form.teamScoring}
-        isScoreO={ranksByScore(form.direction, form.byChoiceMode)}
+        isScoreO={hasScoreCourses}
         onChange={(teamScoring) => patch({ teamScoring })}
       />
 

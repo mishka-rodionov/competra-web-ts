@@ -6,6 +6,7 @@ import { Loading } from '../../components/Loading'
 import { analytics } from '../../lib/analytics/analytics'
 import { AnalyticsEvents } from '../../lib/analytics/events'
 import { ranksByScore } from '../../lib/byChoiceMode'
+import { competitionCourseFormat, groupDetailFormat } from '../../lib/courseFormat'
 import { formatTime } from '../../lib/dateUtils'
 import type { ParticipantGroupDetail } from '../../types/competition'
 import type { OrienteeringParticipant, OrienteeringResult } from '../../types/participant'
@@ -43,10 +44,8 @@ export function ResultsTab({
   hasTeamScoring = false,
 }: ResultsTabProps) {
   const [showTeam, setShowTeam] = useState(false)
-  // Колонка очков и график набора очков — только в score-О; в «по выбору» с минимумом КП нет ни
-  // баллов, ни общего порядка КП, поэтому нет и графика.
-  const isByChoice = ranksByScore(direction, byChoiceMode)
-  const hasGraph = direction !== 'BY_CHOICE' || isByChoice
+  const competitionFormat = competitionCourseFormat(direction, byChoiceMode)
+  const groupsById = new Map(groups.map((g) => [g.groupId, g]))
   const { data: results, isLoading, isError, error } = useResults(competitionId, competitionStatus)
   const { data: participants } = useParticipants(competitionId)
 
@@ -111,6 +110,12 @@ export function ResultsTab({
       {!showTeam && sortedGroupIds.map((groupId) => {
         // Место есть только у FINISHED: OVERTIME и снятые уходят в конец, участник вне конкурса
         // стоит среди финишировавших по своему результату.
+        // Формат — у каждой группы свой (по её дистанции). Колонка очков и график набора очков —
+        // только в score-О; в «по выбору» с минимумом КП нет ни баллов, ни общего порядка КП,
+        // поэтому нет и графика.
+        const format = groupDetailFormat(groupsById.get(groupId), competitionFormat)
+        const isByChoice = ranksByScore(format.direction, format.byChoiceMode)
+        const hasGraph = format.direction !== 'BY_CHOICE' || isByChoice
         const groupResults = [...(resultsByGroup.get(groupId) ?? [])].sort(compareResultsForProtocol(isByChoice))
         return (
           <GroupResultsCard

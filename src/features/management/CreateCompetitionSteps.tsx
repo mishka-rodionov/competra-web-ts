@@ -14,7 +14,8 @@ import {
   startTimeModeOptionsFor,
   startTimeModePatch,
 } from './dictionaries'
-import { minControlsLabel, ranksByScore } from '../../lib/byChoiceMode'
+import { minControlsLabel } from '../../lib/byChoiceMode'
+import { competitionCourseFormat, effectiveFormat, formatLabel, sameFormat, type CourseFormat } from '../../lib/courseFormat'
 import { isRequiredControl } from '../../lib/controlPoints'
 import { CompetitionFormatFields } from './CompetitionFormatFields'
 import { CoverPickerField } from './CoverPickerField'
@@ -31,7 +32,18 @@ interface StepProps {
   onPatch: (patch: Partial<CreateCompetitionFormState>) => void
 }
 
-export function BasicStep({ form, onPatch, isPastEvent }: StepProps & { isPastEvent: boolean }) {
+export function BasicStep({
+  form,
+  onPatch,
+  isPastEvent,
+  hasTimeCourses,
+  hasScoreCourses,
+}: StepProps & {
+  isPastEvent: boolean
+  /** Есть дистанции (или формат по умолчанию), где места по времени / по баллам — для политик КВ. */
+  hasTimeCourses: boolean
+  hasScoreCourses: boolean
+}) {
   const start = competitionStartMillis(form)
   // Момент открытия шага: Date.now() в рендере линтер считает нечистым.
   const [now] = useState(() => Date.now())
@@ -76,12 +88,7 @@ export function BasicStep({ form, onPatch, isPastEvent }: StepProps & { isPastEv
       <TextInput label="Описание" multiline value={form.description} onChange={(description) => onPatch({ description })} />
 
       <h2 className="mt-2 text-base font-medium text-fg">Параметры ориентирования</h2>
-      <CompetitionFormatFields
-        direction={form.direction}
-        byChoiceMode={form.byChoiceMode}
-        overtimePolicy={form.overtimePolicy}
-        onChange={onPatch}
-      />
+      <CompetitionFormatFields direction={form.direction} byChoiceMode={form.byChoiceMode} onChange={onPatch} />
       <LabeledSelect
         label="Система отметки"
         value={form.punchingSystem}
@@ -128,15 +135,16 @@ export function BasicStep({ form, onPatch, isPastEvent }: StepProps & { isPastEv
         />
       )}
       <ControlTimeFields
-        direction={form.direction}
-        byChoiceMode={form.byChoiceMode}
         controlTimeMinutes={form.controlTimeMinutes}
-        overtimePolicy={form.overtimePolicy}
+        timeOvertimePolicy={form.timeOvertimePolicy}
+        scoreOvertimePolicy={form.scoreOvertimePolicy}
+        hasTimeCourses={hasTimeCourses}
+        hasScoreCourses={hasScoreCourses}
         onChange={onPatch}
       />
       <TeamScoringFields
         value={form.teamScoring}
-        isScoreO={ranksByScore(form.direction, form.byChoiceMode)}
+        isScoreO={hasScoreCourses}
         onChange={(teamScoring) => onPatch({ teamScoring })}
       />
     </div>
@@ -231,9 +239,12 @@ export function OrganizerStep({ form, onPatch, myClubs }: StepProps & { myClubs:
 }
 
 /** «Взять 2 из 3 КП • обязательные: 31» — правила дистанции «по выбору», если они заданы. */
-function pendingRulesLabel(distance: PendingDistance): string | null {
+function pendingRulesLabel(distance: PendingDistance, competitionFormat: CourseFormat): string | null {
   const required = distance.controlPoints.filter(isRequiredControl).map((cp) => cp.number)
+  const format = effectiveFormat(distance, competitionFormat)
   const parts = [
+    // Свой формат дистанции, отличный от формата соревнования, — показываем явно.
+    sameFormat(format, competitionFormat) ? null : formatLabel(format),
     distance.minControlsCount != null ? minControlsLabel(distance.minControlsCount, distance.controlPoints.length) : null,
     required.length > 0 ? `обязательные: ${required.join(', ')}` : null,
   ].filter(Boolean)
@@ -342,7 +353,11 @@ export function DistancesStep({
               <span className="text-sm text-on-surface-variant">
                 Длина: {d.lengthMeters} м • Набор: {d.climbMeters} м • КП: {d.controlPoints.length}
               </span>
-              {pendingRulesLabel(d) && <span className="text-sm text-on-surface-variant">{pendingRulesLabel(d)}</span>}
+              {pendingRulesLabel(d, competitionCourseFormat(direction, byChoiceMode)) && (
+                <span className="text-sm text-on-surface-variant">
+                  {pendingRulesLabel(d, competitionCourseFormat(direction, byChoiceMode))}
+                </span>
+              )}
             </button>
             <div className="flex shrink-0 gap-3">
               <button type="button" onClick={() => onEdit(index)} className="text-sm text-primary">
@@ -362,8 +377,8 @@ export function DistancesStep({
       {detailsDistance && (
         <DistanceDetailsDialog
           distance={detailsDistance}
-          direction={direction}
-          byChoiceMode={byChoiceMode}
+          direction={effectiveFormat(detailsDistance, competitionCourseFormat(direction, byChoiceMode)).direction}
+          byChoiceMode={effectiveFormat(detailsDistance, competitionCourseFormat(direction, byChoiceMode)).byChoiceMode}
           onDismiss={() => setDetailsIndex(null)}
         />
       )}

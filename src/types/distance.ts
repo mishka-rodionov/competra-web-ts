@@ -28,6 +28,10 @@ export interface Distance {
   finishLongitude?: number | null
   /** Минимум КП («по выбору» с минимумом КП); null — все КП дистанции. */
   minControlsCount?: number | null
+  /** Направление дистанции (FORWARD / BY_CHOICE / MARKING); null — как у соревнования (см. lib/courseFormat). */
+  direction?: string | null
+  /** Режим «по выбору» дистанции (SCORE / MIN_CONTROLS); null — как у соревнования. */
+  byChoiceMode?: string | null
   mapUrl: string | null
   mapTopLeftLat: number | null
   mapTopLeftLng: number | null
@@ -66,6 +70,10 @@ export interface SaveDistanceRequest {
   finishLongitude?: number | null
   /** Минимум КП: N > 0 — минимум, 0 — все КП, не передано — сервер значение не меняет. */
   minControlsCount?: number | null
+  /** Направление дистанции; INHERIT_FORMAT — как у соревнования, не передано — сервер не меняет. */
+  direction?: string | null
+  /** Режим «по выбору» дистанции; INHERIT_FORMAT — как у соревнования, не передано — не менять. */
+  byChoiceMode?: string | null
   mapUrl?: string | null
   mapTopLeftLat?: number | null
   mapTopLeftLng?: number | null

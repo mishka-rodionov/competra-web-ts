@@ -8,7 +8,8 @@ import { NO_DISTANCE_KEY, type PendingGroup } from './types'
 interface GroupDialogProps {
   /** Пары [ключ дистанции, название]. */
   distanceOptions: [string, string][]
-  isScoreO: boolean
+  /** Места на дистанции [distanceKey] — по баллам (score-О): тогда у группы есть штраф очками за опоздание. */
+  isScoreOForDistance: (distanceKey: string) => boolean
   /** КВ соревнования — подсказка о том, что унаследует группа с пустым полем. */
   competitionControlTimeMinutes: number | null
   /** N командного зачёта соревнования; null — зачёт не включён, поле группы скрыто. */
@@ -25,7 +26,7 @@ function numStr(value: number | null | undefined): string {
 
 export function GroupDialog({
   distanceOptions,
-  isScoreO,
+  isScoreOForDistance,
   competitionControlTimeMinutes,
   competitionTeamCounted = null,
   initial,
@@ -38,6 +39,8 @@ export function GroupDialog({
   const [maxAge, setMaxAge] = useState(numStr(initial?.maxAge))
   const [maxParticipants, setMaxParticipants] = useState(numStr(initial?.maxParticipants))
   const [distanceKey, setDistanceKey] = useState(initial?.distanceKey ?? distanceOptions[0]?.[0] ?? NO_DISTANCE_KEY)
+  // Формат — у выбранной дистанции группы.
+  const isScoreO = isScoreOForDistance(distanceKey)
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(numStr(initial?.timeLimitMinutes))
   const [scorePenaltyPerMinute, setScorePenaltyPerMinute] = useState(initial ? numStr(initial.scorePenaltyPerMinute) : '1')
   const [maxLatenessMinutes, setMaxLatenessMinutes] = useState(initial ? numStr(initial.maxLatenessMinutes) : '30')

@@ -52,6 +52,10 @@ export interface PendingDistance {
   description: string | null
   /** Минимум КП («по выбору» с минимумом КП); null — все КП. */
   minControlsCount: number | null
+  /** Направление дистанции; null — как у соревнования (см. lib/courseFormat). */
+  direction: string | null
+  /** Режим «по выбору» дистанции; null — как у соревнования. */
+  byChoiceMode: string | null
 }
 
 /** [PendingGroup.distanceKey] группы, которой дистанция ещё не назначена. */
@@ -98,7 +102,10 @@ export interface CreateCompetitionFormState {
   startInterval: number
   /** КВ соревнования в минутах, строкой из поля ввода; пусто — КВ не задано. */
   controlTimeMinutes: string
-  overtimePolicy: string
+  /** Политика КВ для дистанций, где места по времени (IGNORE / DISQUALIFY). */
+  timeOvertimePolicy: string
+  /** Политика КВ для дистанций с баллами (IGNORE / DISQUALIFY / SCORE_PENALTY). */
+  scoreOvertimePolicy: string
   registrationOpenImmediately: boolean
   regStartDateStr: string
   regStartTime: string

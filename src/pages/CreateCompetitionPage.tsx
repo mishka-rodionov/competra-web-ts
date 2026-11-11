@@ -23,7 +23,14 @@ import {
   isRegistrationStartAfterCompetition,
 } from '../features/management/createCompetitionValidation'
 import { parseXmlCoursePreviews, xmlCourseKey } from '../features/management/types'
-import { competitionFormat, ranksByScore } from '../lib/byChoiceMode'
+import { competitionFormat } from '../lib/byChoiceMode'
+import {
+  competitionCourseFormat,
+  effectiveFormat,
+  formatRanksByScore,
+  INHERIT_FORMAT,
+  isMixedFormat,
+} from '../lib/courseFormat'
 import { matchDistanceKey, parseGroupTitle } from '../lib/standardGroups'
 import { teamScoringAnalyticsValue, teamScoringRequest } from '../lib/teamScoring'
 import type { CreateCompetitionFormState, PendingDistance, PendingGroup, XmlCoursePreview } from '../features/management/types'
@@ -55,7 +62,8 @@ const INITIAL_FORM: CreateCompetitionFormState = {
   startTimeMode: 'USER_SET',
   startInterval: 60,
   controlTimeMinutes: '',
-  overtimePolicy: 'IGNORE',
+  timeOvertimePolicy: 'IGNORE',
+  scoreOvertimePolicy: 'SCORE_PENALTY',
   registrationOpenImmediately: true,
   regStartDateStr: '',
   regStartTime: '10:00',
@@ -139,6 +147,16 @@ export function CreateCompetitionPage() {
     })
   }, [])
 
+  // Формат по умолчанию и форматы дистанций (импортированные из XML — как у соревнования): от них
+  // зависят политики КВ, штраф очками у групп и командный зачёт.
+  const defaultFormat = competitionCourseFormat(form.direction, form.byChoiceMode)
+  const courseFormats = [defaultFormat, ...distances.map((d) => effectiveFormat(d, defaultFormat))]
+  const hasScoreCourses = courseFormats.some(formatRanksByScore)
+  const hasTimeCourses = courseFormats.some((f) => !formatRanksByScore(f))
+  /** Места в группе с дистанцией [distanceKey] — по баллам? Дистанция из XML или без дистанции — как у соревнования. */
+  const isScoreOForDistance = (distanceKey: string) =>
+    formatRanksByScore(effectiveFormat(distances.find((d) => d.key === distanceKey), defaultFormat))
+
   function patchForm(patch: Partial<CreateCompetitionFormState>) {
     setForm((prev) => ({ ...prev, ...patch }))
   }
@@ -206,19 +224,20 @@ export function CreateCompetitionPage() {
   }
 
   function addStandardGroups(titles: string[], defaultDistanceKey: string) {
-    const isScoreO = ranksByScore(form.direction, form.byChoiceMode)
     const existing = new Set(groups.map((g) => g.title.trim().toLowerCase()))
     const added = titles
       .filter((title) => !existing.has(title.toLowerCase()))
       .map((title): PendingGroup => {
         const info = parseGroupTitle(title)
+        const distanceKey = matchDistanceKey(title, distanceOptions) ?? defaultDistanceKey
+        const isScoreO = isScoreOForDistance(distanceKey)
         return {
           title,
           gender: info?.gender ?? null,
           minAge: info?.minAge ?? null,
           maxAge: info?.maxAge ?? null,
           maxParticipants: null,
-          distanceKey: matchDistanceKey(title, distanceOptions) ?? defaultDistanceKey,
+          distanceKey,
           timeLimitMinutes: null,
           scorePenaltyPerMinute: isScoreO ? 1 : null,
           maxLatenessMinutes: isScoreO ? 30 : null,
@@ -323,9 +342,12 @@ export function CreateCompetitionPage() {
       startTimeMode: form.startTimeMode,
       startIntervalSeconds: form.startInterval,
       controlTimeMinutes: form.controlTimeMinutes ? parseInt(form.controlTimeMinutes, 10) : null,
-      overtimePolicy: form.overtimePolicy,
+      // Legacy-поле — политика для формата по умолчанию (для клиентов без формата на дистанции).
+      overtimePolicy: formatRanksByScore(defaultFormat) ? form.scoreOvertimePolicy : form.timeOvertimePolicy,
+      timeOvertimePolicy: form.timeOvertimePolicy,
+      scoreOvertimePolicy: form.scoreOvertimePolicy,
       byChoiceMode: form.byChoiceMode,
-      teamScoring: teamScoringRequest(form.teamScoring, ranksByScore(form.direction, form.byChoiceMode)),
+      teamScoring: teamScoringRequest(form.teamScoring, hasScoreCourses),
       isFinishRegistration: !isPastEvent && form.isFinishRegistration,
     })
     if (createResult.kind === 'error') return fail(createResult.message)
@@ -356,6 +378,8 @@ export function CreateCompetitionPage() {
         finishControlPoint: d.finishControlPoint,
         startControlPoint: d.startControlPoint,
         minControlsCount: d.minControlsCount ?? 0,
+        direction: d.direction ?? INHERIT_FORMAT,
+        byChoiceMode: d.byChoiceMode ?? INHERIT_FORMAT,
       }))
       const dr = await distanceRepository.saveDistances(distRequests)
       if (dr.kind === 'error') return fail(`Дистанции: ${dr.message}`)
@@ -410,6 +434,7 @@ export function CreateCompetitionPage() {
         competitionFormat(form.direction, form.byChoiceMode),
         teamScoringAnalyticsValue(form.teamScoring),
         !isPastEvent && form.isFinishRegistration,
+        isMixedFormat(distances, defaultFormat),
       ),
     )
     await queryClient.invalidateQueries({ queryKey: ['my-competitions'] })
@@ -439,7 +464,15 @@ export function CreateCompetitionPage() {
               <DebugTestToolsCard isTest={form.isTest} onIsTest={(isTest) => patchForm({ isTest })} onFill={fillTestData} />
             )}
 
-            {step === 0 && <BasicStep form={form} onPatch={patchForm} isPastEvent={isPastEvent} />}
+            {step === 0 && (
+              <BasicStep
+                form={form}
+                onPatch={patchForm}
+                isPastEvent={isPastEvent}
+                hasTimeCourses={hasTimeCourses}
+                hasScoreCourses={hasScoreCourses}
+              />
+            )}
             {step === 1 && <RegistrationStep form={form} onPatch={patchForm} />}
             {step === 2 && <OrganizerStep form={form} onPatch={patchForm} myClubs={myClubs} />}
             {step === 3 && (
@@ -513,7 +546,7 @@ export function CreateCompetitionPage() {
       {groupDialog && (
         <GroupDialog
           distanceOptions={distanceOptions}
-          isScoreO={ranksByScore(form.direction, form.byChoiceMode)}
+          isScoreOForDistance={isScoreOForDistance}
           competitionControlTimeMinutes={form.controlTimeMinutes ? parseInt(form.controlTimeMinutes, 10) : null}
           competitionTeamCounted={form.teamScoring?.groupCountedResults ?? null}
           initial={editedGroup}

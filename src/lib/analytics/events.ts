@@ -96,6 +96,8 @@ export const AnalyticsEvents = {
     format: string,
     teamScoring: string,
     isFinishRegistration: boolean,
+    /** Есть дистанция с форматом, отличным от формата соревнования. */
+    mixedFormat: boolean,
   ): AnalyticsEvent => ({
     name: 'create_competition_finished',
     params: {
@@ -104,6 +106,7 @@ export const AnalyticsEvents = {
       format,
       team_scoring: teamScoring,
       is_finish_registration: isFinishRegistration,
+      mixed_format: mixedFormat,
     },
   }),
   /** Открыт командный зачёт в результатах. */

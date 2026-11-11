@@ -1,12 +1,22 @@
 import { useState } from 'react'
 import { formatControlPoints, parseControlPoints } from '../../lib/controlPoints'
 import { isMinControls, ranksByScore } from '../../lib/byChoiceMode'
+import {
+  competitionCourseFormat,
+  distanceFormatFields,
+  distanceFormatOption,
+  distanceFormatOptions,
+  effectiveFormat,
+  formatRanksByScore,
+} from '../../lib/courseFormat'
+import { LabeledSelect } from '../../components/LabeledSelect'
 import { DEFAULT_STATION_CODES } from './dictionaries'
 import type { PendingDistance } from './types'
 
 interface DistanceDialogProps {
+  /** Направление соревнования по умолчанию; дистанция может задать своё. */
   direction: string
-  /** SCORE / MIN_CONTROLS — в score-О у КП баллы, в «по выбору» с минимумом КП — минимум КП. */
+  /** SCORE / MIN_CONTROLS соревнования — в score-О у КП баллы, в «по выбору» с минимумом КП — минимум КП. */
   byChoiceMode: string
   /** Старт по стартовой станции: реальное время старта берётся из отметки на этом КП. */
   isStartCpRequired: boolean
@@ -27,9 +37,13 @@ export function DistanceDialog({
   onDismiss,
   onSave,
 }: DistanceDialogProps) {
-  const isByChoice = direction === 'BY_CHOICE'
-  const hasScores = ranksByScore(direction, byChoiceMode)
-  const hasMinControls = isMinControls(direction, byChoiceMode)
+  // Формат дистанции: свой или как у соревнования. От него зависят баллы КП и минимум КП.
+  const competitionFormat = competitionCourseFormat(direction, byChoiceMode)
+  const [formatOption, setFormatOption] = useState(distanceFormatOption(initial, competitionFormat))
+  const format = effectiveFormat(distanceFormatFields(formatOption), competitionFormat)
+  const isByChoice = format.direction === 'BY_CHOICE'
+  const hasScores = ranksByScore(format.direction, format.byChoiceMode)
+  const hasMinControls = isMinControls(format.direction, format.byChoiceMode)
   const [name, setName] = useState(initial?.name ?? '')
   const [lengthMeters, setLengthMeters] = useState(initial?.lengthMeters ? String(initial.lengthMeters) : '')
   const [climbMeters, setClimbMeters] = useState(initial?.climbMeters ? String(initial.climbMeters) : '')
@@ -66,6 +80,7 @@ export function DistanceDialog({
       startControlPoint: isStartCpRequired && startCp ? parseInt(startCp, 10) : null,
       description: description.trim() || null,
       minControlsCount,
+      ...distanceFormatFields(formatOption),
     })
   }
 
@@ -95,6 +110,19 @@ export function DistanceDialog({
             className="w-1/2 rounded-md border border-outline bg-bg px-3 py-2 text-fg"
           />
         </div>
+        <label className="flex flex-col gap-1">
+          <LabeledSelect
+            label="Формат дистанции"
+            value={formatOption}
+            options={distanceFormatOptions(competitionFormat)}
+            onChange={setFormatOption}
+          />
+          <span className="text-xs text-on-surface-variant">
+            {formatRanksByScore(format) !== formatRanksByScore(competitionFormat)
+              ? `Места на этой дистанции — ${hasScores ? 'по баллам' : 'по времени'}, не как у формата соревнования. Политика КВ для таких дистанций задаётся в настройках соревнования`
+              : 'Можно задать дистанции свой формат — например, «по выбору» для младших групп'}
+          </span>
+        </label>
         <input
           value={controlPointsInput}
           onChange={(e) => setControlPointsInput(e.target.value)}

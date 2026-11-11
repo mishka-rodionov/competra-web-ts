@@ -13,7 +13,7 @@ import { ManageResultsTab } from '../features/management/ManageResultsTab'
 import { GroupsWithoutDistanceBanner } from '../features/management/NoDistanceNotice'
 import { ParticipantsManageTab } from '../features/management/ParticipantsManageTab'
 import { usePendingLinkCounts } from '../features/participant-links/hooks'
-import { ranksByScore } from '../lib/byChoiceMode'
+import { competitionCourseFormat } from '../lib/courseFormat'
 import { groupsWithoutDistance } from '../lib/groupDistance'
 
 const TABS = [
@@ -67,7 +67,7 @@ export function ManageCompetitionPage() {
             {tab === 'groups' && (
               <ManageGroupsTab
                 competitionId={competition.competitionId}
-                isScoreO={ranksByScore(competition.direction, competition.byChoiceMode)}
+                competitionFormat={competitionCourseFormat(competition.direction, competition.byChoiceMode)}
                 competitionControlTimeMinutes={competition.controlTimeMinutes}
                 competitionTeamCounted={competition.teamScoring?.groupCountedResults ?? null}
               />

@@ -4,6 +4,14 @@ import { EmptyState } from '../../components/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { useIsLoggedIn } from '../../auth/useIsLoggedIn'
 import { minControlsLabel } from '../../lib/byChoiceMode'
+import {
+  formatLabel,
+  formatRanksByScore,
+  groupDetailFormat,
+  overtimePolicyFor,
+  type CourseFormat,
+  type OvertimePolicies,
+} from '../../lib/courseFormat'
 import type { RegistrationTeamSource } from '../../lib/analytics/events'
 import { birthYearsRange, checkGroupEligibility, type GroupEligibility } from '../../lib/groupEligibility'
 import type { ParticipantGroupDetail, RegisterEventRequest } from '../../types/competition'
@@ -18,10 +26,12 @@ interface GroupsTabProps {
   competitionYear: number
   /** Профиль вошедшего пользователя — для проверки пола и возраста; null — не вошёл или грузится. */
   profile: UserProfile | null
-  /** IGNORE / DISQUALIFY / SCORE_PENALTY — влияет только на подпись к КВ. */
-  overtimePolicy: string
-  /** «По выбору» с минимумом КП — у группы показывается правило её дистанции («Взять 18 из 20 КП»). */
-  isMinControls?: boolean
+  /** Формат соревнования по умолчанию; формат группы — у её дистанции (groupDetailFormat). */
+  competitionFormat: CourseFormat
+  /** Политики КВ по виду дистанции — влияют только на подпись к КВ. */
+  overtimePolicies: OvertimePolicies
+  /** У дистанций разные форматы — у группы подписывается формат её дистанции. */
+  isMixedFormat?: boolean
   registrationOpen: boolean
   registeredGroupId: number | null
   /** Профиль или список участников ещё грузятся — неизвестно, зарегистрирован ли пользователь. */
@@ -36,8 +46,9 @@ export function GroupsTab({
   groups,
   competitionYear,
   profile,
-  overtimePolicy,
-  isMinControls = false,
+  competitionFormat,
+  overtimePolicies,
+  isMixedFormat = false,
   registrationOpen,
   registeredGroupId,
   registrationStatusLoading,
@@ -77,8 +88,9 @@ export function GroupsTab({
           <GroupCard
             key={group.groupId}
             group={group}
-            overtimePolicy={overtimePolicy}
-            isMinControls={isMinControls}
+            format={groupDetailFormat(group, competitionFormat)}
+            overtimePolicies={overtimePolicies}
+            showsFormat={isMixedFormat}
             competitionYear={competitionYear}
             eligibility={profile ? checkGroupEligibility(group, profile, competitionYear) : { eligible: true }}
             canRegister={isLoggedIn && !registrationStatusLoading}
@@ -107,8 +119,11 @@ export function GroupsTab({
 
 interface GroupCardProps {
   group: ParticipantGroupDetail
-  overtimePolicy: string
-  isMinControls: boolean
+  /** Формат дистанции группы. */
+  format: CourseFormat
+  overtimePolicies: OvertimePolicies
+  /** Подписать формат дистанции (у дистанций соревнования разные форматы). */
+  showsFormat: boolean
   competitionYear: number
   eligibility: GroupEligibility
   canRegister: boolean
@@ -120,8 +135,9 @@ interface GroupCardProps {
 
 function GroupCard({
   group,
-  overtimePolicy,
-  isMinControls,
+  format,
+  overtimePolicies,
+  showsFormat,
   competitionYear,
   eligibility,
   canRegister,
@@ -156,6 +172,10 @@ function GroupCard({
         .join(' · ')
     : null
 
+  // «По выбору» с минимумом КП — показываем правило дистанции («Взять 18 из 20 КП»).
+  const isMinControls = format.direction === 'BY_CHOICE' && format.byChoiceMode === 'MIN_CONTROLS'
+  // Политика — своя у дистанций по времени и с баллами.
+  const overtimePolicy = overtimePolicyFor(overtimePolicies, formatRanksByScore(format))
   // При IGNORE КВ справочное — говорим об этом прямо, иначе участник решит, что его снимут.
   const controlTime =
     group.controlTimeMinutes != null
@@ -183,6 +203,7 @@ function GroupCard({
       )}
       {ageRange && <span className="text-sm text-on-surface-variant">{ageRange}</span>}
       {distInfo && <span className="text-sm text-fg">{distInfo}</span>}
+      {showsFormat && <span className="text-sm text-on-surface-variant">Формат: {formatLabel(format)}</span>}
       {/* LEFT JOIN в деталке: у неназначенной или удалённой дистанции нет и числа КП. */}
       {(group.distanceId == null || group.distanceControlsCount == null) && (
         <span className="text-sm text-on-surface-variant">Дистанция уточняется</span>
